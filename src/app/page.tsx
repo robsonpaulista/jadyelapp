@@ -7,8 +7,9 @@ import { AuthProps } from '@/types/Auth';
 import { motion } from 'framer-motion';
 import { FiUser, FiLock, FiAlertCircle } from 'react-icons/fi';
 import { disableConsoleLogging } from '@/lib/logger';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
 import { signInWithEmailAndPassword, AuthError } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 
 export default function Home() {
   const [email, setEmail] = useState('');
@@ -38,14 +39,27 @@ export default function Home() {
       const firebaseUser = userCredential.user;
 
       if (firebaseUser) {
+        // Buscar dados adicionais do usuário no Firestore
+        const userDocRef = doc(db, 'users', firebaseUser.uid);
+        const userDoc = await getDoc(userDocRef);
+
+        let userRole = 'user'; // Perfil padrão
+        let userPermissions: string[] = [];
+
+        if (userDoc.exists()) {
+          const userDataFromDb = userDoc.data();
+          userRole = userDataFromDb.role || 'user';
+          userPermissions = userDataFromDb.permissions || [];
+        }
+
         // Login bem-sucedido
         const userData: AuthProps = {
           id: firebaseUser.uid,
           username: firebaseUser.email || '',
-          nome: firebaseUser.displayName || firebaseUser.email || '',
+          nome: userDoc.exists() ? userDoc.data().name : firebaseUser.displayName || firebaseUser.email || '',
           email: firebaseUser.email || '',
-          perfil: 'user', // Você pode ajustar isso se tiver roles no Firebase
-          permissions: [], // Você pode buscar isso de um DB separado se necessário
+          perfil: userRole,
+          permissions: userPermissions,
           token: await firebaseUser.getIdToken(),
         };
         
