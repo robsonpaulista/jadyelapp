@@ -186,8 +186,8 @@ export default function Emendas2025() {
       atualizarMatriz();
       
       if (forceRefresh) {
-        // Força a reavaliação do Vercel
-        showToast('Dados atualizados com sucesso!', 'success');
+        const toastMessage = 'Dados atualizados com sucesso!';
+        showToast(toastMessage, 'success');
       }
     } catch (error) {
       // Erro silencioso - não exibir logs por segurança
