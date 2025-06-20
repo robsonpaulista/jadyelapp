@@ -1,5 +1,5 @@
 export interface AuthProps {
-  id: number;
+  id: string;
   username: string;
   nome: string;
   email: string;
@@ -10,7 +10,7 @@ export interface AuthProps {
 
 export interface LoginResponse {
   user: {
-    id: number;
+    id: string;
     username: string;
     nome: string;
     email: string;

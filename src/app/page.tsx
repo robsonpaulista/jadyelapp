@@ -7,9 +7,11 @@ import { AuthProps } from '@/types/Auth';
 import { motion } from 'framer-motion';
 import { FiUser, FiLock, FiAlertCircle } from 'react-icons/fi';
 import { disableConsoleLogging } from '@/lib/logger';
+import { auth } from '@/lib/firebase';
+import { signInWithEmailAndPassword, AuthError } from 'firebase/auth';
 
 export default function Home() {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -17,80 +19,70 @@ export default function Home() {
 
   const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
-    // Desabilitar logs globalmente para proteção de dados
     if (typeof window !== 'undefined') {
       disableConsoleLogging();
     }
-    
-    if (isSubmitting) return; // Evitar múltiplos envios
+    if (isSubmitting) return;
     
     setError('');
     setIsSubmitting(true);
-    
-    // Marcar que o login está em andamento para evitar logout automático
-    sessionStorage.setItem('login_in_progress', 'true');
-    
+
     try {
-      // Validação básica
-      if (!username.trim() || !password.trim()) {
+      if (!email.trim() || !password.trim()) {
         setError('Usuário e senha são obrigatórios');
-        sessionStorage.removeItem('login_in_progress');
         setIsSubmitting(false);
         return;
       }
       
-      // Fazer a requisição de login usando a API dedicada
-      const response = await fetch('/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password }),
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok && data.success) {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
+
+      if (firebaseUser) {
         // Login bem-sucedido
         const userData: AuthProps = {
-          id: data.user.id,
-          username: data.user.email,
-          nome: data.user.name,
-          email: data.user.email,
-          perfil: data.user.role,
-          permissions: data.user.permissions || [],
-          token: 'session-cookie-auth', // Usamos cookies para sessão
+          id: firebaseUser.uid,
+          username: firebaseUser.email || '',
+          nome: firebaseUser.displayName || firebaseUser.email || '',
+          email: firebaseUser.email || '',
+          perfil: 'user', // Você pode ajustar isso se tiver roles no Firebase
+          permissions: [], // Você pode buscar isso de um DB separado se necessário
+          token: await firebaseUser.getIdToken(),
         };
         
-        // Salvar os dados do usuário
         localStorage.setItem('isLoggedIn', 'true');
         localStorage.setItem('user', JSON.stringify(userData));
         localStorage.setItem('userAuthenticated', 'true');
         localStorage.setItem('userPermissions', JSON.stringify(userData.permissions));
         localStorage.setItem('lastLoginTime', Date.now().toString());
         
-        // Remover o marcador de login em andamento após login bem-sucedido
-        sessionStorage.removeItem('login_in_progress');
-        
-        // Redirecionar para o painel
         router.push('/painel-aplicacoes');
       } else {
-        // Login falhou
-        setError(data.message || 'Falha na autenticação');
-        sessionStorage.removeItem('login_in_progress');
+        setError('Falha na autenticação. Usuário não encontrado.');
       }
-    } catch (err) {
-      // Erro silencioso - não exibir logs por segurança
-      setError('Ocorreu um erro ao processar o login. Tente novamente.');
-      sessionStorage.removeItem('login_in_progress');
+    } catch (err: unknown) {
+      const authError = err as AuthError;
+      let errorMessage = 'Ocorreu um erro ao processar o login. Tente novamente.';
+      switch (authError.code) {
+        case 'auth/user-not-found':
+        case 'auth/wrong-password':
+        case 'auth/invalid-credential':
+          errorMessage = 'Usuário ou senha inválidos.';
+          break;
+        case 'auth/invalid-email':
+          errorMessage = 'O formato do e-mail é inválido.';
+          break;
+        case 'auth/user-disabled':
+          errorMessage = 'Este usuário foi desativado.';
+          break;
+      }
+      setError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleUsernameChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setUsername(e.target.value);
+  const handleEmailChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setEmail(e.target.value);
   };
 
   const handlePasswordChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -144,7 +136,7 @@ export default function Home() {
           
           <form onSubmit={handleLogin} className="space-y-5">
             <div className="space-y-2">
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 Usuário
               </label>
               <div className="relative">
@@ -152,14 +144,14 @@ export default function Home() {
                   <FiUser className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
-                  type="text"
-                  id="username"
-                  name="username"
+                  type="email"
+                  id="email"
+                  name="email"
                   className="w-full pl-10 p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm"
-                  autoComplete="username"
+                  autoComplete="email"
                   autoFocus
-                  value={username}
-                  onChange={handleUsernameChange}
+                  value={email}
+                  onChange={handleEmailChange}
                   disabled={isSubmitting}
                   required
                 />
