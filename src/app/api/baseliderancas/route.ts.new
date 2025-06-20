@@ -1,0 +1,235 @@
+import { NextRequest, NextResponse } from 'next/server';
+import * as xlsx from 'xlsx';
+import path from 'path';
+import fs from 'fs';
+
+// Interface para os dados de liderança
+interface Lideranca {
+  id: string;
+  nome: string;
+  telefone: string;
+  nivel: string;
+  municipio: string;
+  bairro?: string;
+  votosProjetados: number;
+  filhos: Lideranca[];
+}
+
+// Interface para estruturar os dados agrupados
+interface DadosAgrupados {
+  dados: Lideranca[];
+  estatisticas: {
+    totalRegistros: number;
+    totalVotos: number;
+    votosPromedio: number;
+    municipios: Array<{
+      municipio: string; 
+      votos: number;
+      bairros: Array<{bairro: string; votos: number}>;
+    }>;
+    niveis: {
+      [key: string]: {
+        count: number;
+        votos: number;
+      }
+    };
+  };
+}
+
+// Cache para armazenar resultados e evitar processamento repetido
+let dadosCache: { dados: Lideranca[]; estatisticas: any } | null = null;
+let lastFetchTime = 0;
+const CACHE_DURATION = 2 * 60 * 1000; // 2 minutos em milissegundos
+
+export async function GET(request: NextRequest) {
+  try {
+    const now = Date.now();
+    const forceRefresh = request.nextUrl.searchParams.get('refresh') === 'true';
+    
+    console.log(`API BaseLiderancas: Iniciada, forceRefresh=${forceRefresh}, temCache=${dadosCache !== null}`);
+
+    // SEMPRE forçar atualização - desabilitar cache temporariamente
+    dadosCache = null;
+    
+    // Caminho para o arquivo Excel
+    const filePath = path.join(process.cwd(), 'baseeleitores.xlsx');
+    console.log('API BaseLiderancas: Caminho do arquivo:', filePath);
+    
+    // Verificar se estamos em ambiente de desenvolvimento para fornecer dados de demonstração
+    const isDemo = !fs.existsSync(filePath);
+    console.log('API BaseLiderancas: Modo demo?', isDemo);
+    
+    // Se o arquivo não existir, gera dados de demonstração
+    if (isDemo) {
+      console.log("API BaseLiderancas: Arquivo não encontrado. Gerando dados de demonstração.");
+      const demoDados = gerarDadosDemonstracao();
+      
+      // Verificar se temos dados
+      if (!demoDados.dados || demoDados.dados.length === 0) {
+        console.error("API BaseLiderancas: Erro ao gerar dados de demonstração");
+        return NextResponse.json({ 
+          success: false, 
+          message: "Erro ao gerar dados de demonstração"
+        });
+      }
+      
+      // Atualizar cache
+      dadosCache = demoDados;
+      lastFetchTime = now;
+    
+      console.log(`API BaseLiderancas: Retornando ${demoDados.dados.length} lideranças de demonstração`);
+      return NextResponse.json({
+        success: true,
+        message: "Dados de demonstração gerados com sucesso",
+        data: demoDados.dados,
+        estatisticas: demoDados.estatisticas
+      });
+    }
+    
+    // Ler o arquivo Excel - adicionamos um try/catch aqui para tratar erros específicos ao ler o arquivo
+    try {
+      console.log("API BaseLiderancas: Tentando ler o arquivo Excel");
+      
+      // Lê o arquivo usando fs primeiro para evitar problemas de acesso
+      const buffer = fs.readFileSync(filePath);
+      
+      // Converte o buffer usando xlsx
+      const workbook = xlsx.read(buffer, { type: 'buffer' });
+      
+      // Verificar se a aba "cadastro" existe
+      if (!workbook.SheetNames.includes('cadastro')) {
+        console.error("API BaseLiderancas: Aba 'cadastro' não encontrada na planilha");
+        throw new Error("Aba 'cadastro' não encontrada na planilha");
+      }
+      
+      // Obter os dados da aba "cadastro"
+      const worksheet = workbook.Sheets['cadastro'];
+      const rawData = xlsx.utils.sheet_to_json(worksheet);
+      
+      console.log(`API BaseLiderancas: Dados brutos obtidos: ${rawData.length} registros`);
+      
+      // Verificar cada registro para debug
+      console.log("API BaseLiderancas: Primeiros 3 registros brutos:", JSON.stringify(rawData.slice(0, 3), null, 2));
+      
+      // Processar os dados usando a função processarDados (não a processarDadosExcel que não existe)
+      const dadosProcessados = processarDados(rawData);
+      
+      // Loggar estrutura da hierarquia para depuração
+      console.log(`API BaseLiderancas: Dados processados: ${dadosProcessados.length} lideranças raiz`);
+      if (dadosProcessados.length > 0) {
+        const estrutura = dadosProcessados.map(r => ({
+          id: r.id,
+          nome: r.nome,
+          nivel: r.nivel,
+          filhosImediatos: r.filhos.length,
+          filhosPorNivel: r.filhos.reduce((acc, filho) => {
+            acc[filho.nivel] = (acc[filho.nivel] || 0) + 1;
+            return acc;
+          }, {} as Record<string, number>)
+        }));
+        console.log(`API BaseLiderancas: Estrutura da hierarquia:`, JSON.stringify(estrutura, null, 2));
+      }
+      
+      // Calcular estatísticas
+      const estatisticas = calcularEstatisticas(rawData, dadosProcessados);
+      
+      // Verificar se temos dados
+      if (!dadosProcessados || dadosProcessados.length === 0) {
+        console.error("API BaseLiderancas: Nenhum dado processado, usando demonstração");
+        const demoDados = gerarDadosDemonstracao();
+        
+        // Atualizar cache
+        dadosCache = demoDados;
+        lastFetchTime = now;
+        
+        return NextResponse.json({
+          success: true,
+          message: "Nenhum dado encontrado na planilha. Usando dados de demonstração.",
+          data: demoDados.dados,
+          estatisticas: demoDados.estatisticas,
+          isDemo: true
+        });
+      }
+      
+      // Atualizar cache
+      dadosCache = {
+        dados: dadosProcessados,
+        estatisticas
+      };
+      lastFetchTime = now;
+      
+      // Verificar se a estrutura pode ser serializada corretamente
+      if (!verificarProfundidadeJSON(dadosProcessados)) {
+        console.error("API BaseLiderancas: Problema na estrutura de dados para serialização JSON");
+        return NextResponse.json({ 
+          success: false, 
+          message: "Erro na estrutura de dados. Possível referência circular."
+        });
+      }
+
+      // Contagem de registros por nível na hierarquia final
+      const contarRegistrosPorNivel = (items: Lideranca[]): Record<string, number> => {
+        const contagem: Record<string, number> = {};
+        
+        const processar = (item: Lideranca) => {
+          const nivel = item.nivel || 'desconhecido';
+          contagem[nivel] = (contagem[nivel] || 0) + 1;
+          
+          for (const filho of item.filhos) {
+            processar(filho);
+          }
+        };
+        
+        for (const item of items) {
+          processar(item);
+        }
+        
+        return contagem;
+      };
+      
+      const contagemPorNivel = contarRegistrosPorNivel(dadosProcessados);
+      
+      console.log(`API BaseLiderancas: Retornando ${dadosProcessados.length} lideranças raiz, com distribuição:`, contagemPorNivel);
+      return NextResponse.json({
+        success: true,
+        message: "Dados processados com sucesso",
+        data: dadosProcessados,
+        estatisticas,
+        registrosBrutos: rawData.length,
+        registrosProcessados: dadosProcessados.length,
+        distribuicaoNiveis: contagemPorNivel,
+        tempoProcessamento: Date.now() - now + 'ms'
+      }, {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate'
+        }
+      });
+      
+    } catch (err) {
+      console.error("API BaseLiderancas: Erro ao processar planilha:", err);
+      const demoDados = gerarDadosDemonstracao();
+      
+      // Atualizar cache com dados de demonstração em caso de erro
+      dadosCache = demoDados;
+      lastFetchTime = now;
+      
+      return NextResponse.json({
+        success: true,
+        message: "Erro ao processar planilha. Usando dados de demonstração.",
+        data: demoDados.dados,
+        estatisticas: demoDados.estatisticas,
+        error: err instanceof Error ? err.message : 'Erro desconhecido'
+      });
+    }
+    
+  } catch (error) {
+    console.error("API BaseLiderancas: Erro geral:", error);
+    return NextResponse.json(
+      { 
+        success: false, 
+        message: `Erro ao processar dados: ${error instanceof Error ? error.message : 'Erro desconhecido'}` 
+      },
+      { status: 500 }
+    );
+  }
+}

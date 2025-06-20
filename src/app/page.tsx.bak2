@@ -1,0 +1,565 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import * as Yup from 'yup';
+import { Formik, Form, Field, ErrorMessage } from 'formik';
+import { motion } from 'framer-motion';
+import { toast } from 'react-hot-toast';
+import { FaUser, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
+import Image from 'next/image';
+import { logout } from '@/lib/auth';
+
+// Componente de partículas no fundo
+const TechParticles = ({show = true}: {show?: boolean}) => {
+  if (!show) return null;
+  
+  const particles = React.useMemo(() => {
+    return Array.from({ length: 30 }).map((_, index) => ({
+      id: index,
+      x: Math.floor(Math.random() * 100),
+      y: Math.floor(Math.random() * 100),
+      size: Math.floor(1 + Math.random() * 4),
+      opacity: Number((0.1 + Math.random() * 0.5).toFixed(2)),
+      speedFactor: 3 + Math.random() * 6
+    }));
+  }, []);
+
+  const lines = React.useMemo(() => {
+    return Array.from({ length: 12 }).map((_, index) => ({
+      id: index,
+      x1: Math.floor(Math.random() * 100),
+      y1: Math.floor(Math.random() * 100),
+      x2: Math.floor(Math.random() * 100),
+      y2: Math.floor(Math.random() * 100),
+      opacity: Number((0.03 + Math.random() * 0.08).toFixed(2)),
+      duration: 6 + Math.random() * 8
+    }));
+  }, []);
+
+  // Efeito para detectar movimento do mouse
+  const [mousePosition, setMousePosition] = React.useState({ x: 0, y: 0 });
+  
+  React.useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePosition({
+        x: e.clientX,
+        y: e.clientY
+      });
+    };
+    
+    window.addEventListener('mousemove', handleMouseMove);
+    
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, []);
+
+  return (
+    <div className="absolute inset-0 overflow-hidden">
+      {/* Partículas */}
+      {particles.map(particle => (
+        <div
+          key={`particle-${particle.id}`}
+          className="absolute rounded-full bg-gray-400 transition-all duration-1000"
+          style={{
+            left: `${particle.x}%`,
+            top: `${particle.y}%`,
+            width: `${particle.size}px`,
+            height: `${particle.size}px`,
+            opacity: particle.opacity,
+            animation: `float-particle ${particle.speedFactor}s infinite alternate ease-in-out, pulse ${3 + Math.random() * 4}s infinite alternate`,
+            transform: `translate(${(mousePosition.x / window.innerWidth) * 10 - 5}px, ${(mousePosition.y / window.innerHeight) * 10 - 5}px)`
+          }}
+        />
+      ))}
+      
+      {/* Linhas simplificadas */}
+      <svg className="absolute inset-0 w-full h-full">
+        {lines.map(line => (
+          <line
+            key={`line-${line.id}`}
+            x1={`${line.x1}%`}
+            y1={`${line.y1}%`}
+            x2={`${line.x2}%`}
+            y2={`${line.y2}%`}
+            stroke="rgba(120, 120, 120, 0.15)"
+            strokeWidth="1"
+            style={{ 
+              opacity: line.opacity,
+              animation: `fadeInOut ${line.duration}s infinite alternate, stretch ${line.duration * 1.5}s infinite alternate`,
+              transformOrigin: 'center',
+              transform: `scale(${1 + (mousePosition.x + mousePosition.y) / (window.innerWidth + window.innerHeight) * 0.1})`
+            }}
+          />
+        ))}
+      </svg>
+      
+      {/* Adicionar uma animação global */}
+      <style jsx global>{`
+        @keyframes pulse {
+          0% { opacity: 0.1; }
+          100% { opacity: 0.6; }
+        }
+        @keyframes fadeInOut {
+          0% { opacity: 0.02; }
+          100% { opacity: 0.12; }
+        }
+        @keyframes float-particle {
+          0% { transform: translateY(0) translateX(0); }
+          100% { transform: translateY(20px) translateX(10px); }
+        }
+        @keyframes stretch {
+          0% { stroke-dasharray: 0; stroke-dashoffset: 0; }
+          100% { stroke-dasharray: 10; stroke-dashoffset: 20; }
+        }
+      `}</style>
+    </div>
+  );
+};
+
+// Esquema de validação com Yup
+const loginSchema = Yup.object().shape({
+  email: Yup.string()
+    .email('Email inválido')
+    .required('Email é obrigatório'),
+  password: Yup.string()
+    .required('Senha é obrigatória'),
+});
+
+export default function Home() {
+  const router = useRouter();
+  const [showPassword, setShowPassword] = useState(false);
+  const [formValues, setFormValues] = useState({ email: '', password: '' });
+  const [isLoading, setIsLoading] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingForm, setProcessingForm] = useState(false);
+  const [lastSessionCheck, setLastSessionCheck] = useState(0);
+  const [isForcingLogout, setIsForcingLogout] = useState(false);
+  const [isLoginInitiated, setIsLoginInitiated] = useState(false);
+  const [redirectAlert, setRedirectAlert] = useState<string | null>(null);
+  const [loginError, setLoginError] = useState<string | null>(null);
+  
+  // Estado para controle de verificação de sessão
+  const SESSION_CHECK_INTERVAL = 10000; // 10 segundos entre verificações
+
+  // Verifica se estamos em processo de login (parâmetro na URL ou iniciado pelo usuário)
+  useEffect(() => {
+    // Verificar se há um parâmetro 'login' na URL
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const loginParam = urlParams.get('login');
+      const redirectParam = urlParams.get('redirect');
+      
+      if (loginParam) {
+        // Se há um parâmetro de login, estamos em processo de login
+        console.log('Processo de login detectado via URL - desativando logout automático');
+        setIsLoginInitiated(true);
+        
+        // Limpar o parâmetro da URL sem recarregar a página
+        urlParams.delete('login');
+        const newUrl = window.location.pathname + (urlParams.toString() ? `?${urlParams.toString()}` : '');
+        window.history.replaceState({}, '', newUrl);
+      }
+      
+      // Verificar se há um parâmetro de redirecionamento e mostrar alerta
+      if (redirectParam) {
+        const decodedPath = decodeURIComponent(redirectParam);
+        setRedirectAlert(`Você precisa fazer login para acessar a página: ${decodedPath}`);
+      }
+      
+      // Verificar também se há um cookie/sessionStorage indicando processo de login
+      const loginInProgress = sessionStorage.getItem('login_in_progress');
+      if (loginInProgress) {
+        console.log('Processo de login em andamento detectado - desativando logout automático');
+        setIsLoginInitiated(true);
+      }
+    }
+  }, []);
+
+  // Força o logout ao carregar a página inicial em segundo plano, sem bloquear a renderização
+  useEffect(() => {
+    let isMounted = true;
+    let hasRunForceLogout = false; // Flag para garantir que execute apenas uma vez
+    
+    const forceLogout = async () => {
+      // Se já executou, está em processo, ou componente desmontado, não prossegue
+      if (hasRunForceLogout || isForcingLogout || !isMounted) return;
+      
+      // Verificar se há um login em andamento pelo sessionStorage
+      const loginInProgress = sessionStorage.getItem('login_in_progress') === 'true';
+      if (loginInProgress) {
+        console.log('Login em andamento, ignorando logout forçado');
+        return;
+      }
+      
+      hasRunForceLogout = true; // Marca que já foi executado
+      setIsForcingLogout(true);
+      
+      try {
+        // Verificar se a URL tem parâmetros de logout ou erro
+        const url = new URL(window.location.href);
+        const hasLogoutParam = url.searchParams.has('logout');
+        const hasErrorParam = url.searchParams.has('error');
+        const hasLoginParam = url.searchParams.has('login');
+        
+        // Se a URL indica que acabou de haver um logout, erro ou login, não forçar outro logout
+        if (hasLogoutParam || hasErrorParam || hasLoginParam) {
+          console.log('Página carregada após logout, erro ou login, ignorando logout forçado');
+          // Limpar parâmetros de URL desnecessários sem recarregar a página
+          url.searchParams.delete('logout');
+          url.searchParams.delete('error');
+          url.searchParams.delete('login');
+          window.history.replaceState({}, '', url.toString());
+          
+          if (isMounted) setIsForcingLogout(false);
+          return;
+        }
+        
+        // Verificar se já existe um cookie de 'session_ended'
+        const sessionEndedCookie = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('session_ended='));
+          
+        if (sessionEndedCookie) {
+          console.log('Sessão já encerrada anteriormente, ignorando novo logout');
+          if (isMounted) setIsForcingLogout(false);
+          return;
+        }
+        
+        // Verificar se a navegação veio de uma página autorizada via cookies ou localStorage
+        const fromAuthorizedRouteCookie = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('fromAuthorizedRoute='));
+        
+        const fromAuthorizedRoute = 
+          (fromAuthorizedRouteCookie !== undefined) || 
+          (localStorage.getItem('fromAuthorizedRoute') === 'true');
+        
+        const lastRoute = sessionStorage.getItem('lastRoute') || '';
+        const isInternalNavigation = fromAuthorizedRoute || 
+          ['/painel-aplicacoes', '/relatorios', '/paciente', '/pacientes', '/mutirao', '/mutiroes', '/configuracoes'].some(route => 
+            lastRoute.includes(route)
+          );
+        
+        console.log('Verificando origem da navegação:', { 
+          fromAuthorizedRouteCookie: !!fromAuthorizedRouteCookie, 
+          fromLocalStorage: localStorage.getItem('fromAuthorizedRoute') === 'true',
+          lastRoute,
+          isInternalNavigation 
+        });
+        
+        // Se veio de uma navegação interna, não força logout
+        if (isInternalNavigation) {
+          console.log('Navegação interna detectada, ignorando logout forçado');
+          if (isMounted) setIsForcingLogout(false);
+          return;
+        }
+
+        // Limpar qualquer cookie de navegação interna
+        document.cookie = "fromAuthorizedRoute=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+
+        console.log('Forçando logout ao acessar página inicial diretamente');
+        
+        // Usar a função de logout aprimorada que se encarregará de todas as etapas
+        await logout();
+        
+        console.log('Usuário desconectado com sucesso ao entrar na página inicial');
+      } catch (error) {
+        console.error('Erro ao forçar logout:', error);
+      } finally {
+        if (isMounted) setIsForcingLogout(false);
+      }
+    };
+
+    // Executar apenas uma vez, com pequeno atraso para garantir que as verificações sejam precisas
+    const timer = setTimeout(forceLogout, 800);
+    
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, []);
+
+  // Verificar sessão a cada 10 segundos - usando debounce para evitar múltiplas chamadas
+  useEffect(() => {
+    // Prevenir verificações durante redirecionamento ou processamento
+    if (isRedirecting || isProcessing || isForcingLogout) return;
+    
+    const now = Date.now();
+    // Apenas verificar se passou o intervalo definido
+    if (now - lastSessionCheck < SESSION_CHECK_INTERVAL) return;
+    
+    const checkSession = async () => {
+      try {
+        console.log('Verificando sessão (periódica)...');
+        
+        // Verificar se há uma sessão válida usando cache
+        const sessionResponse = await fetch('/api/auth?routine=true');
+        
+        if (sessionResponse.ok) {
+          const sessionData = await sessionResponse.json();
+          
+          if (sessionData.isLoggedIn) {
+            console.log('Sessão ativa encontrada, redirecionando para o painel');
+            setIsRedirecting(true);
+            
+            // Mostrar feedback ao usuário
+            toast.success('Sessão ativa detectada. Redirecionando para o painel...');
+            
+            // Marcar como navegação autorizada antes de redirecionar
+            localStorage.setItem('fromAuthorizedRoute', 'true');
+            sessionStorage.setItem('lastRoute', '/');
+            
+            // Usar um pequeno atraso para garantir a definição das flags
+            setTimeout(() => {
+              router.push('/painel-aplicacoes');
+            }, 1000); // Aumentar para 1 segundo para garantir que o usuário veja o feedback
+          } else {
+            console.log('Sessão inválida ou inexistente');
+            setLastSessionCheck(now);
+          }
+        } else {
+          console.error('Erro ao verificar sessão');
+          setLastSessionCheck(now);
+        }
+      } catch (error) {
+        console.error('Erro ao verificar sessão:', error);
+        setLastSessionCheck(now);
+      }
+    };
+
+    // Iniciar verificação uma vez usando setTimeout em vez de setInterval
+    const timer = setTimeout(checkSession, 100);
+    return () => clearTimeout(timer);
+  }, [router, isRedirecting, isProcessing, lastSessionCheck, isForcingLogout]);
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const handleSubmit = async (values: any, { setSubmitting }: any) => {
+    // Limpar qualquer erro anterior
+    setLoginError(null);
+    
+    // Marcar que um processo de login foi iniciado
+    setIsLoginInitiated(true);
+    sessionStorage.setItem('login_in_progress', 'true');
+    setIsProcessing(true);
+    
+    try {
+      console.log('Tentando fazer login com:', { email: values.email });
+      
+      // Fazer login diretamente sem limpezas e verificações
+      const response = await fetch('/api/auth', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
+
+      console.log('Resposta recebida:', { status: response.status, ok: response.ok });
+      
+      const data = await response.json();
+      console.log('Dados da resposta:', data);
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao fazer login');
+      }
+
+      if (data.success) {
+        // Adicionar informação de navegação interna para evitar logout na próxima página
+        localStorage.setItem('fromAuthorizedRoute', 'true');
+        sessionStorage.setItem('lastRoute', '/');
+        
+        toast.success('Login realizado com sucesso!');
+        
+        // Verificar se há um parâmetro de redirecionamento na URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectPath = urlParams.get('redirect');
+        
+        // Marcar que estamos redirecionando
+        setIsRedirecting(true);
+        
+        // Mostrar toast informando sobre o redirecionamento
+        toast.success('Redirecionando para o painel...');
+        
+        if (redirectPath) {
+          // Decodificar o caminho de redirecionamento
+          const decodedPath = decodeURIComponent(redirectPath);
+          console.log(`Redirecionando para rota solicitada: ${decodedPath}`);
+          router.push(decodedPath);
+        } else {
+          // Redirecionar para a página padrão
+          console.log('Login bem-sucedido, redirecionando para /painel-aplicacoes');
+          router.push('/painel-aplicacoes');
+        }
+      } else {
+        // Se falhou o login, limpar a marcação de processo de login
+        sessionStorage.removeItem('login_in_progress');
+        setIsLoginInitiated(false);
+        const errorMessage = data.error || 'Credenciais inválidas. Verifique seu email e senha.';
+        setLoginError(errorMessage);
+        toast.error(errorMessage);
+        console.log('Login falhou:', data);
+      }
+    } catch (error) {
+      // Se houver erro, limpar a marcação de processo de login
+      sessionStorage.removeItem('login_in_progress');
+      setIsLoginInitiated(false);
+      
+      // Determinar mensagem específica de erro
+      let errorMessage = 'Falha ao realizar login. Tente novamente.';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('fetch') || error.message.includes('network')) {
+          errorMessage = 'Erro de conexão. Verifique sua internet e tente novamente.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      setLoginError(errorMessage);
+      console.error('Erro no login:', error);
+      toast.error(errorMessage);
+    } finally {
+      setSubmitting(false);
+      setIsProcessing(false);
+    }
+  };
+
+  // useEffect para limpar o indicador de login em andamento ao desmontar o componente
+  useEffect(() => {
+    return () => {
+      sessionStorage.removeItem('login_in_progress');
+    };
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-white to-gray-100 flex items-center justify-center relative overflow-hidden">
+      <TechParticles show={!isLoading} />
+      
+      {/* Faixas decorativas diagonal */}
+      <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-r from-gray-900 to-gray-800 transform -skew-y-3 origin-top-left z-0"></div>
+      <div className="absolute bottom-0 right-0 w-full h-32 bg-gradient-to-l from-gray-900 to-gray-800 transform skew-y-3 origin-bottom-right z-0"></div>
+      
+      {/* Efeito de círculo decorativo */}
+      <div className="absolute top-20 right-20 w-64 h-64 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full opacity-20 blur-xl"></div>
+      <div className="absolute bottom-20 left-20 w-72 h-72 bg-gradient-to-tr from-gray-800 to-gray-900 rounded-full opacity-10 blur-xl"></div>
+      
+      {/* Efeito interativo no plano de fundo */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute w-full h-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-gray-200 via-transparent to-transparent opacity-30" style={{ top: '30%', left: '40%', height: '60%', width: '60%', animation: 'pulse-slow 8s infinite alternate' }}></div>
+        <div className="absolute w-full h-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-gray-300 via-transparent to-transparent opacity-20" style={{ top: '10%', left: '20%', height: '40%', width: '40%', animation: 'pulse-slow 12s infinite alternate-reverse' }}></div>
+      </div>
+      
+      <div className="bg-white backdrop-blur-sm bg-opacity-80 rounded-xl shadow-2xl w-full max-w-md z-10 p-8 relative overflow-hidden border border-gray-100">
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-50 via-white to-gray-50 opacity-90 z-0"></div>
+        
+        <div className="relative z-10">
+          <div className="flex flex-col items-center justify-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-800">Portal de Aplicações</h1>
+            <p className="text-gray-500 mt-2">Faça login para acessar o sistema</p>
+          </div>
+          
+          {redirectAlert && (
+            <div className="mb-6 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800 text-sm">
+              <p className="font-medium">{redirectAlert}</p>
+            </div>
+          )}
+          
+          {loginError && (
+            <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+              <p className="font-medium">{loginError}</p>
+            </div>
+          )}
+          
+          {isLoading ? (
+            <div className="flex justify-center p-6">
+              <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-gray-700"></div>
+              <p className="ml-3 text-gray-700">Preparando formulário...</p>
+            </div>
+          ) : isRedirecting ? (
+            <div className="flex flex-col items-center justify-center p-6 space-y-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-800"></div>
+              <p className="text-gray-800 text-center font-medium">Login realizado com sucesso!</p>
+              <p className="text-gray-500 text-center">Redirecionando para o painel de aplicações...</p>
+            </div>
+          ) : (
+            <Formik
+              initialValues={formValues}
+              validationSchema={loginSchema}
+              onSubmit={handleSubmit}
+              enableReinitialize={true}
+            >
+              {({ isSubmitting }) => (
+                <Form method="post">
+                  <div className="mb-6 group">
+                    <div className="relative transition-all duration-300 group-hover:shadow-md rounded-lg">
+                      <div className="absolute left-3 top-3 text-gray-400 group-hover:text-gray-600 transition-colors">
+                        <FaUser />
+                      </div>
+                      <Field
+                        type="email"
+                        name="email"
+                        placeholder="Email"
+                        className="w-full pl-10 pr-4 py-3 bg-gray-50 group-hover:bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-all text-gray-800"
+                      />
+                    </div>
+                    <ErrorMessage name="email" component="div" className="mt-1 text-sm text-red-500" />
+                  </div>
+                  
+                  <div className="mb-6 group">
+                    <div className="relative transition-all duration-300 group-hover:shadow-md rounded-lg">
+                      <div className="absolute left-3 top-3 text-gray-400 group-hover:text-gray-600 transition-colors">
+                        <FaLock />
+                      </div>
+                      <Field
+                        type={showPassword ? "text" : "password"}
+                        name="password"
+                        placeholder="Senha"
+                        className="w-full pl-10 pr-12 py-3 bg-gray-50 group-hover:bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-all text-gray-800"
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 transition-colors"
+                        onClick={togglePasswordVisibility}
+                        tabIndex={-1}
+                      >
+                        {showPassword ? <FaEyeSlash /> : <FaEye />}
+                      </button>
+                    </div>
+                    <ErrorMessage name="password" component="div" className="mt-1 text-sm text-red-500" />
+                  </div>
+                  
+                  <button
+                    type="submit"
+                    disabled={isSubmitting || isProcessing}
+                    className="w-full py-3 bg-gradient-to-r from-gray-800 to-gray-700 text-white rounded-lg hover:from-gray-700 hover:to-gray-600 transition-all transform hover:-translate-y-1 shadow hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
+                  >
+                    {isSubmitting || isProcessing ? (
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white mr-2"></div>
+                        <span>Verificando credenciais...</span>
+                      </div>
+                    ) : 'Entrar'}
+                  </button>
+                </Form>
+              )}
+            </Formik>
+          )}
+        </div>
+      </div>
+      
+      {/* Adicionar animação global para o efeito de pulso lento */}
+      <style jsx global>{`
+        @keyframes pulse-slow {
+          0% { transform: scale(1); opacity: 0.2; }
+          100% { transform: scale(1.5); opacity: 0.4; }
+        }
+      `}</style>
+    </div>
+  );
+} 
