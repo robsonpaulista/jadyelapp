@@ -186,6 +186,7 @@ export default function Emendas2025() {
       atualizarMatriz();
       
       if (forceRefresh) {
+        // Força a reavaliação do Vercel
         showToast('Dados atualizados com sucesso!', 'success');
       }
     } catch (error) {
