@@ -186,11 +186,11 @@ export default function Emendas2025() {
       atualizarMatriz();
       
       if (forceRefresh) {
-        toast?.success('Dados atualizados com sucesso!');
+        showToast('Dados atualizados com sucesso!', 'success');
       }
     } catch (error) {
       // Erro silencioso - não exibir logs por segurança
-      toast.error('Erro ao buscar dados. Tente novamente.');
+      showToast('Erro ao buscar dados. Tente novamente.', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -936,7 +936,7 @@ export default function Emendas2025() {
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <p className="text-red-800">{error}</p>
           <button
-            onClick={fetchEmendas}
+            onClick={() => fetchEmendas()}
             className="mt-4 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
           >
             Tentar novamente
@@ -992,7 +992,7 @@ export default function Emendas2025() {
                 <span className="font-light">Voltar</span>
               </button>
               <button
-                onClick={fetchEmendas}
+                onClick={() => fetchEmendas()}
                 className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border border-gray-200 bg-white hover:bg-gray-50 text-gray-700"
                 disabled={isLoading}
               >
