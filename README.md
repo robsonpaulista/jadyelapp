@@ -1,3 +1,69 @@
+# 🚀 JadyelApp - Sistema de Análise Política Municipal
+
+Sistema completo de gestão e análise política para o mandato do Deputado Federal Jadiel Alencar, desenvolvido com Next.js 14 e TypeScript.
+
+## ✨ Funcionalidades Principais
+
+- **📊 Dashboard Completo** - Estatísticas municipais e eleitorais em tempo real
+- **🎯 Base de Lideranças** - Gestão e análise de lideranças políticas com dados de votação
+- **🏗️ Obras e Demandas** - Acompanhamento de obras públicas e demandas municipais
+- **💰 Emendas 2025** - Sistema completo de gestão de emendas parlamentares
+- **📈 Projeção 2026** - Análise e projeção eleitoral avançada
+- **🗳️ Eleições Anteriores** - Dashboard com resultados históricos e totalizadores
+- **📱 Instagram Analytics** - Análise detalhada de redes sociais
+- **📰 Monitoramento de Notícias** - Feed RSS automático
+- **👥 Gestão de Usuários** - Sistema completo de permissões e auditoria
+
+## 🛠️ Tecnologias
+
+- **Frontend:** Next.js 14, TypeScript, Tailwind CSS, Framer Motion
+- **UI:** Shadcn/ui, Lucide Icons, Chart.js, D3.js
+- **Backend:** API Routes, SQLite, Google Sheets API
+- **Autenticação:** Sistema próprio com cookies HTTPOnly
+- **Deploy:** Vercel (pronto para produção)
+
+## 🚀 Instalação e Uso
+
+```bash
+# Clone o repositório
+git clone https://github.com/robsonpaulista/jadyelapp.git
+
+# Instale as dependências
+npm install
+
+# Configure as variáveis de ambiente
+cp env.local.template .env.local
+# Edite .env.local com suas credenciais
+
+# Execute em desenvolvimento
+npm run dev
+```
+
+## 📋 Configuração
+
+Consulte os arquivos de documentação:
+- `ENVIRONMENT_SETUP.md` - Guia completo das variáveis de ambiente
+- `COMO_RECRIAR_ENV_LOCAL.md` - Como configurar o .env.local
+- `DEPLOY_CHECKLIST.md` - Checklist para deploy no Vercel
+
+## 🔐 Credenciais Padrão
+
+- **Email:** admin@exemplo.com
+- **Senha:** admin123
+
+## 📊 Integração com Google Sheets
+
+O sistema integra com múltiplas planilhas do Google Sheets:
+- Base de Lideranças
+- Obras e Demandas
+- Emendas Parlamentares 2025
+- Resultados Eleitorais
+- Projeção 2026
+
+## 🎯 Deploy Status
+
+**✅ Pronto para deploy no Vercel** - Todas as correções TypeScript aplicadas (v2.0)
+
 # Mutirão de Catarata - Sistema de Cadastro de Pacientes
 
 Um sistema web responsivo para captação de informações socioeconômicas de pacientes que participarão de um mutirão de cirurgia de catarata.
