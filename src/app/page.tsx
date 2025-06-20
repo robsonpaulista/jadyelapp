@@ -89,6 +89,7 @@ export default function Home() {
           errorMessage = 'Este usuário foi desativado.';
           break;
       }
+      console.error('Firebase Auth Error:', authError);
       setError(errorMessage);
     } finally {
       setIsSubmitting(false);

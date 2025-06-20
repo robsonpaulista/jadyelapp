@@ -11,6 +11,8 @@ import { useEffect, useState } from 'react';
 import { getCurrentUser } from '@/lib/storage';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { auth } from '@/lib/firebase';
+import { signOut } from 'firebase/auth';
 
 interface Submenu {
   label: string;
@@ -81,9 +83,15 @@ export default function Navbar() {
     else setGreeting('Boa noite');
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    router.push('/login');
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      localStorage.clear();
+      router.push('/');
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+      // Opcional: Mostrar uma notificação de erro para o usuário
+    }
   };
 
   return (
