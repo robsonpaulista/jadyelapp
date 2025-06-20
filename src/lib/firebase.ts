@@ -11,9 +11,35 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const auth = getAuth(app);
-const db = getFirestore(app);
+// Verificar se todas as configurações necessárias estão presentes
+const requiredConfig = [
+  'NEXT_PUBLIC_FIREBASE_API_KEY',
+  'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN',
+  'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
+  'NEXT_PUBLIC_FIREBASE_APP_ID'
+];
+
+const missingConfig = requiredConfig.filter(key => !process.env[key]);
+
+if (missingConfig.length > 0) {
+  console.error('🔥 Firebase: Configurações faltando:', missingConfig);
+  console.error('Verifique se as seguintes variáveis estão no .env.local:', missingConfig);
+}
+
+let app;
+let auth;
+let db;
+
+try {
+  // Initialize Firebase
+  app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+  auth = getAuth(app);
+  db = getFirestore(app);
+  
+  console.log('🔥 Firebase inicializado com sucesso');
+} catch (error) {
+  console.error('🔥 Erro ao inicializar Firebase:', error);
+  throw new Error('Falha na inicialização do Firebase. Verifique as configurações.');
+}
 
 export { app, auth, db }; 

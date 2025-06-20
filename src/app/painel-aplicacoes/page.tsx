@@ -18,6 +18,7 @@ interface AppUser {
   name: string;
   email: string;
   role: string;
+  perfil?: string;
   permissions?: string[];
 }
 
@@ -49,7 +50,7 @@ export default function ApplicationsDashboard() {
   // Função para verificar se há alguma aplicação disponível para o usuário
   const hasVisibleApps = () => {
     // Se o usuário é admin, sempre tem acesso a todas as aplicações
-    if (user?.role === 'admin') return true;
+    if (user?.role === 'admin' || user?.perfil === 'admin') return true;
     
     // Verificar se há aplicações visíveis além do painel-aplicacoes
     return visibleApps.some(app => app !== 'painel-aplicacoes') && visibleApps.length > 1;
@@ -195,6 +196,7 @@ export default function ApplicationsDashboard() {
     // Filtrar aplicações com base nas permissões
     const newVisibleApps = allAppIds.filter(appId => 
       user.role === 'admin' || 
+      user.perfil === 'admin' ||
       appId === "painel-aplicacoes" || 
       (user.permissions && user.permissions.includes(appId))
     );

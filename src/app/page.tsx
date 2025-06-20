@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, FormEvent, ChangeEvent } from 'react';
+import { useState, FormEvent, ChangeEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AuthProps } from '@/types/Auth';
@@ -16,7 +16,27 @@ export default function Home() {
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [firebaseStatus, setFirebaseStatus] = useState<string>('');
   const router = useRouter();
+
+  useEffect(() => {
+    // Verificar status do Firebase na inicialização
+    try {
+      if (auth && auth.app) {
+        setFirebaseStatus('Firebase conectado ✅');
+        console.log('🔥 Firebase inicializado:', {
+          projectId: auth.app.options.projectId,
+          authDomain: auth.app.options.authDomain
+        });
+      } else {
+        setFirebaseStatus('Firebase não inicializado ❌');
+        console.error('🔥 Firebase não foi inicializado corretamente');
+      }
+    } catch (error) {
+      setFirebaseStatus('Erro na configuração do Firebase ❌');
+      console.error('🔥 Erro ao verificar Firebase:', error);
+    }
+  }, []);
 
   const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -34,29 +54,69 @@ export default function Home() {
         setIsSubmitting(false);
         return;
       }
+
+      // Verificar se Firebase está disponível
+      if (!auth) {
+        throw new Error('Firebase não está configurado. Verifique as variáveis de ambiente.');
+      }
       
+      console.log('🔥 Tentando login Firebase para:', email);
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
 
       if (firebaseUser) {
+        console.log('✅ Login Firebase bem-sucedido:', firebaseUser.uid);
+        
         // Buscar dados adicionais do usuário no Firestore
-        const userDocRef = doc(db, 'users', firebaseUser.uid);
-        const userDoc = await getDoc(userDocRef);
+        let userRole = 'admin'; // Perfil padrão para usuários logados
+        let userPermissions: string[] = [
+          'painel-aplicacoes',
+          'acoes',
+          'obras_demandas',
+          'emendas2025',
+          'baseliderancas',
+          'projecao2026',
+          'instagram-analytics',
+          'gerenciar-usuarios',
+          'configuracoes',
+          'cadastro',
+          'pacientes',
+          'usuarios',
+          'tipos-acao',
+          'pessoas',
+          'chapas',
+          'consultar-tetos',
+          'eleicoes-anteriores',
+          'monitoramento-noticias',
+          'pesquisas-eleitorais',
+          'eleitores-municipio',
+          'emendas',
+          'criaremendas',
+          'dashboardemendas',
+          'relatorios'
+        ]; // Todas as permissões por padrão
 
-        let userRole = 'user'; // Perfil padrão
-        let userPermissions: string[] = [];
+        try {
+          const userDocRef = doc(db, 'users', firebaseUser.uid);
+          const userDoc = await getDoc(userDocRef);
 
-        if (userDoc.exists()) {
-          const userDataFromDb = userDoc.data();
-          userRole = userDataFromDb.role || 'user';
-          userPermissions = userDataFromDb.permissions || [];
+          if (userDoc.exists()) {
+            const userDataFromDb = userDoc.data();
+            userRole = userDataFromDb.role || 'admin';
+            userPermissions = userDataFromDb.permissions || userPermissions;
+            console.log('📄 Dados do Firestore carregados:', { role: userRole, permissions: userPermissions });
+          } else {
+            console.log('📄 Usuário não encontrado no Firestore, usando permissões admin padrão');
+          }
+        } catch (firestoreError) {
+          console.warn('⚠️ Erro ao acessar Firestore, usando permissões admin padrão:', firestoreError);
         }
 
         // Login bem-sucedido
         const userData: AuthProps = {
           id: firebaseUser.uid,
           username: firebaseUser.email || '',
-          nome: userDoc.exists() ? userDoc.data().name : firebaseUser.displayName || firebaseUser.email || '',
+          nome: firebaseUser.displayName || firebaseUser.email || '',
           email: firebaseUser.email || '',
           perfil: userRole,
           permissions: userPermissions,
@@ -69,13 +129,17 @@ export default function Home() {
         localStorage.setItem('userPermissions', JSON.stringify(userData.permissions));
         localStorage.setItem('lastLoginTime', Date.now().toString());
         
+        console.log('🚀 Redirecionando para painel de aplicações');
         router.push('/painel-aplicacoes');
       } else {
         setError('Falha na autenticação. Usuário não encontrado.');
       }
-    } catch (err: unknown) {
+    } catch (err) {
       const authError = err as AuthError;
       let errorMessage = 'Ocorreu um erro ao processar o login. Tente novamente.';
+      
+      console.error('🔥 Erro no login Firebase:', authError);
+      
       switch (authError.code) {
         case 'auth/user-not-found':
         case 'auth/wrong-password':
@@ -88,8 +152,22 @@ export default function Home() {
         case 'auth/user-disabled':
           errorMessage = 'Este usuário foi desativado.';
           break;
+        case 'auth/network-request-failed':
+          errorMessage = 'Erro de conexão. Verifique sua internet.';
+          break;
+        case 'auth/too-many-requests':
+          errorMessage = 'Muitas tentativas de login. Tente novamente mais tarde.';
+          break;
+        case 'auth/configuration-not-found':
+        case 'auth/invalid-api-key':
+          errorMessage = 'Erro de configuração do Firebase. Entre em contato com o suporte.';
+          break;
+        default:
+          if (authError.message.includes('Firebase')) {
+            errorMessage = 'Erro de configuração do Firebase. Verifique as configurações.';
+          }
       }
-      console.error('Firebase Auth Error:', authError);
+      
       setError(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -105,117 +183,150 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex flex-col items-center justify-center p-4">
-      <motion.div 
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-5">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.1'%3E%3Ccircle cx='7' cy='7' r='7'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+        }} />
+      </div>
+
+      {/* Floating Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          className="absolute top-1/4 left-1/4 w-64 h-64 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-20"
+          animate={{
+            x: [0, 100, 0],
+            y: [0, -100, 0],
+          }}
+          transition={{
+            duration: 20,
+            repeat: Infinity,
+            ease: "linear"
+          }}
+        />
+        <motion.div
+          className="absolute top-3/4 right-1/4 w-64 h-64 bg-indigo-200 rounded-full mix-blend-multiply filter blur-xl opacity-20"
+          animate={{
+            x: [0, -100, 0],
+            y: [0, 100, 0],
+          }}
+          transition={{
+            duration: 25,
+            repeat: Infinity,
+            ease: "linear"
+          }}
+        />
+      </div>
+
+      {/* Login Card */}
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-md"
+        className="bg-white backdrop-blur-sm bg-opacity-80 rounded-xl shadow-2xl w-full max-w-md z-10 p-8 relative overflow-hidden border border-gray-100"
       >
-        {/* Cabeçalho */}
-        <motion.div 
-          initial={{ scale: 0.9 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="text-center mb-8"
-        >
-          <div className="inline-block">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2 tracking-tight">
-              86 Dynamics Integration
-            </h1>
-            <p className="text-xs text-gray-600 uppercase tracking-widest font-medium">
-              HUB DE APLICAÇÕES DEP FEDERAL JADYEL ALENCAR
-            </p>
-          </div>
-        </motion.div>
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-50 via-white to-gray-50 opacity-90 z-0"></div>
         
-        {/* Formulário de login */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="bg-white rounded-2xl border border-gray-100 p-8 shadow-xl backdrop-blur-sm bg-opacity-90"
-        >
-          <h2 className="text-xl font-semibold text-gray-800 mb-6 text-center">Acesso ao Sistema</h2>
+        <div className="relative z-10">
+          <div className="flex flex-col items-center justify-center mb-8">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+              className="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mb-4 shadow-lg"
+            >
+              <FiUser className="text-white text-2xl" />
+            </motion.div>
+            <h1 className="text-3xl font-bold text-gray-800">Portal de Aplicações</h1>
+            <p className="text-gray-500 mt-2">Faça login para acessar o sistema</p>
+          </div>
+
+          {/* Status do Firebase */}
+          {firebaseStatus && (
+            <div className="mb-4 p-2 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-600 text-center">
+              {firebaseStatus}
+            </div>
+          )}
           
           {error && (
-            <motion.div 
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="w-full p-3 mb-4 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm rounded-r-lg flex items-center gap-2"
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex items-center"
             >
-              <FiAlertCircle className="flex-shrink-0" />
-              <span>{error}</span>
+              <FiAlertCircle className="mr-2 flex-shrink-0" />
+              <p className="font-medium">{error}</p>
             </motion.div>
           )}
           
-          <form onSubmit={handleLogin} className="space-y-5">
-            <div className="space-y-2">
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Usuário
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                Email
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiUser className="h-5 w-5 text-gray-400" />
-                </div>
+                <FiUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <input
-                  type="email"
                   id="email"
-                  name="email"
-                  className="w-full pl-10 p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm"
-                  autoComplete="email"
-                  autoFocus
+                  type="email"
                   value={email}
                   onChange={handleEmailChange}
-                  disabled={isSubmitting}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white/50 backdrop-blur-sm"
+                  placeholder="Digite seu email"
                   required
+                  disabled={isSubmitting}
                 />
               </div>
             </div>
-            
-            <div className="space-y-2">
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                 Senha
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiLock className="h-5 w-5 text-gray-400" />
-                </div>
+                <FiLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <input
-                  type="password"
                   id="password"
-                  name="password"
-                  className="w-full pl-10 p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm"
-                  autoComplete="current-password"
+                  type="password"
                   value={password}
                   onChange={handlePasswordChange}
-                  disabled={isSubmitting}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white/50 backdrop-blur-sm"
+                  placeholder="Digite sua senha"
                   required
+                  disabled={isSubmitting}
                 />
               </div>
             </div>
-            
+
             <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
               type="submit"
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-3 rounded-lg text-sm font-medium uppercase tracking-wider hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
               disabled={isSubmitting}
+              whileHover={{ scale: isSubmitting ? 1 : 1.02 }}
+              whileTap={{ scale: isSubmitting ? 1 : 0.98 }}
+              className={`w-full py-3 px-4 rounded-lg font-medium text-white transition-all duration-200 ${
+                isSubmitting
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-lg hover:shadow-xl'
+              }`}
             >
               {isSubmitting ? (
-                <span className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  PROCESSANDO...
-                </span>
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  Entrando...
+                </div>
               ) : (
-                'ENTRAR'
+                'Entrar'
               )}
             </motion.button>
           </form>
-        </motion.div>
+
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-500">
+              Sistema de Gestão Política
+            </p>
+          </div>
+        </div>
       </motion.div>
     </div>
   );

@@ -1,46 +1,27 @@
 'use client';
 
+import { signOut } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+
 export const checkLogin = async (email: string, password: string) => {
-  try {
-    const response = await fetch('/api/auth', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, password }),
-    });
-
-    if (!response.ok) {
-      return false;
-    }
-
-    const data = await response.json();
-    return data.success;
-  } catch (error) {
-    console.error('Erro ao verificar login:', error);
-    return false;
-  }
+  // Esta função não é mais necessária com Firebase, mas mantemos para compatibilidade
+  return false;
 };
 
-export const isUserLoggedIn = () => {
-  if (typeof window === 'undefined') return false;
-  return localStorage.getItem('isLoggedIn') === 'true';
-};
-
-export const getCurrentUser = async () => {
+export const getCurrentUser = () => {
+  if (typeof window === 'undefined') return null;
+  
   try {
-    const response = await fetch('/api/auth', {
-      method: 'GET',
-    });
-
-    if (!response.ok) {
-      return null;
+    const user = localStorage.getItem('user');
+    const isLoggedIn = localStorage.getItem('isLoggedIn');
+    
+    if (user && isLoggedIn === 'true') {
+      return JSON.parse(user);
     }
-
-    const data = await response.json();
-    return data.isLoggedIn ? data.user : null;
+    
+    return null;
   } catch (error) {
-    console.error('Erro ao verificar sessão:', error);
+    console.error('Erro ao obter usuário atual:', error);
     return null;
   }
 };
@@ -75,6 +56,9 @@ export const logout = async (): Promise<boolean> => {
   try {
     console.log('Iniciando processo de logout...');
     
+    // Fazer logout do Firebase
+    await signOut(auth);
+    
     // Limpar dados do usuário
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('user');
@@ -91,23 +75,6 @@ export const logout = async (): Promise<boolean> => {
     // Expirar cookies relacionados à sessão
     document.cookie = "fromAuthorizedRoute=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     document.cookie = "session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-    
-    // Informar o servidor sobre o logout
-    let serverNotified = false;
-    try {
-      const response = await fetch('/api/logout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      serverNotified = response.ok;
-      console.log(`Servidor notificado sobre o logout - Status: ${serverNotified ? 'Sucesso' : 'Falha'}`);
-    } catch (apiError) {
-      console.error('Erro ao notificar servidor sobre logout:', apiError);
-      // Continuamos com o logout mesmo se falhar a notificação ao servidor
-    }
     
     console.log('Logout concluído com sucesso');
     return true;
