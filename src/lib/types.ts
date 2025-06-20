@@ -50,27 +50,8 @@ export interface PersonAtendida {
   occupation?: string;
   surgeryDate?: string;
   surgeryPerformedDate?: string;
-  medicalInfo?: {
-    hasHealthInsurance: boolean;
-    healthInsuranceName?: string;
-    previousEyeSurgery: boolean;
-    previousEyeSurgeryDescription?: string;
-    chronicDiseases: string[];
-    medications: string[];
-    allergies: string[];
-    visualAcuityRightEye?: string;
-    visualAcuityLeftEye?: string;
-    cataractType?: 'Senil' | 'Traumática' | 'Congênita' | 'Secundária' | 'Outra';
-    cataractEye: 'Direito' | 'Esquerdo' | 'Ambos';
-    visualAcuityOD?: string;
-    visualAcuityOS?: string;
-    iop?: string;
-    surgicalHistory?: string;
-    surgeryTime?: string;
-    surgeryLocation?: string;
-    surgeryNotes?: string;
-    postOpFollowUp?: string;
-  };
+  medicalInfo?: MedicalInfo;
+  socioeconomic?: Socioeconomic;
 }
 
 export interface Address {

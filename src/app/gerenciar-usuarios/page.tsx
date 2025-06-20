@@ -400,24 +400,32 @@ export default function GerenciarUsuarios() {
     }
   };
 
+  // Função auxiliar para converter valores de active para boolean
+  const convertToBoolean = (value: any): boolean => {
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'number') return value === 1;
+    if (typeof value === 'string') return value === '1' || value.toLowerCase() === 'true';
+    return false;
+  };
+
   const handleEdit = (user: User) => {
     console.log('Editando usuário:', user);
     console.log('Valor de active:', user.active, 'Tipo:', typeof user.active);
     
     setSelectedUser(user);
+    const activeValue = convertToBoolean(user.active);
     setFormData({
       name: user.name,
       email: user.email,
       password: '',
       role: user.role,
       permissions: Array.isArray(user.permissions) ? user.permissions : [],
-      // Forçar a conversão explícita para boolean, considerando valores numéricos (0/1) também
-      active: user.active === true || user.active === 1 || user.active === "1" || user.active === "true",
+      active: activeValue,
     });
     
     console.log('FormData após edição:', {
       ...user,
-      active: user.active === true || user.active === 1 || user.active === "1" || user.active === "true"
+      active: activeValue
     });
     
     onOpen();

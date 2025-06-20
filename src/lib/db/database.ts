@@ -2,6 +2,11 @@ import { getDatabase } from './index';
 import { User } from '@/types/user';
 import { hashPassword } from '@/lib/hash';
 
+// Interface para usuário como vem do banco SQLite (permissions como string JSON)
+interface DatabaseUser extends Omit<User, 'permissions'> {
+  permissions: string; // JSON string no banco
+}
+
 interface UserWithParsedPermissions extends Omit<User, 'permissions'> {
   permissions: string[];
 }
@@ -53,7 +58,7 @@ export const getUserByEmail = async (email: string): Promise<UserWithParsedPermi
   try {
     const db = await getDatabase();
     const stmt = db.prepare('SELECT * FROM users WHERE email = ?');
-    const user = stmt.get(email) as User | undefined;
+    const user = stmt.get(email) as DatabaseUser | undefined;
     
     if (user) {
       try {
@@ -79,7 +84,7 @@ export const getUserByEmail = async (email: string): Promise<UserWithParsedPermi
 export const getAllUsers = async (): Promise<UserWithParsedPermissions[]> => {
   const db = await getDatabase();
   const stmt = db.prepare('SELECT * FROM users');
-  const users = stmt.all() as User[];
+  const users = stmt.all() as DatabaseUser[];
   return users.map(user => ({
     ...user,
     permissions: JSON.parse(user.permissions || '[]')

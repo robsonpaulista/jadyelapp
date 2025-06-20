@@ -61,7 +61,7 @@ export const dadosIniciais: Chapa[] = [
 
 export async function carregarChapas() {
   const snapshot = await getDocs(collection(db, 'chapas2026'));
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Chapa[];
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown)) as Chapa[];
 }
 
 function safeId(partido: string, nome: string) {
