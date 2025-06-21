@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as xlsx from 'xlsx';
 import path from 'path';
 import fs from 'fs';
+import { GoogleSpreadsheet } from 'google-spreadsheet';
+import { JWT } from 'google-auth-library';
+
+// Força runtime dinâmico para permitir uso de searchParams
+export const dynamic = 'force-dynamic';
 
 // Interface para os dados de liderança
 interface Lideranca {

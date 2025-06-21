@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSheetByTitle, ACOES_CONFIG, ensureAcoesSheetExists } from '@/lib/googleSheetsConfig';
 import { v4 as uuidv4 } from 'uuid';
 import { GoogleSpreadsheetRow } from 'google-spreadsheet';
-import { logUserActivity } from '@/lib/db/database';
+import { logUserActivity, getUserByEmail } from '@/lib/db/database';
 import { headers } from 'next/headers';
+
+// Força runtime dinâmico para permitir uso de searchParams e request.url
+export const dynamic = 'force-dynamic';
 
 // Interface para as ações
 export interface Acao {

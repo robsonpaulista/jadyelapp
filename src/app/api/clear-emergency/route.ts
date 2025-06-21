@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
+// Força runtime dinâmico para permitir uso de cookies
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   try {
     // Imprime informações de diagnóstico

@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
+// Força runtime dinâmico para permitir uso de cookies
+export const dynamic = 'force-dynamic';
+
 // Cache simplificado para anti-flood de logout
 let lastLogoutTime: { [ip: string]: number } = {};
 const LOGOUT_THROTTLE_MS = 2000; // 2 segundos entre logouts permitidos

@@ -9,7 +9,8 @@ import {
   orderBy,
   doc,
   deleteDoc,
-  updateDoc
+  updateDoc,
+  Firestore
 } from 'firebase/firestore';
 import { Line } from 'react-chartjs-2';
 import {
@@ -129,7 +130,7 @@ export default function PesquisasEleitoraisPage() {
   const fetchPesquisas = async () => {
     setLoading(true);
     try {
-      const q = query(collection(db, 'pesquisas_eleitorais'), orderBy('data'));
+      const q = query(collection(db as Firestore, 'pesquisas_eleitorais'), orderBy('data'));
       const snapshot = await getDocs(q);
       const data = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -163,14 +164,14 @@ export default function PesquisasEleitoraisPage() {
     try {
       if (editingPesquisa?.id) {
         // Atualizar pesquisa existente
-        await updateDoc(doc(db, 'pesquisas_eleitorais', editingPesquisa.id), {
+        await updateDoc(doc(db as Firestore, 'pesquisas_eleitorais', editingPesquisa.id), {
           ...form,
           votos: Number(form.votos),
           criadoEm: new Date().toISOString()
         });
       } else {
         // Adicionar nova pesquisa
-        await addDoc(collection(db, 'pesquisas_eleitorais'), {
+        await addDoc(collection(db as Firestore, 'pesquisas_eleitorais'), {
           ...form,
           votos: Number(form.votos),
           criadoEm: new Date().toISOString()
@@ -207,7 +208,7 @@ export default function PesquisasEleitoraisPage() {
   const handleDelete = async (id: string) => {
     if (window.confirm('Tem certeza que deseja excluir esta pesquisa?')) {
       try {
-        await deleteDoc(doc(db, 'pesquisas_eleitorais', id));
+        await deleteDoc(doc(db as Firestore, 'pesquisas_eleitorais', id));
         await fetchPesquisas();
       } catch (err) {
         setError('Erro ao excluir pesquisa.');

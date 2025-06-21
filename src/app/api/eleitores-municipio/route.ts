@@ -23,9 +23,12 @@ interface MunicipioEleitores {
 const TAXA_ELEITORES_POPULACAO = 0.68; // ~68% da população em idade de votar
 const CRESCIMENTO_ANUAL_ELEITORES = 0.02; // 2% ao ano
 
-export async function GET(req: NextRequest) {
+// Força runtime dinâmico para permitir uso de request.url
+export const dynamic = 'force-dynamic';
+
+export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
+    const { searchParams } = new URL(request.url);
     const municipio = searchParams.get('municipio');
     
     // Carregar dados populacionais

@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Força runtime dinâmico para permitir uso de request.url
+export const dynamic = 'force-dynamic';
+
 interface Proposta {
   nuProposta: string;
   acao: string;

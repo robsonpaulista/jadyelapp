@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { buscarResultadosPorCidade } from '@/services/resultadoEleicoesService';
 
+// Força runtime dinâmico para permitir uso de nextUrl.searchParams
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   const cidade = req.nextUrl.searchParams.get('cidade');
   const debug = req.nextUrl.searchParams.get('debug');

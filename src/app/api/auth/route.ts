@@ -1,11 +1,14 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getUserByEmail, logUserActivity } from '@/lib/db/database';
 import { comparePassword } from '@/lib/hash';
 
+// Força runtime dinâmico para permitir uso de cookies
+export const dynamic = 'force-dynamic';
+
 // Versão simplificada da API de autenticação sem validações complexas
 
-export async function GET(request: Request) {
+export async function GET(req: NextRequest) {
   try {
     // Verificar se há um cookie de sessão
     const cookieStore = cookies();

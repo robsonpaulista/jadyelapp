@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getDatabase } from '@/lib/db/index';
+import fs from 'fs';
+import path from 'path';
+
+// Força runtime dinâmico para permitir uso de request.url
+export const dynamic = 'force-dynamic';
 
 // Lista de aplicações mock
 const mockApplications = [
