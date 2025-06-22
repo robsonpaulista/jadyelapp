@@ -1,0 +1,20 @@
+{
+  "functions": {
+    "src/app/api/consultar-tetos/route.ts": {
+      "maxDuration": 25
+    }
+  },
+  "crons": [],
+  "rewrites": [],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "s-maxage=1800, stale-while-revalidate=3600"
+        }
+      ]
+    }
+  ]
+} 

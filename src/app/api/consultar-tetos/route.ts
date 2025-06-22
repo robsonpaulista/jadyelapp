@@ -5,6 +5,9 @@ import path from 'path';
 // Força runtime dinâmico para permitir uso de request.url
 export const dynamic = 'force-dynamic';
 
+// Configuração de timeout para produção (máximo 25 segundos)
+export const maxDuration = 25;
+
 interface Proposta {
   nuProposta: string;
   acao: string;
@@ -34,6 +37,22 @@ const HEADERS = {
   "User-Agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N)",
   "Referer": "https://consultafns.saude.gov.br/",
 };
+
+// Cache simples em memória
+const cache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_DURATION = 30 * 60 * 1000; // 30 minutos
+
+function getFromCache(key: string) {
+  const cached = cache.get(key);
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return cached.data;
+  }
+  return null;
+}
+
+function setCache(key: string, data: any) {
+  cache.set(key, { data, timestamp: Date.now() });
+}
 
 // Função para carregar municípios do arquivo local
 function getMunicipiosFromLocal(): any[] {
@@ -77,12 +96,18 @@ function getMunicipiosFromLocal(): any[] {
   }
 }
 
-async function getPropostasByMunicipio(codigoIbge: string, nomeMunicipio: string): Promise<Proposta[]> {
+async function getPropostasByMunicipio(codigoIbge: string, nomeMunicipio: string, maxPages: number = 5): Promise<Proposta[]> {
+  const cacheKey = `propostas-${codigoIbge}`;
+  const cached = getFromCache(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
   const propostas: Proposta[] = [];
   let page = 1;
   
   try {
-    while (true) {
+    while (page <= maxPages) {
       const url = "https://consultafns.saude.gov.br/recursos/proposta/consultar";
       const params = new URLSearchParams({
         "ano": "2025",
@@ -93,7 +118,15 @@ async function getPropostasByMunicipio(codigoIbge: string, nomeMunicipio: string
         "coEsfera": ""
       });
       
-      const response = await fetch(`${url}?${params.toString()}`, { headers: HEADERS });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos por requisição
+      
+      const response = await fetch(`${url}?${params.toString()}`, { 
+        headers: HEADERS,
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
       
       if (!response.ok) {
         console.error(`Erro na consulta do município ${nomeMunicipio}: ${response.status}`);
@@ -114,62 +147,99 @@ async function getPropostasByMunicipio(codigoIbge: string, nomeMunicipio: string
       }));
       
       propostas.push(...propostasComMunicipio);
-      console.log(`Página ${page}: ${propostasPage.length} propostas encontradas para ${nomeMunicipio}`);
       
       page++;
       
       // Pequena pausa para não sobrecarregar a API
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise(resolve => setTimeout(resolve, 200));
     }
-  } catch (error) {
-    console.error(`Erro ao buscar propostas para ${nomeMunicipio}:`, error);
+    
+    // Cache o resultado
+    setCache(cacheKey, propostas);
+    
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      console.error(`Timeout na consulta do município ${nomeMunicipio}`);
+    } else {
+      console.error(`Erro ao buscar propostas para ${nomeMunicipio}:`, error);
+    }
   }
   
   return propostas;
 }
 
 export async function GET(req: NextRequest) {
+  const startTime = Date.now();
+  
   try {
     const { searchParams } = new URL(req.url);
     const municipioParam = searchParams.get('municipio');
+    const limit = parseInt(searchParams.get('limit') || '50'); // Limitar municípios por padrão
+    const onlyMunicipios = searchParams.get('only_municipios') === 'true';
 
-    console.log('Carregando municípios do arquivo local...');
     const municipios = getMunicipiosFromLocal();
-    console.log(`Carregados ${municipios.length} municípios do PI do arquivo local.`);
     
     if (municipios.length === 0) {
       return NextResponse.json({ error: 'Não foi possível carregar a lista de municípios do arquivo local' }, { status: 500 });
     }
 
+    // Se solicitar apenas a lista de municípios
+    if (onlyMunicipios) {
+      return NextResponse.json({
+        municipios: municipios.map(m => m.noMunicipio).sort()
+      });
+    }
+
     let allPropostas: Proposta[] = [];
 
     if (municipioParam) {
+      // Buscar apenas um município específico
       const municipioTarget = municipios.find(m => m.noMunicipio.toUpperCase() === municipioParam.toUpperCase());
       if (municipioTarget) {
-        console.log(`Buscando propostas para o município: ${municipioTarget.noMunicipio}`);
         allPropostas = await getPropostasByMunicipio(municipioTarget.coMunicipioIbge, municipioTarget.noMunicipio);
-      } else {
-        console.log(`Município "${municipioParam}" não encontrado na lista.`);
       }
     } else {
-      // Comportamento original: buscar todos os municípios em lotes
-      const batchSize = 5;
+      // Buscar apenas os primeiros X municípios ou usar cache geral
+      const cacheKey = 'all-propostas';
+      const cached = getFromCache(cacheKey);
       
-      for (let i = 0; i < municipios.length; i += batchSize) {
-        const batch = municipios.slice(i, i + batchSize);
-        const propostasBatch = await Promise.all(batch.map(municipio => 
-          getPropostasByMunicipio(municipio.coMunicipioIbge, municipio.noMunicipio)
-        ));
+      if (cached) {
+        allPropostas = cached;
+      } else {
+        // Limitar municípios para evitar timeout
+        const municipiosLimitados = municipios.slice(0, limit);
+        const batchSize = 3; // Reduzir batch size
         
-        propostasBatch.forEach(propostas => allPropostas.push(...propostas));
-        
-        if (i + batchSize < municipios.length) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
+        for (let i = 0; i < municipiosLimitados.length; i += batchSize) {
+          // Verificar se não estamos próximos do timeout
+          if (Date.now() - startTime > 20000) { // 20 segundos
+            console.log('Interrompendo busca devido ao tempo limite');
+            break;
+          }
+          
+          const batch = municipiosLimitados.slice(i, i + batchSize);
+          const propostasBatch = await Promise.allSettled(
+            batch.map(municipio => 
+              getPropostasByMunicipio(municipio.coMunicipioIbge, municipio.noMunicipio, 3) // Máximo 3 páginas
+            )
+          );
+          
+          propostasBatch.forEach((result) => {
+            if (result.status === 'fulfilled') {
+              allPropostas.push(...result.value);
+            }
+          });
+          
+          // Pausa entre lotes
+          if (i + batchSize < municipiosLimitados.length) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
         }
+        
+        // Cache o resultado
+        setCache(cacheKey, allPropostas);
       }
     }
-    
-    console.log(`Total de propostas coletadas: ${allPropostas.length}`);
     
     // Ordenar propostas por data de cadastro (mais recentes primeiro)
     allPropostas.sort((a, b) => {
@@ -178,7 +248,15 @@ export async function GET(req: NextRequest) {
       return dateB - dateA;
     });
     
-    return NextResponse.json(allPropostas);
+    const responseTime = Date.now() - startTime;
+    console.log(`Consulta finalizada em ${responseTime}ms com ${allPropostas.length} propostas`);
+    
+    return NextResponse.json({
+      propostas: allPropostas,
+      municipios: municipios.map(m => m.noMunicipio).sort(),
+      total_municipios: municipios.length,
+      municipios_consultados: municipioParam ? 1 : limit
+    });
   } catch (error: any) {
     console.error('Erro geral na API de consultar-tetos:', error);
     return NextResponse.json(

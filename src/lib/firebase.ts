@@ -1,6 +1,7 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
+import { logger } from './logger';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -22,8 +23,8 @@ const requiredConfig = [
 const missingConfig = requiredConfig.filter(key => !process.env[key]);
 
 if (missingConfig.length > 0) {
-  console.error('🔥 Firebase: Configurações faltando:', missingConfig);
-  console.error('Verifique se as seguintes variáveis estão no .env.local:', missingConfig);
+  logger.error('🔥 Firebase: Configurações faltando:', missingConfig);
+  logger.error('Verifique se as seguintes variáveis estão no .env.local:', missingConfig);
 }
 
 let app: FirebaseApp;
@@ -36,9 +37,9 @@ try {
   auth = getAuth(app);
   db = getFirestore(app);
   
-  console.log('🔥 Firebase inicializado com sucesso');
+  logger.info('🔥 Firebase inicializado com sucesso');
 } catch (error) {
-  console.error('🔥 Erro ao inicializar Firebase:', error);
+  logger.error('🔥 Erro ao inicializar Firebase:', error);
   throw new Error('Falha na inicialização do Firebase. Verifique as configurações.');
 }
 

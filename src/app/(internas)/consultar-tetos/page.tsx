@@ -102,22 +102,53 @@ export default function ConsultarTetosPage() {
     valor_proposta: 0,
     valor_pagar: 0
   });
+  
+  // Lista completa de municípios do PI 
+  const [todosOsMunicipios, setTodosOsMunicipios] = useState<string[]>(['todos']);
 
   // Função para carregar os dados das propostas
-  const loadPropostas = async () => {
+  const loadPropostas = async (municipio?: string) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/consultar-tetos');
+      let url = '/api/consultar-tetos';
+      
+      if (municipio && municipio !== 'todos') {
+        // Busca específica por município
+        url += `?municipio=${encodeURIComponent(municipio)}`;
+      } else {
+        // Busca limitada para carregamento inicial
+        url += '?limit=30';
+      }
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos timeout
+      
+      const res = await fetch(url, {
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
       if (!res.ok) {
+        if (res.status === 504) {
+          throw new Error('Timeout: A consulta demorou muito para responder. Tente filtrar por um município específico.');
+        }
         throw new Error(`Erro ao buscar dados: ${res.status}`);
       }
       const data = await res.json();
-      setPropostas(data);
-      applyFilter(data, filter);
+      
+      // A API agora retorna um objeto com propostas e municípios
+      setPropostas(data.propostas || data);
+      setTodosOsMunicipios(['todos', ...(data.municipios || [])]);
+      applyFilter(data.propostas || data, filter);
+      
     } catch (err: any) {
-      // Erro silencioso - não exibir logs por segurança
-      setError(err.message || 'Erro ao carregar propostas');
+      if (err.name === 'AbortError') {
+        setError('Consulta cancelada por timeout. Tente filtrar por um município específico.');
+      } else {
+        setError(err.message || 'Erro ao carregar propostas');
+      }
     } finally {
       setLoading(false);
     }
@@ -191,17 +222,16 @@ export default function ConsultarTetosPage() {
   };
 
   useEffect(() => {
+    // Carregar propostas (que já incluem a lista de municípios)
     loadPropostas();
   }, []);
   
   useEffect(() => {
     applyFilter(propostas, filter);
   }, [filter, propostas]);
-
-  // Lista de municípios únicos para o filtro
-  const municipios = propostas.length > 0 
-    ? ['todos', ...Array.from(new Set(propostas.map(p => p.municipio))).sort()]
-    : ['todos'];
+  
+  // Usar a lista completa de municípios do arquivo local
+  const municipios = todosOsMunicipios;
 
   // Função para aplicar todos os filtros
   const applyAllFilters = (data: Proposta[], municipio: string, tipoProposta: string, tipoRecurso: string) => {
@@ -387,7 +417,7 @@ export default function ConsultarTetosPage() {
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={loadPropostas}
+                onClick={() => loadPropostas()}
                 className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-white hover:bg-gray-50 text-gray-700 cursor-pointer border-gray-200"
                 title="Atualizar dados"
                 disabled={loading}
@@ -408,7 +438,14 @@ export default function ConsultarTetosPage() {
               <select 
                 className="text-sm border border-gray-200 rounded px-2 py-1"
                 value={filter}
-                onChange={(e) => setFilter(e.target.value)}
+                onChange={(e) => {
+                  const municipio = e.target.value;
+                  setFilter(municipio);
+                  // Se selecionou um município específico, fazer busca direcionada
+                  if (municipio !== 'todos') {
+                    loadPropostas(municipio);
+                  }
+                }}
                 disabled={loading}
               >
                 {municipios.map((municipio, index) => (
