@@ -21,7 +21,7 @@ export function RouteGuard({ children }: RouteGuardProps) {
       
       // Se não há usuário logado, redireciona para login
       if (!user) {
-        router.replace('/login');
+        router.replace('/');
         return;
       }
 
@@ -40,7 +40,7 @@ export function RouteGuard({ children }: RouteGuardProps) {
             router.replace('/consultar-tetos');
             break;
           case 'gabinetejuridico':
-            router.replace('/projetos'); // Quando a página for criada
+            router.replace('/projetos');
             break;
           default:
             router.replace('/painel-aplicacoes');

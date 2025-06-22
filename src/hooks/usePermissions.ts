@@ -28,32 +28,25 @@ export function usePermissions() {
       return;
     }
 
-    // Obtém o nível do usuário (assumindo que está no campo 'level' do usuário)
-    const level = user.level as UserLevel;
+    // Obtém o nível do usuário, com fallback para 'user' se não existir
+    const level = (user.level || 'user') as UserLevel;
     
-    if (level) {
-      setUserLevel(level);
-      const userPermissions = getUserPermissions(level);
-      setPermissions(userPermissions);
-    }
+    setUserLevel(level);
+    const userPermissions = getUserPermissions(level);
+    setPermissions(userPermissions);
     
     setIsLoading(false);
   }, []);
 
-  // Verifica se o usuário pode acessar a rota atual
-  useEffect(() => {
-    if (!isLoading && userLevel && pathname) {
-      const routeValidation = validateRouteAccess(userLevel, pathname);
-      
-      if (!routeValidation.allowed && routeValidation.redirectTo) {
-        console.log(`Acesso negado para ${pathname}. Redirecionando para ${routeValidation.redirectTo}`);
-        router.replace(routeValidation.redirectTo);
-      }
-    }
-  }, [userLevel, pathname, isLoading, router]);
+  // Removendo o redirecionamento automático daqui para evitar loops
+  // O redirecionamento será feito apenas no RouteGuard quando necessário
 
   const hasAccess = (route: string): boolean => {
     if (!userLevel) return false;
+    
+    // Sempre permitir acesso à página inicial e login
+    if (route === '/' || route === '/login') return true;
+    
     return hasRoutePermission(userLevel, route);
   };
 
@@ -78,12 +71,29 @@ export function usePermissions() {
     return userLevel === 'gabinetejuridico';
   };
 
+  const canAccessRoute = (route: string): boolean => {
+    return hasAccess(route);
+  };
+
+  const getDefaultRoute = (): string => {
+    switch (userLevel) {
+      case 'gabineteemendas':
+        return '/consultar-tetos';
+      case 'gabinetejuridico':
+        return '/projetos';
+      default:
+        return '/painel-aplicacoes';
+    }
+  };
+
   return {
     userLevel,
     permissions,
     isLoading,
     hasAccess,
     hasMenuAccess,
+    canAccessRoute,
+    getDefaultRoute,
     isAdmin,
     isUser,
     isGabineteEmendas,
