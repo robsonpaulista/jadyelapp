@@ -176,7 +176,7 @@ export default function EleicoesAnterioresPage() {
 
   // Função para calcular totais das propostas
   const calcularTotaisPropostas = (tipo: string) => {
-    if (!propostas || !cidade) return { total: 0, valorPagar: 0, saldo: 0 };
+    if (!propostas || !Array.isArray(propostas) || !cidade) return { total: 0, valorPagar: 0, saldo: 0 };
     
     const propostasFiltradas = propostas.filter(p => 
       p.municipio.toUpperCase() === cidade.toUpperCase() && 
@@ -198,7 +198,7 @@ export default function EleicoesAnterioresPage() {
 
   // Função para calcular totais das emendas SUAS
   const calcularTotaisSUAS = () => {
-    if (!emendasSUAS || !cidade) return { totalPropostas: 0, totalPagar: 0 };
+    if (!emendasSUAS || !Array.isArray(emendasSUAS) || !cidade) return { totalPropostas: 0, totalPagar: 0 };
     
     const emendasFiltradas = emendasSUAS.filter(e => 
       e.municipio.toUpperCase() === cidade.toUpperCase()
@@ -264,8 +264,15 @@ export default function EleicoesAnterioresPage() {
       // Buscar propostas
       const resPropostas = await fetch(`/api/consultar-tetos?municipio=${encodeURIComponent(cidade)}`);
       if (!resPropostas.ok) throw new Error('Erro ao buscar propostas');
-      let dataPropostas = await resPropostas.json();
-      dataPropostas = dataPropostas.filter((p: any) => p.dsTipoRecurso !== 'PROGRAMA');
+      const responsePropostas = await resPropostas.json();
+      // A API agora retorna um objeto com propostas e municípios
+      let dataPropostas = responsePropostas.propostas || responsePropostas;
+      // Garantir que dataPropostas é um array antes de filtrar
+      if (Array.isArray(dataPropostas)) {
+        dataPropostas = dataPropostas.filter((p: any) => p.dsTipoRecurso !== 'PROGRAMA');
+      } else {
+        dataPropostas = [];
+      }
       setPropostas(dataPropostas);
 
       // Carregar emendas SUAS
@@ -337,9 +344,9 @@ export default function EleicoesAnterioresPage() {
   // Função para abrir o modal com dados da liderança
   const handleExpectativaClick = (lideranca: any) => {
     // Buscar todas as lideranças do mesmo município
-    const liderancasMunicipio = dadosLiderancas.filter(item => 
+    const liderancasMunicipio = Array.isArray(dadosLiderancas) ? dadosLiderancas.filter(item => 
       normalizeString(item.municipio) === normalizeString(lideranca.municipio)
-    );
+    ) : [];
     setSelectedLideranca({ ...lideranca, todasLiderancas: liderancasMunicipio });
     setModalOpen(true);
   };
