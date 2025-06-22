@@ -44,6 +44,7 @@ import {
 } from '@chakra-ui/react';
 import { ArrowLeft, LogOut, User as UserIcon, Plus, RefreshCw, Activity, Clock, Filter, ChevronLeft, ChevronRight, ShieldCheck, Home } from 'lucide-react';
 import { disableConsoleLogging } from '@/lib/logger';
+import { AdminRouteGuard } from '@/components/auth/RouteGuard';
 
 interface User {
   id: number;
@@ -127,7 +128,7 @@ const getTargetLabel = (targetType: UserActivity['target_type']) => {
   }
 };
 
-export default function GerenciarUsuarios() {
+function GerenciarUsuarios() {
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -1026,5 +1027,13 @@ export default function GerenciarUsuarios() {
         )}
       </Container>
     </motion.div>
+  );
+}
+
+export default function GerenciarUsuariosPage() {
+  return (
+    <AdminRouteGuard>
+      <GerenciarUsuarios />
+    </AdminRouteGuard>
   );
 } 
