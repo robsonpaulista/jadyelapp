@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { getCurrentUser } from '@/lib/storage';
+import { User } from '@/types/user';
 import { 
   UserLevel, 
   getUserPermissions, 
@@ -20,7 +21,7 @@ export function usePermissions() {
   const pathname = usePathname();
 
   useEffect(() => {
-    const user = getCurrentUser();
+    const user = getCurrentUser() as User | null;
     
     if (!user) {
       setIsLoading(false);
