@@ -50,6 +50,8 @@ export default function Home() {
         
         // Buscar dados adicionais do usuário no Firestore
         let userRole = 'admin'; // Perfil padrão para usuários logados
+        let userLevel = 'admin'; // Nível padrão para usuários logados
+        let userName = firebaseUser.displayName || firebaseUser.email || '';
         let userPermissions: string[] = [
           'painel-aplicacoes',
           'acoes',
@@ -84,8 +86,15 @@ export default function Home() {
           if (userDoc.exists()) {
             const userDataFromDb = userDoc.data();
             userRole = userDataFromDb.role || 'admin';
+            userLevel = userDataFromDb.level || 'admin'; // Campo level para o sistema de permissões
+            userName = userDataFromDb.name || userName; // Nome do usuário
             userPermissions = userDataFromDb.permissions || userPermissions;
-            console.log('📄 Dados do Firestore carregados:', { role: userRole, permissions: userPermissions });
+            console.log('📄 Dados do Firestore carregados:', { 
+              role: userRole, 
+              level: userLevel, 
+              name: userName, 
+              permissions: userPermissions 
+            });
           } else {
             console.log('📄 Usuário não encontrado no Firestore, usando permissões admin padrão');
           }
@@ -93,13 +102,15 @@ export default function Home() {
           console.warn('⚠️ Erro ao acessar Firestore, usando permissões admin padrão:', firestoreError);
         }
 
-        // Login bem-sucedido
+        // Login bem-sucedido - Estrutura compatível com o sistema de permissões
         const userData: AuthProps = {
           id: firebaseUser.uid,
           username: firebaseUser.email || '',
-          nome: firebaseUser.displayName || firebaseUser.email || '',
+          nome: userName,
+          name: userName, // Campo adicional para o sistema de permissões
           email: firebaseUser.email || '',
           perfil: userRole,
+          level: userLevel, // Campo obrigatório para o sistema de permissões
           permissions: userPermissions,
           token: await firebaseUser.getIdToken(),
         };
@@ -110,8 +121,13 @@ export default function Home() {
         localStorage.setItem('userPermissions', JSON.stringify(userData.permissions));
         localStorage.setItem('lastLoginTime', Date.now().toString());
         
+        console.log('🚀 Dados do usuário salvos:', userData);
         console.log('🚀 Redirecionando para painel de aplicações');
-        router.push('/painel-aplicacoes');
+        
+        // Aguardar um momento para garantir que os dados foram salvos
+        setTimeout(() => {
+          router.push('/painel-aplicacoes');
+        }, 100);
       } else {
         setError('Falha na autenticação. Usuário não encontrado.');
       }
