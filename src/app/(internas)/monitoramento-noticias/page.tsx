@@ -1,9 +1,6 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import { User as UserIcon, ShieldCheck, RefreshCw, Filter } from 'lucide-react';
-import { getCurrentUser } from '@/lib/storage';
-import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { RefreshCw, Filter } from 'lucide-react';
 import { disableConsoleLogging } from '@/lib/logger';
 
 interface NewsItem {
@@ -37,8 +34,6 @@ async function getNews(): Promise<NewsItem[]> {
 }
 
 export default function MonitoramentoNoticiasPage() {
-  const [user, setUser] = useState<any>(null);
-  const [greeting, setGreeting] = useState('');
   const [news, setNews] = useState<NewsItem[]>([]);
   const [filteredNews, setFilteredNews] = useState<NewsItem[]>([]);
   const [filter, setFilter] = useState<string>('todos');
@@ -81,17 +76,6 @@ export default function MonitoramentoNoticiasPage() {
       disableConsoleLogging();
     }
 
-    // Saudação baseada no horário
-    const updateGreeting = () => {
-      const currentHour = new Date().getHours();
-      if (currentHour >= 5 && currentHour < 12) setGreeting('Bom dia');
-      else if (currentHour >= 12 && currentHour < 18) setGreeting('Boa tarde');
-      else setGreeting('Boa noite');
-    };
-    updateGreeting();
-    const userData = getCurrentUser();
-    setUser(userData);
-    
     // Carrega as notícias imediatamente ao montar o componente
     loadNews();
   }, []);
@@ -112,21 +96,6 @@ export default function MonitoramentoNoticiasPage() {
               <span className="text-xs text-gray-500 font-light">Acompanhe notícias, blogs e menções sobre Jadyel Alencar.</span>
             </div>
             <div className="flex items-center gap-2">
-              {user && (
-                <div className="flex flex-col items-end mr-2">
-                  <div className="flex items-center gap-2">
-                    <UserIcon className="h-4 w-4 text-gray-500" />
-                    <span className="text-xs text-gray-700 font-normal">{greeting}, {user.name}</span>
-                  </div>
-                  <span className="text-[11px] text-gray-500 font-light flex items-center gap-1">
-                    {user.role === 'admin' ? (
-                      <><ShieldCheck className="h-3 w-3" />Administrador</>
-                    ) : (
-                      <><UserIcon className="h-3 w-3" />Usuário</>
-                    )}
-                  </span>
-                </div>
-              )}
               <button
                 onClick={loadNews}
                 className={`flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border ${
@@ -140,10 +109,6 @@ export default function MonitoramentoNoticiasPage() {
                 <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                 {loading ? 'Atualizando...' : 'Atualizar'}
               </button>
-              <Link href="/painel-aplicacoes" className="flex items-center gap-1 text-gray-600 hover:text-blue-700 transition-colors px-3 py-1.5 rounded border border-gray-200">
-                <ArrowLeft className="h-5 w-5" />
-                <span className="text-xs font-medium">Voltar</span>
-              </Link>
             </div>
           </div>
         </nav>
@@ -226,22 +191,6 @@ export default function MonitoramentoNoticiasPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
-          )}
-          
-          {/* Informações de debug para administradores */}
-          {user?.role === 'admin' && (
-            <div className="mt-6 mx-4 p-4 border border-gray-200 rounded-lg bg-gray-50 text-xs">
-              <details>
-                <summary className="font-medium text-gray-700 cursor-pointer">Informações de Debug</summary>
-                <div className="mt-2 space-y-1">
-                  <p>Total de notícias: {news.length}</p>
-                  <p>Google Alertas: {news.filter(item => item.source === 'Google Alertas').length}</p>
-                  <p>Talkwalker Alerts: {news.filter(item => item.source === 'Talkwalker Alerts').length}</p>
-                  <p>URL Google: {GOOGLE_FEED}</p>
-                  <p>URL Talkwalker: {TALKWALKER_FEED}</p>
-                </div>
-              </details>
             </div>
           )}
         </main>

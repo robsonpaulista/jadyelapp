@@ -1,8 +1,8 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Painel de Aplicações | Portal de Aplicações',
-  description: 'Painel de controle para gerenciamento de aplicações do Portal de Aplicações',
+  title: 'Hub de Aplicações | Deputado Federal Jadyel Alencar',
+  description: 'Hub de aplicações e ferramentas para gestão parlamentar do Deputado Federal Jadyel Alencar',
 };
 
 export const viewport = {

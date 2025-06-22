@@ -1,9 +1,6 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import { User as UserIcon, ShieldCheck, RefreshCw, Filter, FileDown, Plus } from 'lucide-react';
-import { getCurrentUser } from '@/lib/storage';
-import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { RefreshCw, Filter, FileDown, Plus } from 'lucide-react';
 import { getLimiteMacByMunicipio } from '@/utils/limitesmac';
 import { getLimitePapByMunicipio } from '@/utils/limitepap';
 import { disableConsoleLogging } from '@/lib/logger';
@@ -83,8 +80,7 @@ export default function ConsultarTetosPage() {
   // Desabilitar logs de console para proteção de dados
   disableConsoleLogging();
   
-  const [user, setUser] = useState<any>(null);
-  const [greeting, setGreeting] = useState('');
+
   const [propostas, setPropostas] = useState<Proposta[]>([]);
   const [filteredPropostas, setFilteredPropostas] = useState<Proposta[]>([]);
   const [filter, setFilter] = useState<string>('todos');
@@ -195,16 +191,6 @@ export default function ConsultarTetosPage() {
   };
 
   useEffect(() => {
-    // Saudação baseada no horário
-    const updateGreeting = () => {
-      const currentHour = new Date().getHours();
-      if (currentHour >= 5 && currentHour < 12) setGreeting('Bom dia');
-      else if (currentHour >= 12 && currentHour < 18) setGreeting('Boa tarde');
-      else setGreeting('Boa noite');
-    };
-    updateGreeting();
-    const userData = getCurrentUser();
-    setUser(userData);
     loadPropostas();
   }, []);
   
@@ -400,21 +386,6 @@ export default function ConsultarTetosPage() {
               <span className="text-xs text-gray-500 font-light">Consulta de Propostas do Fundo Nacional de Saúde</span>
             </div>
             <div className="flex items-center gap-2">
-              {user && (
-                <div className="flex flex-col items-end mr-2">
-                  <div className="flex items-center gap-2">
-                    <UserIcon className="h-4 w-4 text-gray-500" />
-                    <span className="text-xs text-gray-700 font-normal">{greeting}, {user.name}</span>
-                  </div>
-                  <span className="text-[11px] text-gray-500 font-light flex items-center gap-1">
-                    {user.role === 'admin' ? (
-                      <><ShieldCheck className="h-3 w-3" />Administrador</>
-                    ) : (
-                      <><UserIcon className="h-3 w-3" />Usuário</>
-                    )}
-                  </span>
-                </div>
-              )}
               <button
                 onClick={loadPropostas}
                 className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-white hover:bg-gray-50 text-gray-700 cursor-pointer border-gray-200"
@@ -424,10 +395,6 @@ export default function ConsultarTetosPage() {
                 <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                 Atualizar
               </button>
-              <Link href="/painel-aplicacoes" className="flex items-center gap-1 text-gray-600 hover:text-blue-700 transition-colors px-3 py-1.5 rounded border border-gray-200">
-                <ArrowLeft className="h-5 w-5" />
-                <span className="text-xs font-medium">Voltar</span>
-              </Link>
             </div>
           </div>
         </nav>
@@ -539,19 +506,7 @@ export default function ConsultarTetosPage() {
             </div>
           )}
           
-          {/* Informações de debug para administradores */}
-          {user?.role === 'admin' && (
-            <div className="mt-6 mx-4 p-4 border border-gray-200 rounded-lg bg-gray-50 text-xs">
-              <details>
-                <summary className="font-medium text-gray-700 cursor-pointer">Informações de Debug</summary>
-                <div className="mt-2 space-y-1">
-                  <p>Total de propostas: {propostas.length}</p>
-                  <p>Total de municípios: {municipios.length - 1}</p>
-                  <p>Valor total: {formatCurrency(propostas.reduce((acc, curr) => acc + curr.vlProposta, 0))}</p>
-                </div>
-              </details>
-            </div>
-          )}
+
 
           {/* Cards de Limite MAC, PAP e SUAS */}
           <div className="w-full flex flex-col md:flex-row gap-4 px-4 pt-4">
@@ -713,7 +668,9 @@ export default function ConsultarTetosPage() {
             </div>
           )}
         </main>
-        <footer className="mt-auto p-3 text-center text-[10px] text-gray-400 font-light">
+        
+        {/* Footer */}
+        <footer className="mt-auto text-center py-3 text-xs text-gray-500 border-t border-gray-100">
           © 2025 86 Dynamics - Todos os direitos reservados
         </footer>
       </div>

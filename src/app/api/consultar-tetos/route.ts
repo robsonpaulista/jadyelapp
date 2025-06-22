@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import fs from 'fs';
+import path from 'path';
 
 // Força runtime dinâmico para permitir uso de request.url
 export const dynamic = 'force-dynamic';
@@ -20,27 +22,57 @@ interface Proposta {
   vlPagar: number;
 }
 
+interface MunicipioLocal {
+  nome: string;
+  nome_normalizado: string;
+  codigo_ibge: string;
+  populacao: number;
+}
+
 const HEADERS = {
   "Accept": "application/json, text/plain, */*",
   "User-Agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N)",
   "Referer": "https://consultafns.saude.gov.br/",
 };
 
-async function getMunicipiosPI(): Promise<any[]> {
-  const url_municipios = "https://consultafns.saude.gov.br/recursos/municipios/uf/PI";
-  
+// Função para carregar municípios do arquivo local
+function getMunicipiosFromLocal(): any[] {
   try {
-    const response = await fetch(url_municipios, { headers: HEADERS });
+    // Usar o arquivo limitespap.json que já tem os códigos IBGE corretos
+    const filePath = path.join(process.cwd(), 'limitespap.json');
+    const fileContent = fs.readFileSync(filePath, 'utf8');
+    const limitesData: any[] = JSON.parse(fileContent);
     
-    if (!response.ok) {
-      console.error(`Erro ao buscar municípios: ${response.status}`);
-      return [];
-    }
+    // Extrair municípios únicos com códigos IBGE corretos
+    const municipiosMap = new Map();
     
-    const data = await response.json();
-    return data.resultado || [];
+    limitesData.forEach(item => {
+      if (!municipiosMap.has(item.municipio)) {
+        // Converter nome do município para formato adequado (primeira letra maiúscula)
+        const nomeFormatado = item.municipio
+          .toLowerCase()
+          .split(' ')
+          .map((palavra: string) => palavra.charAt(0).toUpperCase() + palavra.slice(1))
+          .join(' ')
+          .replace(/\bDo\b/g, 'do')
+          .replace(/\bDa\b/g, 'da')
+          .replace(/\bDe\b/g, 'de')
+          .replace(/\bDos\b/g, 'dos')
+          .replace(/\bDas\b/g, 'das');
+          
+        municipiosMap.set(item.municipio, {
+          coMunicipioIbge: item.ibge,
+          noMunicipio: nomeFormatado
+        });
+      }
+    });
+    
+    // Converter Map para Array e ordenar por nome
+    return Array.from(municipiosMap.values()).sort((a, b) => 
+      a.noMunicipio.localeCompare(b.noMunicipio, 'pt-BR')
+    );
   } catch (error) {
-    console.error('Erro ao buscar municípios:', error);
+    console.error('Erro ao carregar municípios do arquivo local:', error);
     return [];
   }
 }
@@ -101,12 +133,12 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const municipioParam = searchParams.get('municipio');
 
-    console.log('Buscando municípios do Piauí...');
-    const municipios = await getMunicipiosPI();
-    console.log(`Encontrados ${municipios.length} municípios no PI.`);
+    console.log('Carregando municípios do arquivo local...');
+    const municipios = getMunicipiosFromLocal();
+    console.log(`Carregados ${municipios.length} municípios do PI do arquivo local.`);
     
     if (municipios.length === 0) {
-      return NextResponse.json({ error: 'Não foi possível obter a lista de municípios' }, { status: 500 });
+      return NextResponse.json({ error: 'Não foi possível carregar a lista de municípios do arquivo local' }, { status: 500 });
     }
 
     let allPropostas: Proposta[] = [];

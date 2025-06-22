@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AuthProps } from '@/types/Auth';
 import { motion } from 'framer-motion';
-import { FiUser, FiLock, FiAlertCircle } from 'react-icons/fi';
+import { FiUser, FiLock, FiAlertCircle, FiMail, FiEye, FiEyeOff } from 'react-icons/fi';
 import { disableConsoleLogging } from '@/lib/logger';
 import { auth, db } from '@/lib/firebase';
 import { signInWithEmailAndPassword, AuthError } from 'firebase/auth';
@@ -14,29 +14,10 @@ import { doc, getDoc } from 'firebase/firestore';
 export default function Home() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [firebaseStatus, setFirebaseStatus] = useState<string>('');
   const router = useRouter();
-
-  useEffect(() => {
-    // Verificar status do Firebase na inicialização
-    try {
-      if (auth && auth.app) {
-        setFirebaseStatus('Firebase conectado ✅');
-        console.log('🔥 Firebase inicializado:', {
-          projectId: auth.app.options.projectId,
-          authDomain: auth.app.options.authDomain
-        });
-      } else {
-        setFirebaseStatus('Firebase não inicializado ❌');
-        console.error('🔥 Firebase não foi inicializado corretamente');
-      }
-    } catch (error) {
-      setFirebaseStatus('Erro na configuração do Firebase ❌');
-      console.error('🔥 Erro ao verificar Firebase:', error);
-    }
-  }, []);
 
   const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -182,6 +163,10 @@ export default function Home() {
     setPassword(e.target.value);
   };
 
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4 relative overflow-hidden">
       {/* Background Pattern */}
@@ -238,16 +223,9 @@ export default function Home() {
             >
               <FiUser className="text-white text-2xl" />
             </motion.div>
-            <h1 className="text-3xl font-bold text-gray-800">Portal de Aplicações</h1>
-            <p className="text-gray-500 mt-2">Faça login para acessar o sistema</p>
+            <h1 className="text-2xl font-bold text-gray-800 text-center">Hub de aplicações Deputado Federal Jadyel Alencar</h1>
+            <p className="text-gray-500 mt-2 text-center">Faça login para acessar o sistema</p>
           </div>
-
-          {/* Status do Firebase */}
-          {firebaseStatus && (
-            <div className="mb-4 p-2 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-600 text-center">
-              {firebaseStatus}
-            </div>
-          )}
           
           {error && (
             <motion.div
@@ -266,7 +244,7 @@ export default function Home() {
                 Email
               </label>
               <div className="relative">
-                <FiUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <FiMail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <input
                   id="email"
                   type="email"
@@ -288,14 +266,21 @@ export default function Home() {
                 <FiLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <input
                   id="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={handlePasswordChange}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white/50 backdrop-blur-sm"
+                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white/50 backdrop-blur-sm"
                   placeholder="Digite sua senha"
                   required
                   disabled={isSubmitting}
                 />
+                <button
+                  type="button"
+                  onClick={togglePasswordVisibility}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                >
+                  {showPassword ? <FiEyeOff /> : <FiEye />}
+                </button>
               </div>
             </div>
 
@@ -320,12 +305,6 @@ export default function Home() {
               )}
             </motion.button>
           </form>
-
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-500">
-              Sistema de Gestão Política
-            </p>
-          </div>
         </div>
       </motion.div>
     </div>
