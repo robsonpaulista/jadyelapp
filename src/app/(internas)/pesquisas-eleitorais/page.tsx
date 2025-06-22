@@ -24,16 +24,25 @@ import {
   Legend,
   TimeScale
 } from 'chart.js';
-import { User as UserIcon, ShieldCheck, RefreshCw, Maximize2, Plus } from 'lucide-react';
-import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { RefreshCw, Maximize2, Plus } from 'lucide-react';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { PesquisaModal } from './components/PesquisaModal';
 import { PesquisasTable } from './components/PesquisasTable';
 import { motion } from 'framer-motion';
 import 'chartjs-adapter-date-fns';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ChartDataLabels, TimeScale);
+// Registrar todos os componentes necessários do Chart.js
+ChartJS.register(
+  CategoryScale, 
+  LinearScale, 
+  PointElement, 
+  LineElement, 
+  Title, 
+  Tooltip, 
+  Legend, 
+  ChartDataLabels, 
+  TimeScale
+);
 
 interface PesquisaEleitoral {
   id?: string;
@@ -112,8 +121,6 @@ export default function PesquisasEleitoraisPage() {
   const [pesquisas, setPesquisas] = useState<PesquisaEleitoral[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [user, setUser] = useState<any>(null);
-  const [greeting, setGreeting] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPesquisa, setEditingPesquisa] = useState<PesquisaEleitoral | null>(null);
@@ -145,15 +152,6 @@ export default function PesquisasEleitoraisPage() {
   };
 
   useEffect(() => {
-    // Saudação baseada no horário
-    const updateGreeting = () => {
-      const currentHour = new Date().getHours();
-      if (currentHour >= 5 && currentHour < 12) setGreeting('Bom dia');
-      else if (currentHour >= 12 && currentHour < 18) setGreeting('Boa tarde');
-      else setGreeting('Boa noite');
-    };
-    updateGreeting();
-    setUser({ name: 'Usuário', role: 'admin' }); // Simulação, troque pelo seu auth
     fetchPesquisas();
   }, []);
 
@@ -219,10 +217,6 @@ export default function PesquisasEleitoraisPage() {
   // Agrupa por candidato para o gráfico
   const candidatos = Array.from(new Set(pesquisas.map(p => p.candidato)));
   const cargos = Array.from(new Set(pesquisas.map(p => p.cargo)));
-  const datas = Array.from(new Set(pesquisas.map(p => p.data))).sort();
-
-  // Converter datas para objetos Date para o gráfico
-  const datasDate = datas.map(dataStr => new Date(dataStr));
 
   // Filtra as pesquisas com base nos filtros selecionados
   const pesquisasFiltradas = pesquisas.filter(pesquisa => {
@@ -244,26 +238,47 @@ export default function PesquisasEleitoraisPage() {
   // Atualiza a lista de candidatos com base nos filtros
   const candidatosFiltrados = Array.from(new Set(pesquisasFiltradas.map(p => p.candidato)));
 
-  const datasets = candidatosFiltrados.map((candidato, idx) => ({
-    label: candidato,
-    data: datas.map(data => {
+  // Obter apenas as datas que têm pesquisas filtradas (resolve problema 1)
+  const datasComPesquisas = Array.from(new Set(pesquisasFiltradas.map(p => p.data))).sort();
+
+  // Calcular o valor máximo para ajustar a escala do eixo Y (resolve problema 2)
+  const valorMaximo = Math.max(...pesquisasFiltradas.map(p => p.votos));
+  const limiteY = Math.ceil(valorMaximo * 1.2); // 20% de margem superior
+
+  const datasets = candidatosFiltrados.map((candidato, idx) => {
+    // Criar array de dados para cada candidato, mantendo a ordem das datas
+    const dadosCandidato = datasComPesquisas.map(data => {
       const pesquisa = pesquisasFiltradas.find(p => p.candidato === candidato && p.data === data);
-      return pesquisa ? { x: new Date(data), y: pesquisa.votos, instituto: pesquisa.instituto } : null;
-    }),
-    fill: false,
-    borderColor: `hsl(${(idx * 80) % 360}, 70%, 55%)`,
-    backgroundColor: `hsl(${(idx * 80) % 360}, 70%, 55%)`,
-    tension: 0.1,
-    pointRadius: 6,
-    pointHoverRadius: 8,
-    pointBorderWidth: 2,
-    pointStyle: 'circle',
-  }));
+      return pesquisa ? pesquisa.votos : null;
+    });
+
+    return {
+      label: candidato,
+      data: dadosCandidato,
+      fill: false,
+      borderColor: `hsl(${(idx * 80) % 360}, 70%, 55%)`,
+      backgroundColor: `hsl(${(idx * 80) % 360}, 70%, 55%)`,
+      tension: 0.1,
+      pointRadius: 6,
+      pointHoverRadius: 8,
+      pointBorderWidth: 2,
+      pointStyle: 'circle',
+      spanGaps: false, // Não conecta pontos quando há valores nulos
+      // Armazenar informações do instituto para tooltip
+      institutos: datasComPesquisas.map(data => {
+        const pesquisa = pesquisasFiltradas.find(p => p.candidato === candidato && p.data === data);
+        return pesquisa ? pesquisa.instituto : null;
+      })
+    };
+  });
 
   const chartData = {
-    labels: datasDate,
+    labels: datasComPesquisas.map(data => new Date(data).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })),
     datasets
   };
+
+  // Verificar se há dados para mostrar
+  const hasData = datasets.some(dataset => dataset.data.some(value => value !== null && value !== undefined));
 
   const chartOptions = {
     responsive: true,
@@ -277,6 +292,20 @@ export default function PesquisasEleitoraisPage() {
           weight: 'bold' as const 
         } 
       },
+      tooltip: {
+        callbacks: {
+          label: function(context: any) {
+            const dataset = context.dataset;
+            const dataIndex = context.dataIndex;
+            const instituto = dataset.institutos?.[dataIndex] || '';
+            const value = context.parsed.y;
+            
+            if (value === null || value === undefined) return '';
+            
+            return `${context.dataset.label}: ${value.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}% (${instituto})`;
+          }
+        }
+      },
       datalabels: {
         display: true,
         align: 'top' as const,
@@ -284,38 +313,34 @@ export default function PesquisasEleitoraisPage() {
         font: { weight: 'bold' as const, size: 14 },
         color: '#111',
         formatter: function(value: any, context: any) {
-          if (!value) return '';
+          if (value === null || value === undefined) return '';
+          
+          // Buscar instituto correspondente
+          const dataset = context.dataset;
+          const dataIndex = context.dataIndex;
+          const instituto = dataset.institutos?.[dataIndex] || '';
+          
           // Mostra valor% (INSTITUTO)
-          return `${value.y?.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}% (${value.instituto || ''})`;
+          return `${value.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}% (${instituto})`;
         }
       }
     },
     scales: {
       y: {
         beginAtZero: true,
+        max: pesquisasFiltradas.length > 0 ? limiteY : 100, // Usa limite calculado ou 100 como padrão
         title: { display: true, text: 'Votos (%)' },
-        grid: { display: false }
+        grid: { display: false },
+        ticks: {
+          stepSize: Math.max(1, Math.ceil(limiteY / 10)) // Divide o eixo Y em ~10 marcações
+        }
       },
       x: {
-        type: 'time' as const,
-        time: {
-          unit: 'day' as const,
-          tooltipFormat: 'dd/MM/yyyy',
-          displayFormats: {
-            day: 'dd/MM/yyyy',
-            month: 'MM/yyyy',
-            year: 'yyyy'
-          }
-        },
+        type: 'category' as const, // Mudança para category para mostrar apenas datas com dados
         title: { display: true, text: 'Data da Pesquisa' },
         grid: { display: false },
         ticks: {
-          callback: function(value: any) {
-            // value é timestamp, formatar para dd/MM/yyyy
-            const d = new Date(value);
-            if (isNaN(d.getTime())) return '';
-            return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-          }
+          maxRotation: 45 // Rotaciona labels se necessário para melhor legibilidade
         }
       }
     }
@@ -349,17 +374,15 @@ export default function PesquisasEleitoraisPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Cabeçalho */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Pesquisas Eleitorais</h1>
-              <p className="mt-1 text-sm text-gray-500">
-                {greeting}, {user?.name}
-              </p>
-            </div>
+    <div className="flex-1 flex flex-col min-h-screen">
+      {/* Navbar interna do conteúdo */}
+      <nav className="w-full bg-white border-b border-gray-100 shadow-sm">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex flex-col items-start">
+            <span className="text-base md:text-lg font-semibold text-gray-900">Pesquisas Eleitorais</span>
+            <span className="text-xs text-gray-500 font-light">Gerencie e acompanhe a evolução das pesquisas eleitorais por município e candidato</span>
+          </div>
+          <div className="flex items-center gap-2">
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -379,13 +402,18 @@ export default function PesquisasEleitoraisPage() {
                 });
                 setIsModalOpen(true);
               }}
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-white hover:bg-blue-50 text-blue-700 cursor-pointer border-gray-200"
             >
-              <Plus className="h-5 w-5 mr-2" />
+              <Plus className="h-4 w-4" />
               Nova Pesquisa
             </motion.button>
           </div>
         </div>
+      </nav>
+
+      {/* Conteúdo principal */}
+      <main className="p-0 w-full flex-1">
+        <div className="px-4 py-8">
 
         {/* Filtros */}
         <div className="bg-white rounded-lg shadow p-4 mb-8">
@@ -524,7 +552,13 @@ export default function PesquisasEleitoraisPage() {
             onDelete={handleDelete}
           />
         </div>
-      </div>
+
+          {/* Footer */}
+          <div className="mt-8 text-center text-sm text-gray-500">
+            © 2025 86 Dynamics - Todos os direitos reservados
+          </div>
+        </div>
+      </main>
 
       {/* Modal */}
       <PesquisaModal

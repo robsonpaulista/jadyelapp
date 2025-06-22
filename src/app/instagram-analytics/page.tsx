@@ -533,7 +533,7 @@ export default function InstagramAnalyticsPage() {
       <div className="max-w-3xl mx-auto">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center text-xl font-bold">
+            <CardTitle className="flex items-center text-base md:text-lg font-semibold">
               <Instagram className="mr-2 h-5 w-5 text-pink-600" /> 
               Configurar Conexão com Instagram
             </CardTitle>
@@ -623,7 +623,7 @@ export default function InstagramAnalyticsPage() {
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between">
                     <div>
-                      <CardTitle>Publicações Recentes</CardTitle>
+                      <CardTitle className="text-base md:text-lg font-semibold">Publicações Recentes</CardTitle>
                       <CardDescription>
                         {metrics?.posts.length} publicações encontradas
                       </CardDescription>
@@ -726,7 +726,7 @@ export default function InstagramAnalyticsPage() {
                 {/* Top 5 Posts Mais Curtidos */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center">
+                    <CardTitle className="flex items-center text-base md:text-lg font-semibold">
                       <Heart className="h-5 w-5 text-pink-500 mr-2" />
                       Top 5 Posts Mais Curtidos
                     </CardTitle>
@@ -766,7 +766,7 @@ export default function InstagramAnalyticsPage() {
                 {/* Categorização por Tipo de Postagem */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center">
+                    <CardTitle className="flex items-center text-base md:text-lg font-semibold">
                       <BarChart4 className="h-5 w-5 text-blue-500 mr-2" />
                       Desempenho por Tipo de Postagem
                     </CardTitle>
@@ -897,7 +897,7 @@ export default function InstagramAnalyticsPage() {
                 {/* Ranking de Temas */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center">
+                    <CardTitle className="flex items-center text-base md:text-lg font-semibold">
                       <BarChart4 className="h-5 w-5 text-purple-500 mr-2" />
                       Temas Mais Populares
                     </CardTitle>
@@ -975,7 +975,7 @@ export default function InstagramAnalyticsPage() {
                 {/* Insights e Recomendações */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Recomendações</CardTitle>
+                    <CardTitle className="text-base md:text-lg font-semibold">Recomendações</CardTitle>
                     <CardDescription>Análises e sugestões para melhorar seu desempenho</CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -1010,14 +1010,14 @@ export default function InstagramAnalyticsPage() {
           <TabsContent value="audience">
             <Card>
               <CardHeader>
-                <CardTitle>Perfil da Audiência</CardTitle>
+                <CardTitle className="text-base md:text-lg font-semibold">Perfil da Audiência</CardTitle>
                 <CardDescription>Informações demográficas sobre seus seguidores</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
                   {/* Gênero */}
                   <div>
-                    <h3 className="text-lg font-medium mb-3">Distribuição por Gênero</h3>
+                    <h3 className="text-base font-medium mb-3">Distribuição por Gênero</h3>
                     <div className="flex items-center gap-4">
                       <div className="h-4 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full" style={{width: '62%'}}></div>
                       <span className="font-medium">62% Masculino</span>
@@ -1030,7 +1030,7 @@ export default function InstagramAnalyticsPage() {
                   
                   {/* Faixa Etária */}
                   <div>
-                    <h3 className="text-lg font-medium mb-3">Faixa Etária</h3>
+                    <h3 className="text-base font-medium mb-3">Faixa Etária</h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <div className="flex justify-between mb-1">
@@ -1073,7 +1073,7 @@ export default function InstagramAnalyticsPage() {
                   
                   {/* Localização */}
                   <div>
-                    <h3 className="text-lg font-medium mb-3">Principais Localizações</h3>
+                    <h3 className="text-base font-medium mb-3">Principais Localizações</h3>
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span>São Paulo, Brasil</span>
@@ -1128,36 +1128,43 @@ export default function InstagramAnalyticsPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white text-gray-800 flex flex-col">
       <Navbar />
-      <div className="flex-1 p-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold">
-            Análise do Instagram
-          </h1>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={handleRefresh}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4" />
-              )}
-              <span className="ml-2">Atualizar</span>
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDisconnect}
-            >
-              <X className="h-4 w-4 mr-2" />
-              Desconectar
-            </Button>
+      {/* Conteúdo principal */}
+      <div className="flex-1 flex flex-col">
+        {/* Navbar interna do conteúdo */}
+        <nav className="w-full bg-white border-b border-gray-100 shadow-sm">
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex flex-col items-start">
+              <span className="text-base md:text-lg font-semibold text-gray-900">Análise do Instagram</span>
+              <span className="text-xs text-gray-500 font-light">Métricas de desempenho e engajamento do Instagram oficial.</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleRefresh}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border ${
+                  isLoading 
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                    : 'bg-white hover:bg-gray-50 text-gray-700 cursor-pointer'
+                } border-gray-200`}
+                title="Atualizar dados"
+                disabled={isLoading}
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                {isLoading ? 'Atualizando...' : 'Atualizar'}
+              </button>
+              <button
+                onClick={handleDisconnect}
+                className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-red-50 hover:bg-red-100 text-red-700 border-red-200"
+                title="Desconectar conta"
+              >
+                <X className="h-4 w-4" />
+                Desconectar
+              </button>
+            </div>
           </div>
-        </div>
-
+        </nav>
+        
         {/* Conteúdo principal */}
         <main className="p-0 w-full">
           {!isConfigured ? (
@@ -1166,6 +1173,9 @@ export default function InstagramAnalyticsPage() {
             renderDashboard()
           )}
         </main>
+        <footer className="mt-auto p-3 text-center text-[10px] text-gray-400 font-light">
+          © 2025 86 Dynamics - Todos os direitos reservados
+        </footer>
       </div>
     </div>
   );

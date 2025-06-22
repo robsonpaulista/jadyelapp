@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 
 import { useRouter } from "next/navigation";
 import { X, RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -352,38 +351,44 @@ export default function EleicoesAnterioresPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-gray-800">
-      <div className="p-3">
-        <div className="flex justify-between items-center mb-3">
-          <h1 className="text-xl font-bold">Dashboard Município</h1>
-          <div className="flex gap-4">
-            <Button
-              variant="outline"
+    <div className="flex-1 flex flex-col min-h-screen">
+      {/* Navbar interna do conteúdo */}
+      <nav className="w-full bg-white border-b border-gray-100 shadow-sm">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex flex-col items-start">
+            <span className="text-base md:text-lg font-semibold text-gray-900">Eleições Anteriores</span>
+            <span className="text-xs text-gray-500 font-light">Análise de resultados eleitorais e projeções por município</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <select
+              value={cidade}
+              onChange={e => setCidade(e.target.value)}
+              className="text-sm border border-gray-200 rounded px-2 py-1"
+            >
+              <option value="">Selecione município...</option>
+              {cidades.map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+            <button
               onClick={buscarDados}
               disabled={loading || !cidade}
+              className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-white hover:bg-blue-50 text-blue-700 cursor-pointer border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <RefreshCw className="h-4 w-4 animate-spin" />
               ) : (
                 <RefreshCw className="h-4 w-4" />
               )}
-              <span className="ml-2">Buscar</span>
-            </Button>
+              Buscar
+            </button>
           </div>
         </div>
+      </nav>
 
-        <div className="flex items-center space-x-2 mb-3">
-          <select
-            value={cidade}
-            onChange={e => setCidade(e.target.value)}
-            className="w-64 p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">Selecione...</option>
-            {cidades.map(c => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
-        </div>
+      {/* Conteúdo principal */}
+      <main className="p-0 w-full flex-1">
+        <div className="px-4 py-8">
 
         {buscaIniciada && loading && (
           <div className="flex items-center justify-center mt-8">
@@ -864,7 +869,13 @@ export default function EleicoesAnterioresPage() {
             )}
           </DialogContent>
         </Dialog>
-      </div>
+
+        {/* Footer */}
+        <div className="mt-8 text-center text-sm text-gray-500">
+          © 2025 86 Dynamics - Todos os direitos reservados
+        </div>
+        </div>
+      </main>
     </div>
   );
 } 

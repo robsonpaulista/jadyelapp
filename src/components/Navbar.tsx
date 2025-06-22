@@ -71,16 +71,10 @@ const MENUS: Menu[] = [
 export default function Navbar() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
-  const [greeting, setGreeting] = useState('');
 
   useEffect(() => {
     const user = getCurrentUser();
     setUser(user);
-
-    const hour = new Date().getHours();
-    if (hour >= 5 && hour < 12) setGreeting('Bom dia');
-    else if (hour >= 12 && hour < 18) setGreeting('Boa tarde');
-    else setGreeting('Boa noite');
   }, []);
 
   const handleLogout = async () => {
@@ -128,10 +122,10 @@ export default function Navbar() {
           </div>
         ))}
       </div>
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2">
         {user && (
-          <div>
-            <p className="text-sm text-white">{greeting}, {user.name.split(' ')[0]}</p>
+          <div className="mr-2">
+            <p className="text-sm text-white">Usuário: {user.name.split(' ')[0]}</p>
           </div>
         )}
         <Button 

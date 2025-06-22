@@ -1,10 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { User, ShieldCheck, ChevronLeft, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
 import { carregarChapas, atualizarChapa, excluirChapa, Chapa } from "@/services/chapasService";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
@@ -87,25 +85,14 @@ const initialPartidos = [
 const initialQuociente = 190000;
 
 export default function ChapasPage() {
-  const router = useRouter();
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const greeting = "Olá";
+
   const [partidos, setPartidos] = useState(initialPartidos);
   const [quociente, setQuociente] = useState(initialQuociente);
   const [editVoto, setEditVoto] = useState<{ partidoIdx: number; candIdx: number } | null>(null);
   const [hoveredRow, setHoveredRow] = useState<{ partidoIdx: number; candIdx: number } | null>(null);
+  const [editingName, setEditingName] = useState<{ partidoIdx: number; candIdx: number; originalName: string } | null>(null);
 
-  useEffect(() => {
-    async function fetchUser() {
-      try {
-        const user = await getCurrentUser();
-        setCurrentUser(user);
-      } catch {
-        setCurrentUser({ name: "Usuário", role: "admin" });
-      }
-    }
-    fetchUser();
-  }, []);
+
 
   // Carregar dados do Firestore ao abrir a página
   useEffect(() => {
@@ -131,25 +118,66 @@ export default function ChapasPage() {
     fetchChapasFirestore();
   }, []);
 
-  // Função para atualizar nome ou votos
-  const handleChange = async (partidoIdx: number, candIdx: number, field: 'nome' | 'votos', value: string) => {
+  // Função para atualizar apenas o estado local (sem salvar no Firestore)
+  const updateLocalState = (partidoIdx: number, candIdx: number, field: 'nome' | 'votos', value: string) => {
     setPartidos(prev => prev.map((p, i) => {
       if (i !== partidoIdx) return p;
       const candidatos = p.candidatos.map((c, j) => {
         if (j !== candIdx) return c;
         if (field === 'nome') {
-          // Atualiza Firestore ao editar nome
-          atualizarChapa(p.nome, value, c.votos);
           return { ...c, nome: value };
         }
         let votos = parseInt(value.replace(/\D/g, ''), 10) || 0;
         if (votos < 0) votos = 0;
-        // Atualiza Firestore ao editar votos
-        atualizarChapa(p.nome, c.nome, votos);
         return { ...c, votos };
       });
       return { ...p, candidatos };
     }));
+  };
+
+  // Função para iniciar edição de nome
+  const startEditingName = (partidoIdx: number, candIdx: number) => {
+    const originalName = partidos[partidoIdx].candidatos[candIdx].nome;
+    setEditingName({ partidoIdx, candIdx, originalName });
+  };
+
+  // Função para salvar nome no Firestore
+  const saveNameChange = async (partidoIdx: number, candIdx: number) => {
+    if (!editingName) return;
+    
+    const partido = partidos[partidoIdx];
+    const candidato = partido.candidatos[candIdx];
+    const originalName = editingName.originalName;
+    const newName = candidato.nome;
+
+    try {
+      // Se o nome mudou, precisamos excluir o registro antigo e criar um novo
+      if (originalName !== newName) {
+        // Excluir o registro antigo
+        await excluirChapa(partido.nome, originalName);
+        // Criar o novo registro
+        await atualizarChapa(partido.nome, newName, candidato.votos);
+      }
+      // Se o nome não mudou, não faz nada
+    } catch (error) {
+      console.error('Erro ao salvar nome:', error);
+      // Reverter para o nome original em caso de erro
+      updateLocalState(partidoIdx, candIdx, 'nome', originalName);
+    } finally {
+      setEditingName(null);
+    }
+  };
+
+  // Função para salvar votos no Firestore
+  const saveVotosChange = async (partidoIdx: number, candIdx: number, votos: number) => {
+    const partido = partidos[partidoIdx];
+    const candidato = partido.candidatos[candIdx];
+    
+    try {
+      await atualizarChapa(partido.nome, candidato.nome, votos);
+    } catch (error) {
+      console.error('Erro ao salvar votos:', error);
+    }
   };
 
   // Soma dos votos e cálculo da projeção
@@ -188,34 +216,7 @@ export default function ChapasPage() {
               <span className="text-xs text-gray-500 font-light">Projeção de votos por chapa de partidos</span>
             </div>
             <div className="flex items-center gap-2">
-              {currentUser && (
-                <div className="flex flex-col items-end mr-2">
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-gray-500" />
-                    <span className="text-xs text-gray-700 font-normal">{greeting}, {currentUser.name}</span>
-                  </div>
-                  <span className="text-[11px] text-gray-500 font-light flex items-center gap-1">
-                    {currentUser.role === 'admin' ? (
-                      <><ShieldCheck className="h-3 w-3" />Administrador</>
-                    ) : (
-                      <><User className="h-3 w-3" />Usuário</>
-                    )}
-                  </span>
-                </div>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => router.push('/painel-aplicacoes')}
-                className="flex items-center gap-1 text-gray-600 hover:text-blue-700 transition-colors px-3 py-1.5 rounded border border-gray-200"
-              >
-                <ChevronLeft className="h-5 w-5" />
-                <span className="text-xs font-medium">Voltar</span>
-              </Button>
-              <button className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-white hover:bg-gray-50 text-gray-700 cursor-pointer border-gray-200" onClick={() => {/* implementar logout se necessário */}}>
-                <svg className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7" /></svg>
-                <span className="font-light">Sair</span>
-              </button>
+              {/* Espaço reservado para futuras ações */}
             </div>
           </div>
         </nav>
@@ -258,9 +259,16 @@ export default function ChapasPage() {
                               <input
                                 type="text"
                                 value={c.nome}
+                                onFocus={() => startEditingName(pIdx, idx)}
                                 onChange={e => {
                                   const value = e.target.value;
-                                  handleChange(pIdx, idx, 'nome', value);
+                                  updateLocalState(pIdx, idx, 'nome', value);
+                                }}
+                                onBlur={() => saveNameChange(pIdx, idx)}
+                                onKeyDown={e => {
+                                  if (e.key === 'Enter') {
+                                    e.currentTarget.blur(); // Isso vai disparar o onBlur
+                                  }
                                 }}
                                 className="bg-transparent border-b border-gray-200 focus:border-blue-400 outline-none w-full text-xs py-0.5 px-1"
                               />
@@ -272,10 +280,19 @@ export default function ChapasPage() {
                                   min={0}
                                   value={c.votos}
                                   autoFocus
-                                  onChange={e => handleChange(pIdx, idx, 'votos', e.target.value)}
-                                  onBlur={() => setEditVoto(null)}
+                                  onChange={e => {
+                                    const value = e.target.value;
+                                    updateLocalState(pIdx, idx, 'votos', value);
+                                  }}
+                                  onBlur={() => {
+                                    saveVotosChange(pIdx, idx, c.votos);
+                                    setEditVoto(null);
+                                  }}
                                   onKeyDown={e => {
-                                    if (e.key === 'Enter') setEditVoto(null);
+                                    if (e.key === 'Enter') {
+                                      saveVotosChange(pIdx, idx, c.votos);
+                                      setEditVoto(null);
+                                    }
                                   }}
                                   className="bg-transparent border-b border-gray-200 focus:border-blue-400 outline-none w-full text-xs py-0.5 px-1 text-right"
                                   style={{ textAlign: 'right' }}
@@ -339,7 +356,8 @@ export default function ChapasPage() {
             </div>
           </div>
         </main>
-        <footer className="mt-auto p-3 text-center text-[10px] text-gray-400 font-light">
+        {/* Footer */}
+        <footer className="mt-auto text-center py-3 text-xs text-gray-500 border-t border-gray-100">
           © 2025 86 Dynamics - Todos os direitos reservados
         </footer>
       </div>
