@@ -327,6 +327,9 @@ export default function ConsultarTetosPage() {
     fetch('/populacaoibge.json')
       .then(res => res.json())
       .then(data => setMunicipiosPopulacao(data));
+    
+    // Carrega as propostas iniciais
+    loadPropostas();
   }, []);
 
   function getPopulacaoMunicipio(nomeMunicipio: string): number | null {
