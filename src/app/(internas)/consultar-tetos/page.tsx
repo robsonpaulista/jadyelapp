@@ -113,12 +113,16 @@ export default function ConsultarTetosPage() {
     try {
       let url = '/api/consultar-tetos';
       
-      if (municipio && municipio !== 'todos') {
+      if (municipio && municipio !== 'todos' && !municipio.includes('force_update')) {
         // Busca específica por município
         url += `?municipio=${encodeURIComponent(municipio)}`;
       } else {
         // Busca limitada para carregamento inicial
         url += '?limit=30';
+        // Se for força atualização, adicionar timestamp para quebrar cache
+        if (municipio && municipio.includes('force_update')) {
+          url += `&${municipio}`;
+        }
       }
       
       const controller = new AbortController();
@@ -420,9 +424,13 @@ export default function ConsultarTetosPage() {
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => loadPropostas()}
+                onClick={() => {
+                  // Forçar atualização limpando cache
+                  const timestamp = new Date().getTime();
+                  loadPropostas(`force_update=${timestamp}`);
+                }}
                 className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-white hover:bg-gray-50 text-gray-700 cursor-pointer border-gray-200"
-                title="Atualizar dados"
+                title="Atualizar dados (força nova busca)"
                 disabled={loading}
               >
                 <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
