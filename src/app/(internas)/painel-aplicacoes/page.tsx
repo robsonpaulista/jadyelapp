@@ -26,16 +26,9 @@ export default function ApplicationsDashboard() {
         
         @media (max-width: 768px) {
           .bg-mobile-responsive {
-            background-size: cover !important;
-            background-position: center top !important;
+            background-size: 100% 100% !important;
+            background-position: center center !important;
             background-attachment: scroll !important;
-          }
-        }
-        
-        @media (max-width: 480px) {
-          .bg-mobile-responsive {
-            background-size: 100% auto !important;
-            background-position: center top !important;
           }
         }
       `}</style>
