@@ -134,7 +134,7 @@ export default function Navbar() {
               <img src="/avatar-banner.png" alt="Deputado" className="w-full h-full object-contain" />
             </div>
           </Link>
-          <span className="text-white font-bold text-sm lg:text-lg hidden sm:block lg:mr-8">
+          <span className="text-white font-bold text-sm lg:text-lg mr-2 lg:mr-8">
             Dynamics Integration
           </span>
         </div>
