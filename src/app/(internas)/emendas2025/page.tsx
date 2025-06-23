@@ -1,115 +1,38 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Loader2, RefreshCw, DollarSign, Wallet, CreditCard, Receipt, ChevronDown, ArrowUpDown, ChevronUp, Pencil, Save, X as XIcon } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { useRouter } from 'next/navigation';
-import { getCurrentUser } from '@/lib/storage';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Input } from '@/components/ui/input';
-import { toast } from 'react-hot-toast';
-import { Label } from '@/components/ui/label';
+import React, { useState, useEffect } from 'react';
+import { Loader2, RefreshCw, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { disableConsoleLogging } from '@/lib/logger';
+import { toast } from 'react-hot-toast';
 
 interface Emenda {
   id: string;
   emenda: string;
   municipio: string;
-  funcional: string;
-  gnd: string;
-  valor_total: number;
-  valor_empenhado: number;
-  valor_liquidado: number;
-  valor_pago: number;
+  valor_indicado: number;
   objeto: string;
-  processo: string;
-  contrato: string;
-  tipo: string;
-  natureza: string;
+  valor_empenhado: number;
+  liderancas: string;
   classificacao_emenda: string;
-}
-
-interface MatrizNatureza {
   natureza: string;
-  total_valor_total: number;
-  total_valor_empenhado: number;
-  total_valor_liquidado: number;
-  total_valor_pago: number;
+  status: string;
+  fase: string;
+  rowIndex: number;
+}
+
+interface FaseData {
+  fase: string;
   emendas: Emenda[];
+  totalValorIndicado: number;
+  totalValorEmpenhado: number;
 }
-
-interface Filtros {
-  municipio: string[];
-  classificacao_emenda: string[];
-  natureza: string[];
-  tipo: string[];
-}
-
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
 export default function Emendas2025() {
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [emendas, setEmendas] = useState<Emenda[]>([]);
-  const [matrizNaturezas, setMatrizNaturezas] = useState<MatrizNatureza[]>([]);
-  const [filtros, setFiltros] = useState<Filtros>({
-    municipio: [],
-    classificacao_emenda: [],
-    natureza: [],
-    tipo: [],
-  });
-  const [opcoesUnicas, setOpcoesUnicas] = useState<Filtros>({
-    municipio: [],
-    classificacao_emenda: [],
-    natureza: [],
-    tipo: [],
-  });
-  const [mostrarFiltros, setMostrarFiltros] = useState(false);
-  const [sortConfig, setSortConfig] = useState<{
-    key: string;
-    direction: 'asc' | 'desc';
-  } | null>(null);
-
-  // Estados para usuário logado
-  const [currentUser, setCurrentUser] = useState<any>(null);
-
-  // Estado para controlar quais naturezas estão expandidas
-  const [naturezasExpandidas, setNaturezasExpandidas] = useState<Set<string>>(new Set());
-
-  // Estados para a edição inline
-  const [editandoEmenda, setEditandoEmenda] = useState<string | null>(null);
-  const [emendasEditadas, setEmendasEditadas] = useState<Record<string, any>>({});
-  const [salvandoEmenda, setSalvandoEmenda] = useState<string | null>(null);
-  
-  // Carregar informações do usuário
-  useEffect(() => {
-    // Desabilitar logs globalmente para proteção de dados
-    if (typeof window !== 'undefined') {
-      disableConsoleLogging();
-    }
-
-    try {
-      const user = getCurrentUser();
-      if (user) {
-        setCurrentUser(user);
-      } else {
-        setCurrentUser({
-          name: "ROBSON MEDEIROS SANTOS",
-          role: "admin"
-        });
-      }
-    } catch (error) {
-      setCurrentUser({
-        name: "ROBSON MEDEIROS SANTOS",
-        role: "admin"
-      });
-    }
-  }, []);
+  const [fases, setFases] = useState<FaseData[]>([]);
+  const [fasesExpandidas, setFasesExpandidas] = useState<Set<string>>(new Set(['1ª fase']));
 
   // Buscar dados das emendas
   const fetchEmendas = async (forceRefresh = false) => {
@@ -119,113 +42,66 @@ export default function Emendas2025() {
     try {
       const url = forceRefresh ? '/api/emendas?forceRefresh=true' : '/api/emendas';
       const res = await fetch(url);
+      
+      if (!res.ok) {
+        throw new Error(`Erro HTTP: ${res.status}`);
+      }
+      
       const data = await res.json();
+      
+      console.log('Dados recebidos da API:', data);
       
       if (data.sucesso && data.dados) {
         setEmendas(data.dados);
-        
-        // Atualizar opções únicas para filtros
-        const opcoesUnicas = data.dados.reduce((acc: Filtros, emenda: Emenda) => {
-          if (!acc.municipio.includes(emenda.municipio)) acc.municipio.push(emenda.municipio);
-          if (emenda.classificacao_emenda && !acc.classificacao_emenda.includes(emenda.classificacao_emenda)) 
-            acc.classificacao_emenda.push(emenda.classificacao_emenda);
-          if (emenda.natureza && !acc.natureza.includes(emenda.natureza)) 
-            acc.natureza.push(emenda.natureza);
-          if (emenda.tipo && !acc.tipo.includes(emenda.tipo)) 
-            acc.tipo.push(emenda.tipo);
-          
-          return acc;
-        }, { municipio: [], classificacao_emenda: [], natureza: [], tipo: [] });
-
-        // Ordenar as opções alfabeticamente
-        opcoesUnicas.municipio.sort();
-        opcoesUnicas.classificacao_emenda.sort();
-        opcoesUnicas.natureza.sort();
-        opcoesUnicas.tipo.sort();
-
-        setOpcoesUnicas(opcoesUnicas);
-
-        if (forceRefresh) {
-          toast.success('Dados atualizados com sucesso!');
-        }
+        processarFases(data.dados);
+        toast.success(`${data.dados.length} emendas carregadas com sucesso!`);
       } else {
-        setError('Erro ao carregar dados das emendas');
-        toast.error('Erro ao buscar dados. Tente novamente.');
+        throw new Error(data.mensagem || 'Erro ao carregar dados das emendas');
       }
-    } catch (error) {
-      setError('Erro ao carregar dados das emendas');
-      toast.error('Erro ao buscar dados. Tente novamente.');
+    } catch (error: any) {
+      console.error('Erro ao buscar emendas:', error);
+      setError(error.message || 'Erro ao carregar dados das emendas');
+      toast.error('Erro ao buscar dados. Verifique o console para mais detalhes.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const atualizarMatriz = useCallback(() => {
-    if (!emendas.length) return;
-
-    // Aplicar filtros
-    let emendasFiltradas = emendas;
-
-    if (filtros.municipio.length > 0) {
-      emendasFiltradas = emendasFiltradas.filter(emenda => 
-        filtros.municipio.includes(emenda.municipio)
-      );
-    }
-
-    if (filtros.classificacao_emenda.length > 0) {
-      emendasFiltradas = emendasFiltradas.filter(emenda => 
-        filtros.classificacao_emenda.includes(emenda.classificacao_emenda)
-      );
-    }
-
-    if (filtros.natureza.length > 0) {
-      emendasFiltradas = emendasFiltradas.filter(emenda => 
-        filtros.natureza.includes(emenda.natureza)
-      );
-    }
-
-    if (filtros.tipo.length > 0) {
-      emendasFiltradas = emendasFiltradas.filter(emenda => 
-        filtros.tipo.includes(emenda.tipo)
-      );
-    }
-
-    // Agrupar por natureza
-    const matrizPorNatureza = emendasFiltradas.reduce((acc, emenda) => {
-      const natureza = emenda.natureza || 'SEM NATUREZA';
-      
-      if (!acc[natureza]) {
-        acc[natureza] = {
-          natureza,
-          total_valor_total: 0,
-          total_valor_empenhado: 0,
-          total_valor_liquidado: 0,
-          total_valor_pago: 0,
-          emendas: []
-        };
+  // Processar dados e agrupar por fases
+  const processarFases = (dados: Emenda[]) => {
+    const faseMap = new Map<string, Emenda[]>();
+    
+    dados.forEach(emenda => {
+      const fase = emenda.fase || 'Sem fase definida';
+      if (!faseMap.has(fase)) {
+        faseMap.set(fase, []);
       }
+      faseMap.get(fase)!.push(emenda);
+    });
+
+    const fasesProcessadas: FaseData[] = Array.from(faseMap.entries()).map(([fase, emendas]) => {
+      const totalValorIndicado = emendas.reduce((acc, emenda) => acc + (emenda.valor_indicado || 0), 0);
+      const totalValorEmpenhado = emendas.reduce((acc, emenda) => acc + (emenda.valor_empenhado || 0), 0);
       
-      acc[natureza].total_valor_total += emenda.valor_total || 0;
-      acc[natureza].total_valor_empenhado += emenda.valor_empenhado || 0;
-      acc[natureza].total_valor_liquidado += emenda.valor_liquidado || 0;
-      acc[natureza].total_valor_pago += emenda.valor_pago || 0;
-      acc[natureza].emendas.push(emenda);
-      
-      return acc;
-    }, {} as Record<string, MatrizNatureza>);
+      return {
+        fase,
+        emendas,
+        totalValorIndicado,
+        totalValorEmpenhado
+      };
+    });
 
-    // Converter para array e ordenar por valor total decrescente
-    const matrizArray = Object.values(matrizPorNatureza).sort((a, b) => 
-      b.total_valor_total - a.total_valor_total
-    );
+    // Ordenar fases (1ª fase primeiro, depois 2ª fase, etc.)
+    fasesProcessadas.sort((a, b) => {
+      if (a.fase.includes('1ª')) return -1;
+      if (b.fase.includes('1ª')) return 1;
+      if (a.fase.includes('2ª')) return -1;
+      if (b.fase.includes('2ª')) return 1;
+      return a.fase.localeCompare(b.fase);
+    });
 
-    setMatrizNaturezas(matrizArray);
-  }, [emendas, filtros]);
-
-  // Recarregar matriz quando filtros mudarem
-  useEffect(() => {
-    atualizarMatriz();
-  }, [atualizarMatriz]);
+    setFases(fasesProcessadas);
+  };
 
   // Carregar dados iniciais
   useEffect(() => {
@@ -233,195 +109,45 @@ export default function Emendas2025() {
   }, []);
 
   const formatarValor = (valor: number) => {
+    if (!valor || valor === 0) return 'R$ 0,00';
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
     }).format(valor);
   };
 
-  const toggleFiltro = (tipo: keyof Filtros, valor: string) => {
-    setFiltros(prev => {
-      const novosFiltros = { ...prev };
-      const index = novosFiltros[tipo].indexOf(valor);
-      
-      if (index > -1) {
-        novosFiltros[tipo] = novosFiltros[tipo].filter(item => item !== valor);
-      } else {
-        novosFiltros[tipo] = [...novosFiltros[tipo], valor];
-      }
-      
-      return novosFiltros;
-    });
-  };
-
-  const sortData = (key: string) => {
-    let direction: 'asc' | 'desc' = 'asc';
-    
-    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
+  const getStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'ok':
+        return 'text-green-600 bg-green-50';
+      case 'pendente':
+        return 'text-yellow-600 bg-yellow-50';
+      case 'erro':
+        return 'text-red-600 bg-red-50';
+      default:
+        return 'text-gray-600 bg-gray-50';
     }
-    
-    setSortConfig({ key, direction });
-    
-    setMatrizNaturezas(prev => {
-      const sorted = [...prev].sort((a, b) => {
-        let aValue: any;
-        let bValue: any;
-        
-        switch (key) {
-          case 'natureza':
-            aValue = a.natureza;
-            bValue = b.natureza;
-            break;
-          case 'total_valor_total':
-            aValue = a.total_valor_total;
-            bValue = b.total_valor_total;
-            break;
-          case 'total_valor_empenhado':
-            aValue = a.total_valor_empenhado;
-            bValue = b.total_valor_empenhado;
-            break;
-          case 'total_valor_liquidado':
-            aValue = a.total_valor_liquidado;
-            bValue = b.total_valor_liquidado;
-            break;
-          case 'total_valor_pago':
-            aValue = a.total_valor_pago;
-            bValue = b.total_valor_pago;
-            break;
-          default:
-            return 0;
-        }
-        
-        if (direction === 'asc') {
-          return aValue > bValue ? 1 : -1;
-        } else {
-          return aValue < bValue ? 1 : -1;
-        }
-      });
-      
-      return sorted;
-    });
   };
 
-  const toggleExpansao = (natureza: string) => {
-    setNaturezasExpandidas(prev => {
+  const toggleFase = (fase: string) => {
+    setFasesExpandidas(prev => {
       const novas = new Set(prev);
-      if (novas.has(natureza)) {
-        novas.delete(natureza);
+      if (novas.has(fase)) {
+        novas.delete(fase);
       } else {
-        novas.add(natureza);
+        novas.add(fase);
       }
       return novas;
     });
   };
 
-  const expandirTodasNaturezas = () => {
-    const todasNaturezas = new Set(matrizNaturezas.map(m => m.natureza));
-    setNaturezasExpandidas(todasNaturezas);
+  const expandirTodasFases = () => {
+    setFasesExpandidas(new Set(fases.map(f => f.fase)));
   };
 
-  const recolherTodasNaturezas = () => {
-    setNaturezasExpandidas(new Set());
+  const recolherTodasFases = () => {
+    setFasesExpandidas(new Set());
   };
-
-  const iniciarEdicao = (emendaId: string, emenda: any) => {
-    setEditandoEmenda(emendaId);
-    setEmendasEditadas({
-      [emendaId]: { ...emenda }
-    });
-  };
-
-  const atualizarCampoEmenda = (emendaId: string, campo: string, valor: any) => {
-    setEmendasEditadas(prev => ({
-      ...prev,
-      [emendaId]: {
-        ...prev[emendaId],
-        [campo]: valor
-      }
-    }));
-  };
-
-  const cancelarEdicao = () => {
-    setEditandoEmenda(null);
-    setEmendasEditadas({});
-  };
-
-  const salvarEmenda = async (emendaId: string, rowIndex: number) => {
-    setSalvandoEmenda(emendaId);
-    try {
-      const emendaEditada = emendasEditadas[emendaId];
-      
-      const response = await fetch('/api/emendas', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          emenda: emendaEditada,
-          rowIndex: rowIndex
-        }),
-      });
-
-      const result = await response.json();
-      
-      if (result.success) {
-        // Atualizar os dados locais
-        setEmendas(prev => prev.map(e => e.id === emendaId ? emendaEditada : e));
-        setEditandoEmenda(null);
-        setEmendasEditadas({});
-        toast.success('Emenda atualizada com sucesso!');
-        
-        // Recarregar dados após salvar
-        await fetchEmendas(true);
-      } else {
-        toast.error('Erro ao salvar emenda: ' + result.message);
-      }
-    } catch (error) {
-      toast.error('Erro ao salvar emenda');
-    } finally {
-      setSalvandoEmenda(null);
-    }
-  };
-
-  // Preparar dados para gráficos
-  const dadosGraficoNaturezas = useMemo(() => {
-    return matrizNaturezas.map(matriz => ({
-      name: matriz.natureza.length > 20 ? `${matriz.natureza.substring(0, 20)}...` : matriz.natureza,
-      valor: matriz.total_valor_total,
-      fullName: matriz.natureza
-    }));
-  }, [matrizNaturezas]);
-
-  const dadosGraficoMunicipios = useMemo(() => {
-    const municipiosData = emendas.reduce((acc, emenda) => {
-      if (!acc[emenda.municipio]) {
-        acc[emenda.municipio] = 0;
-      }
-      acc[emenda.municipio] += emenda.valor_total || 0;
-      return acc;
-    }, {} as Record<string, number>);
-
-    return Object.entries(municipiosData)
-      .map(([municipio, valor]) => ({ name: municipio, valor }))
-      .sort((a, b) => b.valor - a.valor)
-      .slice(0, 10); // Top 10 municípios
-  }, [emendas]);
-
-  const totaisGerais = useMemo(() => {
-    return emendas.reduce((acc, emenda) => {
-      acc.valorTotal += emenda.valor_total || 0;
-      acc.valorEmpenhado += emenda.valor_empenhado || 0;
-      acc.valorLiquidado += emenda.valor_liquidado || 0;
-      acc.valorPago += emenda.valor_pago || 0;
-      return acc;
-    }, {
-      valorTotal: 0,
-      valorEmpenhado: 0,
-      valorLiquidado: 0,
-      valorPago: 0
-    });
-  }, [emendas]);
 
   if (isLoading) {
     return (
@@ -430,7 +156,7 @@ export default function Emendas2025() {
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex flex-col items-start">
               <span className="text-base md:text-lg font-semibold text-gray-900">Emendas 2025</span>
-              <span className="text-xs text-gray-500 font-light">Controle e acompanhamento de emendas parlamentares</span>
+              <span className="text-xs text-gray-500 font-light">Carregando dados da planilha...</span>
             </div>
           </div>
         </nav>
@@ -452,7 +178,7 @@ export default function Emendas2025() {
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex flex-col items-start">
               <span className="text-base md:text-lg font-semibold text-gray-900">Emendas 2025</span>
-              <span className="text-xs text-gray-500 font-light">Controle e acompanhamento de emendas parlamentares</span>
+              <span className="text-xs text-red-500 font-light">Erro ao carregar dados</span>
             </div>
           </div>
         </nav>
@@ -473,6 +199,12 @@ export default function Emendas2025() {
     );
   }
 
+  const totaisGerais = {
+    valorIndicado: fases.reduce((acc, fase) => acc + fase.totalValorIndicado, 0),
+    valorEmpenhado: fases.reduce((acc, fase) => acc + fase.totalValorEmpenhado, 0),
+    totalEmendas: emendas.length
+  };
+
   return (
     <div className="flex-1 flex flex-col min-h-screen">
       {/* Navbar interna do conteúdo */}
@@ -480,13 +212,30 @@ export default function Emendas2025() {
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex flex-col items-start">
             <span className="text-base md:text-lg font-semibold text-gray-900">Emendas 2025</span>
-            <span className="text-xs text-gray-500 font-light">Controle e acompanhamento de emendas parlamentares</span>
+            <span className="text-xs text-gray-500 font-light">
+              {totaisGerais.totalEmendas} emenda(s) em {fases.length} fase(s)
+            </span>
           </div>
           <div className="flex items-center gap-2">
-            <button
+            <Button
+              onClick={expandirTodasFases}
+              variant="outline"
+              size="sm"
+            >
+              Expandir Todas
+            </Button>
+            <Button
+              onClick={recolherTodasFases}
+              variant="outline"
+              size="sm"
+            >
+              Recolher Todas
+            </Button>
+            <Button
               onClick={() => fetchEmendas(true)}
               disabled={isLoading}
-              className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-white hover:bg-blue-50 text-blue-700 cursor-pointer border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              variant="outline"
+              size="sm"
             >
               {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -494,447 +243,140 @@ export default function Emendas2025() {
                 <RefreshCw className="h-4 w-4" />
               )}
               Atualizar
-            </button>
+            </Button>
           </div>
         </div>
       </nav>
 
       {/* Conteúdo principal */}
-      <main className="p-0 w-full flex-1">
-        <div className="px-4 py-8">
-          {/* Resumo dos totais */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Valor Total</p>
-                    <p className="text-2xl font-bold text-green-600">{formatarValor(totaisGerais.valorTotal)}</p>
-                  </div>
-                  <DollarSign className="h-8 w-8 text-green-600" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Valor Empenhado</p>
-                    <p className="text-2xl font-bold text-blue-600">{formatarValor(totaisGerais.valorEmpenhado)}</p>
-                  </div>
-                  <Wallet className="h-8 w-8 text-blue-600" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Valor Liquidado</p>
-                    <p className="text-2xl font-bold text-purple-600">{formatarValor(totaisGerais.valorLiquidado)}</p>
-                  </div>
-                  <CreditCard className="h-8 w-8 text-purple-600" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Valor Pago</p>
-                    <p className="text-2xl font-bold text-orange-600">{formatarValor(totaisGerais.valorPago)}</p>
-                  </div>
-                  <Receipt className="h-8 w-8 text-orange-600" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Filtros */}
-          <Card className="mb-6">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">Filtros</CardTitle>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setMostrarFiltros(!mostrarFiltros)}
-                >
-                  {mostrarFiltros ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                  {mostrarFiltros ? 'Ocultar' : 'Mostrar'}
-                </Button>
+      <main className="p-6 w-full flex-1">
+        {/* Resumo geral */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+          <div className="p-4">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Resumo Geral</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <p className="text-sm text-blue-600 font-medium">Total de Emendas</p>
+                <p className="text-2xl font-bold text-blue-900">{totaisGerais.totalEmendas}</p>
               </div>
-            </CardHeader>
-            
-            <AnimatePresence>
-              {mostrarFiltros && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                      {/* Filtro por Município */}
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700 mb-2 block">Município</Label>
-                        <Select>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder={`${filtros.municipio.length} selecionados`} />
-                          </SelectTrigger>
-                          <SelectContent className="max-h-[300px] overflow-y-auto">
-                            {opcoesUnicas.municipio.map(opcao => (
-                              <div key={opcao} className="flex items-center space-x-2 p-2 hover:bg-gray-50">
-                                <Checkbox
-                                  id={`municipio-${opcao}`}
-                                  checked={filtros.municipio.includes(opcao)}
-                                  onCheckedChange={() => toggleFiltro('municipio', opcao)}
-                                />
-                                <label htmlFor={`municipio-${opcao}`} className="text-sm cursor-pointer">{opcao}</label>
-                              </div>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* Filtro por Classificação */}
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700 mb-2 block">Classificação</Label>
-                        <Select>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder={`${filtros.classificacao_emenda.length} selecionados`} />
-                          </SelectTrigger>
-                          <SelectContent className="max-h-[300px] overflow-y-auto">
-                            {opcoesUnicas.classificacao_emenda.map(opcao => (
-                              <div key={opcao} className="flex items-center space-x-2 p-2 hover:bg-gray-50">
-                                <Checkbox
-                                  id={`classificacao-${opcao}`}
-                                  checked={filtros.classificacao_emenda.includes(opcao)}
-                                  onCheckedChange={() => toggleFiltro('classificacao_emenda', opcao)}
-                                />
-                                <label htmlFor={`classificacao-${opcao}`} className="text-sm cursor-pointer">{opcao}</label>
-                              </div>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* Filtro por Natureza */}
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700 mb-2 block">Natureza</Label>
-                        <Select>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder={`${filtros.natureza.length} selecionados`} />
-                          </SelectTrigger>
-                          <SelectContent className="max-h-[300px] overflow-y-auto">
-                            {opcoesUnicas.natureza.map(opcao => (
-                              <div key={opcao} className="flex items-center space-x-2 p-2 hover:bg-gray-50">
-                                <Checkbox
-                                  id={`natureza-${opcao}`}
-                                  checked={filtros.natureza.includes(opcao)}
-                                  onCheckedChange={() => toggleFiltro('natureza', opcao)}
-                                />
-                                <label htmlFor={`natureza-${opcao}`} className="text-sm cursor-pointer">{opcao}</label>
-                              </div>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* Filtro por Tipo */}
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700 mb-2 block">Tipo</Label>
-                        <Select>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder={`${filtros.tipo.length} selecionados`} />
-                          </SelectTrigger>
-                          <SelectContent className="max-h-[300px] overflow-y-auto">
-                            {opcoesUnicas.tipo.map(opcao => (
-                              <div key={opcao} className="flex items-center space-x-2 p-2 hover:bg-gray-50">
-                                <Checkbox
-                                  id={`tipo-${opcao}`}
-                                  checked={filtros.tipo.includes(opcao)}
-                                  onCheckedChange={() => toggleFiltro('tipo', opcao)}
-                                />
-                                <label htmlFor={`tipo-${opcao}`} className="text-sm cursor-pointer">{opcao}</label>
-                              </div>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2 mt-4">
-                      <Button variant="outline" size="sm" onClick={expandirTodasNaturezas}>
-                        Expandir Todas
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={recolherTodasNaturezas}>
-                        Recolher Todas
-                      </Button>
-                    </div>
-                  </CardContent>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </Card>
-
-          {/* Gráficos */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            {/* Gráfico por Natureza */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Distribuição por Natureza</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={dadosGraficoNaturezas}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="valor"
-                    >
-                      {dadosGraficoNaturezas.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value: any) => formatarValor(value)} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            {/* Gráfico por Município */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Top 10 Municípios</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={dadosGraficoMunicipios}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
-                      dataKey="name" 
-                      angle={-45}
-                      textAnchor="end"
-                      height={100}
-                      fontSize={10}
-                    />
-                    <YAxis tickFormatter={(value) => formatarValor(value)} />
-                    <Tooltip formatter={(value: any) => formatarValor(value)} />
-                    <Bar dataKey="valor" fill="#8884d8" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+              <div className="bg-green-50 p-4 rounded-lg">
+                <p className="text-sm text-green-600 font-medium">Valor Total Indicado</p>
+                <p className="text-2xl font-bold text-green-900">{formatarValor(totaisGerais.valorIndicado)}</p>
+              </div>
+              <div className="bg-purple-50 p-4 rounded-lg">
+                <p className="text-sm text-purple-600 font-medium">Valor Total a Empenhar</p>
+                <p className="text-2xl font-bold text-purple-900">{formatarValor(totaisGerais.valorEmpenhado)}</p>
+              </div>
+            </div>
           </div>
+        </div>
 
-          {/* Tabela de dados por natureza */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Emendas por Natureza</CardTitle>
-                <div className="text-sm text-gray-600">
-                  Total: {emendas.length} emendas
+        {/* Fases das emendas */}
+        <div className="space-y-4">
+          {fases.map((fase) => (
+            <div key={fase.fase} className="bg-white rounded-lg shadow-sm border border-gray-200">
+              {/* Cabeçalho da fase */}
+              <div 
+                className="p-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50"
+                onClick={() => toggleFase(fase.fase)}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {fasesExpandidas.has(fase.fase) ? (
+                      <ChevronDown className="h-5 w-5 text-gray-500" />
+                    ) : (
+                      <ChevronRight className="h-5 w-5 text-gray-500" />
+                    )}
+                    <h3 className="text-lg font-semibold text-gray-900">{fase.fase}</h3>
+                    <span className="text-sm text-gray-500">
+                      ({fase.emendas.length} emendas)
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-6 text-sm">
+                    <div>
+                      <span className="text-gray-600">Valor Indicado:</span>
+                      <span className="ml-2 font-medium text-green-600">
+                        {formatarValor(fase.totalValorIndicado)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">A Empenhar:</span>
+                      <span className="ml-2 font-medium text-purple-600">
+                        {formatarValor(fase.totalValorEmpenhado)}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left" style={{ width: '40px' }}></th>
-                      <th className="px-4 py-3 text-left">
-                        <button
-                          className="flex items-center gap-1 hover:text-blue-600"
-                          onClick={() => sortData('natureza')}
-                        >
-                          Natureza
-                          <ArrowUpDown className="h-4 w-4" />
-                        </button>
-                      </th>
-                      <th className="px-4 py-3 text-right">
-                        <button
-                          className="flex items-center gap-1 hover:text-blue-600 ml-auto"
-                          onClick={() => sortData('total_valor_total')}
-                        >
-                          Valor Total
-                          <ArrowUpDown className="h-4 w-4" />
-                        </button>
-                      </th>
-                      <th className="px-4 py-3 text-right">
-                        <button
-                          className="flex items-center gap-1 hover:text-blue-600 ml-auto"
-                          onClick={() => sortData('total_valor_empenhado')}
-                        >
-                          Valor Empenhado
-                          <ArrowUpDown className="h-4 w-4" />
-                        </button>
-                      </th>
-                      <th className="px-4 py-3 text-right">
-                        <button
-                          className="flex items-center gap-1 hover:text-blue-600 ml-auto"
-                          onClick={() => sortData('total_valor_liquidado')}
-                        >
-                          Valor Liquidado
-                          <ArrowUpDown className="h-4 w-4" />
-                        </button>
-                      </th>
-                      <th className="px-4 py-3 text-right">
-                        <button
-                          className="flex items-center gap-1 hover:text-blue-600 ml-auto"
-                          onClick={() => sortData('total_valor_pago')}
-                        >
-                          Valor Pago
-                          <ArrowUpDown className="h-4 w-4" />
-                        </button>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {matrizNaturezas.map((natureza) => (
-                      <React.Fragment key={natureza.natureza}>
-                        <tr className="border-b hover:bg-gray-50">
-                          <td className="px-4 py-3">
-                            <button
-                              onClick={() => toggleExpansao(natureza.natureza)}
-                              className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-200"
-                            >
-                              <ChevronDown className={`h-5 w-5 transform transition-transform ${naturezasExpandidas.has(natureza.natureza) ? 'rotate-180' : ''}`} />
-                            </button>
+
+              {/* Conteúdo da fase */}
+              {fasesExpandidas.has(fase.fase) && (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left font-medium text-gray-900">Emenda</th>
+                        <th className="px-4 py-3 text-left font-medium text-gray-900">Município/Beneficiário</th>
+                        <th className="px-4 py-3 text-right font-medium text-gray-900">Valor Indicado</th>
+                        <th className="px-4 py-3 text-left font-medium text-gray-900">Objeto</th>
+                        <th className="px-4 py-3 text-right font-medium text-gray-900">Valor a Empenhar</th>
+                        <th className="px-4 py-3 text-left font-medium text-gray-900">Lideranças</th>
+                        <th className="px-4 py-3 text-left font-medium text-gray-900">Classificação</th>
+                        <th className="px-4 py-3 text-left font-medium text-gray-900">Natureza</th>
+                        <th className="px-4 py-3 text-center font-medium text-gray-900">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {fase.emendas.map((emenda, index) => (
+                        <tr key={emenda.id || index} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 font-medium text-gray-900">{emenda.emenda}</td>
+                          <td className="px-4 py-3 text-gray-900">{emenda.municipio}</td>
+                          <td className="px-4 py-3 text-right font-medium text-green-600">
+                            {formatarValor(emenda.valor_indicado)}
                           </td>
-                          <td className="px-4 py-3 font-medium">
-                            {natureza.natureza}
-                            <span className="ml-2 text-xs text-gray-500">
-                              ({natureza.emendas.length} emendas)
+                          <td className="px-4 py-3 text-gray-900 max-w-xs truncate" title={emenda.objeto}>
+                            {emenda.objeto}
+                          </td>
+                          <td className="px-4 py-3 text-right font-medium text-purple-600">
+                            {formatarValor(emenda.valor_empenhado)}
+                          </td>
+                          <td className="px-4 py-3 text-gray-900">{emenda.liderancas}</td>
+                          <td className="px-4 py-3 text-gray-900">{emenda.classificacao_emenda}</td>
+                          <td className="px-4 py-3 text-gray-900">{emenda.natureza}</td>
+                          <td className="px-4 py-3 text-center">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(emenda.status)}`}>
+                              {emenda.status}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-right text-green-600">
-                            {formatarValor(natureza.total_valor_total)}
-                          </td>
-                          <td className="px-4 py-3 text-right text-blue-600">
-                            {formatarValor(natureza.total_valor_empenhado)}
-                          </td>
-                          <td className="px-4 py-3 text-right text-purple-600">
-                            {formatarValor(natureza.total_valor_liquidado)}
-                          </td>
-                          <td className="px-4 py-3 text-right text-orange-600">
-                            {formatarValor(natureza.total_valor_pago)}
-                          </td>
                         </tr>
-
-                        {naturezasExpandidas.has(natureza.natureza) && (
-                          <tr>
-                            <td colSpan={6} className="px-4 py-3 bg-gray-50">
-                              <table className="w-full text-sm">
-                                <thead className="bg-gray-100">
-                                  <tr>
-                                    <th className="px-4 py-2 text-left">ID</th>
-                                    <th className="px-4 py-2 text-left">Município</th>
-                                    <th className="px-4 py-2 text-left">Objeto</th>
-                                    <th className="px-4 py-2 text-left">Tipo</th>
-                                    <th className="px-4 py-2 text-right">Valor Total</th>
-                                    <th className="px-4 py-2 text-right">Valor Empenhado</th>
-                                    <th className="px-4 py-2 text-center">Ações</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {natureza.emendas.map((emenda, idx) => (
-                                    <tr key={emenda.id} className="border-b hover:bg-gray-50">
-                                      <td className="px-4 py-2">{emenda.id}</td>
-                                      <td className="px-4 py-2">{emenda.municipio}</td>
-                                      <td className="px-4 py-2 max-w-xs truncate" title={emenda.objeto}>{emenda.objeto}</td>
-                                      <td className="px-4 py-2">{emenda.tipo}</td>
-                                      <td className="px-4 py-2 text-right text-green-600">
-                                        {editandoEmenda === emenda.id ? (
-                                          <Input
-                                            type="number"
-                                            value={emendasEditadas[emenda.id]?.valor_total || 0}
-                                            onChange={(e) => atualizarCampoEmenda(emenda.id, 'valor_total', parseFloat(e.target.value) || 0)}
-                                            className="w-24 h-8 text-right"
-                                          />
-                                        ) : (
-                                          formatarValor(emenda.valor_total || 0)
-                                        )}
-                                      </td>
-                                      <td className="px-4 py-2 text-right text-blue-600">
-                                        {editandoEmenda === emenda.id ? (
-                                          <Input
-                                            type="number"
-                                            value={emendasEditadas[emenda.id]?.valor_empenhado || 0}
-                                            onChange={(e) => atualizarCampoEmenda(emenda.id, 'valor_empenhado', parseFloat(e.target.value) || 0)}
-                                            className="w-24 h-8 text-right"
-                                          />
-                                        ) : (
-                                          formatarValor(emenda.valor_empenhado || 0)
-                                        )}
-                                      </td>
-                                      <td className="px-4 py-2 text-center">
-                                        {editandoEmenda === emenda.id ? (
-                                          <div className="flex items-center justify-center gap-1">
-                                            <Button
-                                              size="sm"
-                                              variant="outline"
-                                              onClick={() => salvarEmenda(emenda.id, idx)}
-                                              disabled={salvandoEmenda === emenda.id}
-                                              className="h-7 w-7 p-0"
-                                            >
-                                              {salvandoEmenda === emenda.id ? (
-                                                <Loader2 className="h-3 w-3 animate-spin" />
-                                              ) : (
-                                                <Save className="h-3 w-3" />
-                                              )}
-                                            </Button>
-                                            <Button
-                                              size="sm"
-                                              variant="outline"
-                                              onClick={cancelarEdicao}
-                                              className="h-7 w-7 p-0"
-                                            >
-                                              <XIcon className="h-3 w-3" />
-                                            </Button>
-                                          </div>
-                                        ) : (
-                                          <Button
-                                            size="sm"
-                                            variant="outline"
-                                            onClick={() => iniciarEdicao(emenda.id, emenda)}
-                                            className="h-7 w-7 p-0"
-                                          >
-                                            <Pencil className="h-3 w-3" />
-                                          </Button>
-                                        )}
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </td>
-                          </tr>
-                        )}
-                      </React.Fragment>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
 
-        {/* Footer */}
-        <div className="mt-8 text-center text-sm text-gray-500">
-          © 2025 86 Dynamics - Todos os direitos reservados
-        </div>
+        {/* Debug info */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-6 p-4 bg-gray-100 rounded-lg">
+            <h3 className="font-medium text-gray-900 mb-2">Debug Info:</h3>
+            <pre className="text-xs text-gray-700 overflow-x-auto">
+              {JSON.stringify({ 
+                totalFases: fases.length,
+                totalEmendas: emendas.length,
+                primeiraEmenda: emendas[0] || null 
+              }, null, 2)}
+            </pre>
+          </div>
+        )}
       </main>
+
+      {/* Footer */}
+      <footer className="text-center py-4 text-xs text-gray-500 border-t border-gray-100">
+        © 2025 86 Dynamics - Todos os direitos reservados
+      </footer>
     </div>
   );
 } 

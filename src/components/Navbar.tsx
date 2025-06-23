@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { 
   Settings, Users, BarChart, ListTree, FileText, Building2, UserCheck, Instagram, 
   MapPin, ArrowLeft, LogOut, Newspaper, BarChart2, Building, Coins, Users2,
-  Vote, UserCog, LineChart
+  Vote, UserCog, LineChart, Menu, X
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { getCurrentUser } from '@/lib/storage';
@@ -77,6 +77,7 @@ const MENUS: Menu[] = [
 export default function Navbar() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { hasMenuAccess, hasAccess, isLoading, userLevel } = usePermissions();
 
   useEffect(() => {
@@ -118,82 +119,207 @@ export default function Navbar() {
 
   const visibleMenus = getVisibleMenus();
 
+  // Fechar menu mobile quando clicar em um link
+  const handleMobileLinkClick = () => {
+    setMobileMenuOpen(false);
+  };
+
   return (
-    <nav className="bg-blue-600 flex items-center px-6 py-2 shadow z-[9998] relative">
-      <Link href="/painel-aplicacoes" className="cursor-pointer">
-        <div className="h-10 w-10 rounded-full shadow-xl border-4 border-white bg-gradient-to-r from-blue-50 to-blue-100 flex items-center justify-center overflow-hidden mr-4">
-          <img src="/avatar-banner.png" alt="Deputado" className="w-full h-full object-contain" />
+    <>
+      <nav className="bg-blue-600 flex items-center px-4 lg:px-6 py-2 shadow z-[9998] relative">
+        {/* Logo e Título */}
+        <div className="flex items-center flex-shrink-0">
+          <Link href="/painel-aplicacoes" className="cursor-pointer">
+            <div className="h-8 w-8 lg:h-10 lg:w-10 rounded-full shadow-xl border-2 lg:border-4 border-white bg-gradient-to-r from-blue-50 to-blue-100 flex items-center justify-center overflow-hidden mr-2 lg:mr-4">
+              <img src="/avatar-banner.png" alt="Deputado" className="w-full h-full object-contain" />
+            </div>
+          </Link>
+          <span className="text-white font-bold text-sm lg:text-lg hidden sm:block lg:mr-8">
+            Dynamics Integration
+          </span>
         </div>
-      </Link>
-      <span className="text-white font-bold text-lg mr-8">Dynamics Integration</span>
-      <div className="flex gap-8 flex-1">
-        {visibleMenus.map(menu => {
-          const visibleSubmenus = getVisibleSubmenus(menu.submenus);
+
+        {/* Menu Desktop - Oculto no mobile */}
+        <div className="hidden lg:flex gap-8 flex-1">
+          {visibleMenus.map(menu => {
+            const visibleSubmenus = getVisibleSubmenus(menu.submenus);
+            
+            return (
+              <div key={menu.label || 'config'} className="relative group">
+                <Link href={menu.href} className="flex items-center gap-2 text-white font-medium px-3 py-2 rounded hover:bg-blue-700 transition whitespace-nowrap">
+                  {menu.icon}
+                  {menu.label}
+                </Link>
+                {visibleSubmenus.length > 0 && (
+                  <div className="absolute left-0 mt-0 bg-white rounded shadow-lg py-2 min-w-[220px] invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 z-[9999]">
+                    <div className="absolute top-0 left-0 w-full h-2 bg-transparent -translate-y-full"></div>
+                    {visibleSubmenus.map(sub => (
+                      <Link 
+                        key={sub.href} 
+                        href={sub.href} 
+                        className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-blue-50 whitespace-nowrap"
+                      >
+                        {sub.icon}
+                        {sub.label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Informações do usuário - Adaptadas para mobile */}
+        <div className="flex items-center gap-2 ml-auto">
+          {user && (
+            <div className="mr-2 hidden sm:block">
+              <p className="text-xs lg:text-sm text-white">
+                <span className="hidden lg:inline">Usuário: </span>
+                {user.name?.split(' ')[0] || (user as any).nome?.split(' ')[0] || user.email?.split('@')[0] || 'Admin'}
+                {userLevel && (
+                  <Badge variant="secondary" className="ml-1 lg:ml-2 text-xs">
+                    {userLevel}
+                  </Badge>
+                )}
+              </p>
+            </div>
+          )}
           
-          return (
-            <div key={menu.label || 'config'} className="relative group">
-              <Link href={menu.href} className="flex items-center gap-2 text-white font-medium px-3 py-2 rounded hover:bg-blue-700 transition whitespace-nowrap">
-                {menu.icon}
-                {menu.label}
-              </Link>
-              {visibleSubmenus.length > 0 && (
-                <div className="absolute left-0 mt-0 bg-white rounded shadow-lg py-2 min-w-[220px] invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 z-[9999]">
-                  <div className="absolute top-0 left-0 w-full h-2 bg-transparent -translate-y-full"></div>
-                  {visibleSubmenus.map(sub => (
-                    <Link 
-                      key={sub.href} 
-                      href={sub.href} 
-                      className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-blue-50 whitespace-nowrap"
-                    >
-                      {sub.icon}
-                      {sub.label}
-                    </Link>
-                  ))}
+          {/* Botões Desktop */}
+          <div className="hidden lg:flex items-center gap-2">
+            <Button 
+              onClick={() => router.back()} 
+              variant="ghost" 
+              size="sm"
+              className="text-white hover:text-white hover:bg-blue-700"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Voltar
+            </Button>
+            <Button 
+              onClick={handleLogout} 
+              variant="ghost" 
+              size="sm"
+              className="text-white hover:text-white hover:bg-blue-700"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Sair
+            </Button>
+          </div>
+
+          {/* Botão Menu Mobile */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="lg:hidden text-white hover:text-white hover:bg-blue-700 p-2"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          </Button>
+        </div>
+      </nav>
+
+      {/* Menu Mobile Overlay */}
+      {mobileMenuOpen && (
+        <div className="lg:hidden fixed inset-0 z-[9997] bg-black bg-opacity-50" onClick={() => setMobileMenuOpen(false)}>
+          <div 
+            className="fixed top-0 right-0 h-full w-80 max-w-[90vw] bg-white shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header do menu mobile */}
+            <div className="bg-blue-600 p-4 text-white">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold">Menu</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-white hover:text-white hover:bg-blue-700 p-1"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <X size={20} />
+                </Button>
+              </div>
+              {user && (
+                <div className="mt-2 pt-2 border-t border-blue-500">
+                  <p className="text-sm">
+                    {user.name?.split(' ')[0] || (user as any).nome?.split(' ')[0] || user.email?.split('@')[0] || 'Admin'}
+                    {userLevel && (
+                      <Badge variant="secondary" className="ml-2 text-xs">
+                        {userLevel}
+                      </Badge>
+                    )}
+                  </p>
                 </div>
               )}
             </div>
-          );
-        })}
-      </div>
-      <div className="flex items-center gap-2">
-        {user && (
-          <div className="mr-2">
-            <p className="text-sm text-white">
-              Usuário: {user.name?.split(' ')[0] || (user as any).nome?.split(' ')[0] || user.email?.split('@')[0] || 'Admin'}
-              {userLevel && (
-                <Badge variant="secondary" className="ml-2 text-xs">
-                  {userLevel}
-                </Badge>
-              )}
-            </p>
+
+            {/* Conteúdo do menu mobile */}
+            <div className="p-4 space-y-2 max-h-[calc(100vh-200px)] overflow-y-auto">
+              {visibleMenus.map(menu => {
+                const visibleSubmenus = getVisibleSubmenus(menu.submenus);
+                
+                return (
+                  <div key={menu.label || 'config'} className="space-y-1">
+                    <Link 
+                      href={menu.href} 
+                      className="flex items-center gap-3 p-3 text-gray-700 hover:bg-blue-50 rounded-lg transition"
+                      onClick={handleMobileLinkClick}
+                    >
+                      {menu.icon}
+                      <span className="font-medium">{menu.label || 'Configurações'}</span>
+                    </Link>
+                    
+                    {visibleSubmenus.length > 0 && (
+                      <div className="ml-6 space-y-1">
+                        {visibleSubmenus.map(sub => (
+                          <Link 
+                            key={sub.href} 
+                            href={sub.href} 
+                            className="flex items-center gap-3 p-2 text-gray-600 hover:bg-gray-50 rounded text-sm"
+                            onClick={handleMobileLinkClick}
+                          >
+                            {sub.icon}
+                            {sub.label}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Footer do menu mobile */}
+            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gray-50 border-t space-y-2">
+              <Button 
+                onClick={() => {
+                  router.back();
+                  handleMobileLinkClick();
+                }} 
+                variant="outline" 
+                size="sm"
+                className="w-full justify-start"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Voltar
+              </Button>
+              <Button 
+                onClick={() => {
+                  handleLogout();
+                  handleMobileLinkClick();
+                }} 
+                variant="outline" 
+                size="sm"
+                className="w-full justify-start text-red-600 border-red-200 hover:bg-red-50"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Sair
+              </Button>
+            </div>
           </div>
-        )}
-        {!user && (
-          <div className="mr-2">
-            <p className="text-sm text-white">
-              Usuário: Carregando...
-            </p>
-          </div>
-        )}
-        <Button 
-          onClick={() => router.back()} 
-          variant="ghost" 
-          size="sm"
-          className="text-white hover:text-white hover:bg-blue-700"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Voltar
-        </Button>
-        <Button 
-          onClick={handleLogout} 
-          variant="ghost" 
-          size="sm"
-          className="text-white hover:text-white hover:bg-blue-700"
-        >
-          <LogOut className="w-4 h-4 mr-2" />
-          Sair
-        </Button>
-      </div>
-    </nav>
+        </div>
+      )}
+    </>
   );
 } 

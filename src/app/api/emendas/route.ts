@@ -5,38 +5,17 @@ import { GoogleAuth } from 'google-auth-library';
 
 interface EmendaRow {
   id: string;
-  coluna0: string;
-  coluna1: string;
-  coluna2: string;
-  coluna3: string;
-  coluna4: string;
-  coluna5: string;
-  coluna6: string;
-  coluna7: string;
-  coluna8: string;
-  coluna9: string;
-  coluna10: string;
-  coluna11: string;
-  coluna12: string;
-  coluna13: string;
-  coluna14: string;
-  coluna15: string;
-  coluna16: string;
-  coluna17: string;
-  coluna18: string;
-  coluna19: string;
+  emenda: string;
   municipio: string;
   valor_indicado: number;
-  valor_empenho: number;
-  valoraempenhar: number;
-  valorpago: number;
-  valoraserpago: number;
+  objeto: string;
+  valor_empenhado: number;
+  liderancas: string;
   classificacao_emenda: string;
   natureza: string;
-  objeto: string;
-  status_situacao: string;
-  emenda: string;
-  lideranca: string;
+  status: string;
+  fase: string;
+  rowIndex: number;
 }
 
 export async function GET(req: Request) {
@@ -84,49 +63,73 @@ export async function GET(req: Request) {
 
     const rows = response.data.values || [];
     
-    // Remove empty rows and headers
-    const dataRows = rows.filter((row) => row.length > 0 && row[0] !== 'ID');
+    console.log(`Total de linhas na planilha: ${rows.length}`);
+    console.log('Primeiras 3 linhas:', rows.slice(0, 3));
     
-    console.log(`Processando ${dataRows.length} linhas de dados`);
+    // Localizar onde começam os dados (procurar por "Emenda" no cabeçalho)
+    let headerRowIndex = -1;
+    let currentFase = '';
     
-    const emendas = dataRows
-      .map((row, rowIndex) => {
-        if (!row[0]) return null; // Skip rows without ID
-        
-        try {
-          return {
-            id: row[0],
-            rowIndex: rowIndex + 1, // +1 porque o índice começa em 0, mas o Google Sheets começa em 1
-            emenda: row[1],
-            municipio: row[2],
-            funcional: row[3],
-            gnd: row[4],
-            modalidade: row[5],
-            programa: row[6],
-            acao: row[7],
-            localizador: row[8],
-            plano_interno: row[9],
-            valor_total: parseFloat(String(row[10]).replace('.', '').replace(',', '.')) || 0,
-            valor_empenhado: parseFloat(String(row[11]).replace('.', '').replace(',', '.')) || 0,
-            valor_liquidado: parseFloat(String(row[12]).replace('.', '').replace(',', '.')) || 0,
-            valor_pago: parseFloat(String(row[13]).replace('.', '').replace(',', '.')) || 0,
-            objeto: row[19] || '',
-            processo: row[14] || '',
-            contrato: row[15] || '',
-            tipo: row[16] || '',
-            natureza: row[17] || 'SEM NATUREZA',
-            classificacao_emenda: row[18] || '',
-          };
-        } catch (e) {
-          console.error(`Erro ao processar linha ${rowIndex}:`, e);
-          return null;
-        }
-      })
-      .filter(Boolean); // Remove null entries
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      if (row.some(cell => cell && cell.toString().toLowerCase().includes('emenda') && 
+                          row.some(c => c && c.toString().toLowerCase().includes('município')))) {
+        headerRowIndex = i;
+        break;
+      }
+    }
+    
+    if (headerRowIndex === -1) {
+      console.error('Cabeçalho da tabela não encontrado');
+      return NextResponse.json({ sucesso: false, mensagem: 'Estrutura da planilha não reconhecida' }, { status: 500 });
+    }
+    
+    console.log(`Cabeçalho encontrado na linha ${headerRowIndex + 1}`);
+    console.log('Cabeçalho:', rows[headerRowIndex]);
+    
+    // Processar dados a partir da linha após o cabeçalho
+    const dataRows = rows.slice(headerRowIndex + 1);
+    const emendas: EmendaRow[] = [];
+    
+    for (let i = 0; i < dataRows.length; i++) {
+      const row = dataRows[i];
+      
+      // Verificar se é uma linha de fase (contém "fase" no texto)
+      if (row[0] && row[0].toString().toLowerCase().includes('fase')) {
+        currentFase = row[0].toString();
+        continue;
+      }
+      
+      // Pular linhas vazias ou que não tem dados suficientes
+      if (!row[0] || row.length < 4) {
+        continue;
+      }
+      
+      // Mapear os dados baseado na estrutura da planilha mostrada
+      // Baseado na imagem: Emenda | Município/Beneficiário | Valor Indicado | Objeto | Valor a Empenhar | Lideranças | Classificação | Natureza | Status
+      const emenda: EmendaRow = {
+        id: row[0] || `emenda_${i}`,
+        emenda: row[0] || '', // Coluna A - Emenda
+        municipio: row[1] || '', // Coluna B - Município/Beneficiário  
+        valor_indicado: parseFloat(String(row[2] || '0').replace(/[^\d,.-]/g, '').replace(',', '.')) || 0, // Coluna C - Valor Indicado
+        objeto: row[3] || '', // Coluna D - Objeto
+        valor_empenhado: parseFloat(String(row[4] || '0').replace(/[^\d,.-]/g, '').replace(',', '.')) || 0, // Coluna E - Valor a Empenhar
+        liderancas: row[5] || '', // Coluna F - Lideranças
+        classificacao_emenda: row[6] || '', // Coluna G - Classificação
+        natureza: row[7] || 'SEM NATUREZA', // Coluna H - Natureza
+        status: row[8] || 'ok', // Coluna I - Status
+        fase: currentFase || 'Sem fase definida',
+        rowIndex: headerRowIndex + 2 + i // Índice real na planilha
+      };
+      
+      emendas.push(emenda);
+    }
+    
+         console.log(`${emendas.length} emendas processadas`);
+     console.log('Primeira emenda:', emendas[0]);
+     console.log('Fases encontradas:', Array.from(new Set(emendas.map(e => e.fase))));
 
-    console.log(`${emendas.length} emendas encontradas após filtro`);
-
-    // Cache the results
+     // Cache the results
     apiCache.set(CACHE_KEY, emendas, CACHE_TTL);
 
     // Retornar os dados
