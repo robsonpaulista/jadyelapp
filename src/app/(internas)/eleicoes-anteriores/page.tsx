@@ -3,10 +3,12 @@
 import React, { useState, useEffect } from "react";
 
 import { useRouter } from "next/navigation";
-import { X, RefreshCw } from "lucide-react";
+import { X, RefreshCw, Building, ArrowUpDown, CheckCircle2, Clock, AlertCircle, XCircle, HelpCircle, ChevronDown } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { getLimiteMacByMunicipio } from '@/utils/limitesmac';
 import { getLimitePapByMunicipio } from '@/utils/limitepap';
 import { disableConsoleLogging } from '@/lib/logger';
@@ -24,6 +26,65 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
+// Interface para os dados de obras e demandas
+interface ObraDemanda {
+  [key: string]: string;
+  'Coluna 1': string;
+  'ID': string;
+  'DATA DEMANDA': string;
+  'STATUS': string;
+  'SOLICITAÇÃO': string;
+  'OBS STATUS': string;
+  'MUNICIPIO': string;
+  'LIDERANÇA': string;
+  'LIDERANÇA URNA': string;
+  'PAUTA': string;
+  'AÇÃO/OBJETO': string;
+  'NÍVEL ESPAÇO': string;
+  'ESFERA': string;
+  'VALOR ': string;
+  'ÓRGAO ': string;
+  'PREVISÃO': string;
+}
+
+// Função para obter configuração de status
+const getStatusConfig = (status: string) => {
+  const statusLower = status.toLowerCase();
+  
+  if (statusLower.includes('finalizada') || statusLower.includes('concluída')) {
+    return {
+      color: 'bg-green-100 text-green-800',
+      icon: <CheckCircle2 className="h-4 w-4 text-green-600" />
+    };
+  }
+  
+  if (statusLower.includes('andamento') || statusLower.includes('análise')) {
+    return {
+      color: 'bg-blue-100 text-blue-800',
+      icon: <Clock className="h-4 w-4 text-blue-600" />
+    };
+  }
+  
+  if (statusLower.includes('pendente') || statusLower.includes('aguardando')) {
+    return {
+      color: 'bg-yellow-100 text-yellow-800',
+      icon: <AlertCircle className="h-4 w-4 text-yellow-600" />
+    };
+  }
+  
+  if (statusLower.includes('cancelada') || statusLower.includes('negada')) {
+    return {
+      color: 'bg-red-100 text-red-800',
+      icon: <XCircle className="h-4 w-4 text-red-600" />
+    };
+  }
+  
+  return {
+    color: 'bg-gray-100 text-gray-800',
+    icon: <HelpCircle className="h-4 w-4 text-gray-600" />
+  };
+};
 
 // Função para normalizar texto (remover acentos e padronizar capitalização)
 function normalizeString(str: string) {
@@ -153,6 +214,13 @@ export default function EleicoesAnterioresPage() {
   const [partidoSelecionado, setPartidoSelecionado] = useState<string | null>(null);
   const [buscaIniciada, setBuscaIniciada] = useState(false);
   const [emendasSUAS, setEmendasSUAS] = useState<any[]>([]);
+  
+  // Estados para lideranças e demandas
+  const [liderancasSelecionadas, setLiderancasSelecionadas] = useState<any[]>([]);
+  const [liderancaSelecionada, setLiderancaSelecionada] = useState<string>('');
+  const [modalDemandasOpen, setModalDemandasOpen] = useState(false);
+  const [demandas, setDemandas] = useState<ObraDemanda[]>([]);
+  const [loadingDemandas, setLoadingDemandas] = useState(false);
 
   // Função para formatar valor em moeda brasileira
   const formatCurrency = (value: number) => {
@@ -210,6 +278,110 @@ export default function EleicoesAnterioresPage() {
     return { totalPropostas, totalPagar };
   };
 
+  // Função para formatar valor em moeda brasileira
+  const formatarValor = (valor: string | number | undefined | null) => {
+    if (!valor || valor === '0' || valor === 0) return 'R$ 0,00';
+    
+    let numeroLimpo: number;
+    
+    if (typeof valor === 'string') {
+      // Remove R$, espaços e outros caracteres, mantém apenas números, pontos e vírgulas
+      let valorLimpo = valor.replace(/[^\d,.-]/g, '');
+      
+      // Se tem vírgula e ponto, assume que ponto é separador de milhares e vírgula é decimal
+      if (valorLimpo.includes(',') && valorLimpo.includes('.')) {
+        // Ex: 1.000,50 -> 1000.50
+        valorLimpo = valorLimpo.replace(/\./g, '').replace(',', '.');
+      } else if (valorLimpo.includes(',')) {
+        // Se só tem vírgula, pode ser decimal (100,50) ou milhares (1,000)
+        const partes = valorLimpo.split(',');
+        if (partes.length === 2 && partes[1].length <= 2) {
+          // Provavelmente decimal: 100,50
+          valorLimpo = valorLimpo.replace(',', '.');
+        } else {
+          // Provavelmente separador de milhares: 1,000
+          valorLimpo = valorLimpo.replace(/,/g, '');
+        }
+      }
+      
+      numeroLimpo = parseFloat(valorLimpo);
+    } else {
+      numeroLimpo = valor;
+    }
+    
+    if (isNaN(numeroLimpo)) return 'R$ 0,00';
+    
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(numeroLimpo);
+  };
+
+  // Função para converter valor string para número
+  const converterValorParaNumero = (valor: string | number | undefined | null): number => {
+    if (!valor || valor === '0' || valor === 0) return 0;
+    
+    if (typeof valor === 'number') return valor;
+    
+    // Remove R$, espaços e outros caracteres, mantém apenas números, pontos e vírgulas
+    let valorLimpo = valor.replace(/[^\d,.-]/g, '');
+    
+    // Se tem vírgula e ponto, assume que ponto é separador de milhares e vírgula é decimal
+    if (valorLimpo.includes(',') && valorLimpo.includes('.')) {
+      // Ex: 1.000,50 -> 1000.50
+      valorLimpo = valorLimpo.replace(/\./g, '').replace(',', '.');
+    } else if (valorLimpo.includes(',')) {
+      // Se só tem vírgula, pode ser decimal (100,50) ou milhares (1,000)
+      const partes = valorLimpo.split(',');
+      if (partes.length === 2 && partes[1].length <= 2) {
+        // Provavelmente decimal: 100,50
+        valorLimpo = valorLimpo.replace(',', '.');
+      } else {
+        // Provavelmente separador de milhares: 1,000
+        valorLimpo = valorLimpo.replace(/,/g, '');
+      }
+    }
+    
+    const numero = parseFloat(valorLimpo);
+    return isNaN(numero) ? 0 : numero;
+  };
+
+  // Função para buscar demandas das lideranças
+  const buscarDemandasLideranca = async () => {
+    if (!liderancaSelecionada || !cidade) return;
+    
+    setLoadingDemandas(true);
+    try {
+      const response = await fetch('/api/obras_demandas');
+      const data = await response.json();
+      
+      if (data.success && data.data) {
+        let demandasFiltradas;
+        
+        if (liderancaSelecionada === 'TODAS') {
+          // Filtrar apenas pelo município - todas as lideranças
+          demandasFiltradas = data.data.filter((demanda: ObraDemanda) => 
+            normalizeString(demanda.MUNICIPIO) === normalizeString(cidade)
+          );
+        } else {
+          // Filtrar demandas pelo município e liderança selecionada
+          demandasFiltradas = data.data.filter((demanda: ObraDemanda) => 
+            normalizeString(demanda.MUNICIPIO) === normalizeString(cidade) &&
+            normalizeString(demanda['LIDERANÇA']) === normalizeString(liderancaSelecionada)
+          );
+        }
+        
+        setDemandas(demandasFiltradas);
+        setModalDemandasOpen(true);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar demandas:', error);
+      // Silencioso por segurança
+    } finally {
+      setLoadingDemandas(false);
+    }
+  };
+
   // Função para buscar dados do Google Sheets
   const buscarDados = async () => {
     if (!cidade) return;
@@ -218,6 +390,12 @@ export default function EleicoesAnterioresPage() {
     setLoading(true);
     setError(null);
     setDados([]);
+    
+    // Limpar estados das lideranças e demandas
+    setLiderancasSelecionadas([]);
+    setLiderancaSelecionada('');
+    setDemandas([]);
+    setModalDemandasOpen(false);
 
     try {
       // Buscar dados da planilha
@@ -234,6 +412,15 @@ export default function EleicoesAnterioresPage() {
       const jsonLiderancas = await resLiderancas.json();
       if (resLiderancas.ok) {
         setDadosLiderancas(jsonLiderancas.data);
+        
+        // Filtrar lideranças do município selecionado
+        const liderancasMunicipio = jsonLiderancas.data.filter((lideranca: any) => 
+          normalizeString(lideranca.municipio) === normalizeString(cidade)
+        );
+        setLiderancasSelecionadas(liderancasMunicipio);
+        
+        // Limpar seleção anterior
+        setLiderancaSelecionada('');
       }
 
       // Buscar dados de eleitores
@@ -389,6 +576,40 @@ export default function EleicoesAnterioresPage() {
               )}
               Buscar
             </button>
+            
+            {/* Dropdown de lideranças e botão de demandas */}
+            {buscaIniciada && !loading && liderancasSelecionadas.length > 0 && (
+              <div className="flex items-center gap-2 ml-4">
+                <Select value={liderancaSelecionada} onValueChange={setLiderancaSelecionada}>
+                  <SelectTrigger className="w-64 text-sm">
+                    <SelectValue placeholder="Selecione uma liderança..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="TODAS">
+                      <strong>📋 Todas as lideranças</strong>
+                    </SelectItem>
+                    {liderancasSelecionadas.map((lideranca, index) => (
+                      <SelectItem key={index} value={lideranca.lideranca}>
+                        {lideranca.lideranca}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                <button
+                  onClick={buscarDemandasLideranca}
+                  disabled={!liderancaSelecionada || loadingDemandas}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-blue-600 hover:bg-blue-700 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loadingDemandas ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Building className="h-4 w-4" />
+                  )}
+                  Ver demandas lideranças
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </nav>
@@ -411,8 +632,6 @@ export default function EleicoesAnterioresPage() {
         {buscaIniciada && cidade && !loading && !error && dados.length === 0 && (
           <p className="mt-4">Nenhum resultado encontrado para "{cidade}".</p>
         )}
-
-
 
         {cidade && !loading && dados.length > 0 && (
           <>
@@ -874,6 +1093,116 @@ export default function EleicoesAnterioresPage() {
                 </Table>
               </div>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de Demandas das Lideranças */}
+        <Dialog open={modalDemandasOpen} onOpenChange={setModalDemandasOpen}>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Building className="h-5 w-5" />
+                {liderancaSelecionada === 'TODAS' 
+                  ? `Todas as Demandas do Município` 
+                  : `Demandas da Liderança: ${liderancaSelecionada}`
+                }
+                <Badge variant="outline" className="ml-2">
+                  {cidade}
+                </Badge>
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="mt-4">
+              {demandas.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Building className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <p>Nenhuma demanda encontrada para esta liderança.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-gray-600">
+                      Total de {demandas.length} demanda(s) encontrada(s)
+                    </p>
+                    <div className="text-sm text-gray-600">
+                      Valor total: {formatarValor(demandas.reduce((acc, curr) => acc + converterValorParaNumero(curr['VALOR ']), 0))}
+                    </div>
+                  </div>
+                  
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm border border-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left border-b border-gray-200">Data</th>
+                          <th className="px-4 py-3 text-left border-b border-gray-200">Status</th>
+                          {liderancaSelecionada === 'TODAS' && (
+                            <th className="px-4 py-3 text-left border-b border-gray-200">Liderança</th>
+                          )}
+                          <th className="px-4 py-3 text-left border-b border-gray-200">Solicitação</th>
+                          <th className="px-4 py-3 text-left border-b border-gray-200">Ação/Objeto</th>
+                          <th className="px-4 py-3 text-left border-b border-gray-200">Órgão</th>
+                          <th className="px-4 py-3 text-right border-b border-gray-200">Valor</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {demandas.map((demanda, index) => (
+                          <tr key={index} className="hover:bg-gray-50 border-b border-gray-100">
+                            <td className="px-4 py-3 border-r border-gray-100">
+                              {demanda['DATA DEMANDA']}
+                            </td>
+                            <td className="px-4 py-3 border-r border-gray-100">
+                              <div className={`inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full text-xs ${getStatusConfig(demanda.STATUS).color}`}>
+                                {getStatusConfig(demanda.STATUS).icon}
+                                {demanda.STATUS}
+                              </div>
+                            </td>
+                            {liderancaSelecionada === 'TODAS' && (
+                              <td className="px-4 py-3 border-r border-gray-100">
+                                <span className="text-sm font-medium text-gray-900">
+                                  {demanda['LIDERANÇA']}
+                                </span>
+                              </td>
+                            )}
+                            <td className="px-4 py-3 border-r border-gray-100 max-w-xs">
+                              <div className="truncate" title={demanda['SOLICITAÇÃO']}>
+                                {demanda['SOLICITAÇÃO']}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 border-r border-gray-100">
+                              {demanda['AÇÃO/OBJETO']}
+                            </td>
+                            <td className="px-4 py-3 border-r border-gray-100">
+                              {demanda['ÓRGAO ']}
+                            </td>
+                            <td className="px-4 py-3 text-right text-green-600 font-medium">
+                              {formatarValor(demanda['VALOR '])}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  
+                  {demandas.length > 0 && (
+                    <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                      <h4 className="font-medium text-gray-900 mb-2">Resumo</h4>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-gray-600">Total de demandas:</span>
+                          <span className="ml-2 font-medium">{demandas.length}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Valor total:</span>
+                          <span className="ml-2 font-medium text-green-600">
+                            {formatarValor(demandas.reduce((acc, curr) => acc + converterValorParaNumero(curr['VALOR ']), 0))}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </DialogContent>
         </Dialog>
 
