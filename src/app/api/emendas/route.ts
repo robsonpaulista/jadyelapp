@@ -60,24 +60,26 @@ export async function GET(req: Request) {
   }
 
   try {
-    if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY || !process.env.GOOGLE_SHEET_ID) {
-      console.error('Missing server configuration.');
-      return NextResponse.json({ sucesso: false, mensagem: 'Missing server configuration.' }, { status: 500 });
+    if (!process.env.EMENDAS_SHEETS_CLIENT_EMAIL || !process.env.EMENDAS_SHEETS_PRIVATE_KEY || !process.env.EMENDAS_SHEET_ID) {
+      console.error('Missing emendas configuration.');
+      return NextResponse.json({ sucesso: false, mensagem: 'Missing emendas configuration.' }, { status: 500 });
     }
 
     const auth = new GoogleAuth({
       credentials: {
-        client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-        private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+        client_email: process.env.EMENDAS_SHEETS_CLIENT_EMAIL,
+        private_key: process.env.EMENDAS_SHEETS_PRIVATE_KEY.replace(/\\n/g, '\n'),
       },
       scopes: ['https://www.googleapis.com/auth/spreadsheets'],
     });
 
     const sheets = google.sheets({ version: 'v4', auth });
     
+    const sheetName = process.env.EMENDAS_SHEET_NAME || 'Atualizado2025';
+    
     const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: 'EMENDAS_2025!A:Z',
+      spreadsheetId: process.env.EMENDAS_SHEET_ID,
+      range: `${sheetName}!A:Z`,
     });
 
     const rows = response.data.values || [];
