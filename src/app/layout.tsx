@@ -28,10 +28,10 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Desabilitar logs globalmente para proteção de dados
-  if (typeof window !== 'undefined') {
-    disableConsoleLogging();
-  }
+  // Desabilitação do console.log em produção
+  // if (typeof window !== 'undefined') {
+  //   disableConsoleLogging();
+  // }
   
   return (
     <html lang="pt-BR" className={inter.variable}>

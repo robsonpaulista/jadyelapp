@@ -9,7 +9,7 @@ const LS_CAMPAIGN_TYPES_KEY = 'dynamicsDb_campaignTypes';
 const EMENDAS_KEY = 'dbEmendas';
 
 // Local Storage keys
-const USER_KEY = 'authUser';
+const USER_KEY = 'user'; // Alterado para 'user' para compatibilidade com o sistema de login
 const APPLICATIONS_KEY = 'dbApplications';
 const PERMISSIONS_KEY = 'dbPermissions';
 
@@ -573,6 +573,8 @@ export const logout = (): void => {
   localStorage.removeItem('isLoggedIn');
   localStorage.removeItem(USER_KEY);
   localStorage.removeItem('userAuthenticated');
+  localStorage.removeItem('userPermissions');
+  localStorage.removeItem('lastLoginTime');
   
   // Limpar qualquer configuração do Instagram
   clearInstagramConfig();

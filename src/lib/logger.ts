@@ -47,7 +47,7 @@ export const disableConsoleLogging = () => {
   }
 };
 
-// Auto-executar na importação se necessário
-if (typeof window !== 'undefined' && disableLogs) {
-  disableConsoleLogging();
-} 
+// TEMPORARIAMENTE DESABILITADO - Auto-executar na importação se necessário
+// if (typeof window !== 'undefined' && disableLogs) {
+//   disableConsoleLogging();
+// } 

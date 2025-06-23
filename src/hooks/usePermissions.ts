@@ -21,68 +21,119 @@ export function usePermissions() {
   const pathname = usePathname();
 
   useEffect(() => {
-    const user = getCurrentUser() as User | null;
-    
-    if (!user) {
-      setIsLoading(false);
-      return;
-    }
+    try {
+      const user = getCurrentUser() as User | null;
+      
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
 
-    // Obtém o nível do usuário, com fallback para 'user' se não existir
-    const level = (user.level || 'user') as UserLevel;
-    
-    setUserLevel(level);
-    const userPermissions = getUserPermissions(level);
-    setPermissions(userPermissions);
-    
-    setIsLoading(false);
+      // Obtém o nível do usuário, com fallback para 'user' se não existir
+      const level = (user.level || 'user') as UserLevel;
+      
+      setUserLevel(level);
+      const userPermissions = getUserPermissions(level);
+      setPermissions(userPermissions);
+      
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Erro no usePermissions:', error);
+      // Em caso de erro, definir valores padrão seguros
+      setUserLevel('user');
+      setPermissions(getUserPermissions('user'));
+      setIsLoading(false);
+    }
   }, []);
 
   // Removendo o redirecionamento automático daqui para evitar loops
   // O redirecionamento será feito apenas no RouteGuard quando necessário
 
   const hasAccess = (route: string): boolean => {
-    if (!userLevel) return false;
-    
-    // Sempre permitir acesso à página inicial e login
-    if (route === '/' || route === '/login') return true;
-    
-    return hasRoutePermission(userLevel, route);
+    try {
+      if (!userLevel) return false;
+      
+      // Sempre permitir acesso à página inicial e login
+      if (route === '/' || route === '/login') return true;
+      
+      return hasRoutePermission(userLevel, route);
+    } catch (error) {
+      console.error('Erro em hasAccess:', error);
+      return false;
+    }
   };
 
   const hasMenuAccess = (menu: keyof UserPermissions['menuAccess']): boolean => {
-    if (!userLevel) return false;
-    return hasMenuPermission(userLevel, menu);
+    try {
+      if (!userLevel) {
+        return false;
+      }
+      const result = hasMenuPermission(userLevel, menu);
+      return result;
+    } catch (error) {
+      console.error('Erro em hasMenuAccess:', error);
+      return false;
+    }
   };
 
   const isAdmin = (): boolean => {
-    return userLevel === 'admin';
+    try {
+      return userLevel === 'admin';
+    } catch (error) {
+      console.error('Erro em isAdmin:', error);
+      return false;
+    }
   };
 
   const isUser = (): boolean => {
-    return userLevel === 'user';
+    try {
+      return userLevel === 'user';
+    } catch (error) {
+      console.error('Erro em isUser:', error);
+      return false;
+    }
   };
 
   const isGabineteEmendas = (): boolean => {
-    return userLevel === 'gabineteemendas';
+    try {
+      return userLevel === 'gabineteemendas';
+    } catch (error) {
+      console.error('Erro em isGabineteEmendas:', error);
+      return false;
+    }
   };
 
   const isGabineteJuridico = (): boolean => {
-    return userLevel === 'gabinetejuridico';
+    try {
+      return userLevel === 'gabinetejuridico';
+    } catch (error) {
+      console.error('Erro em isGabineteJuridico:', error);
+      return false;
+    }
   };
 
   const canAccessRoute = (route: string): boolean => {
-    return hasAccess(route);
+    try {
+      return hasAccess(route);
+    } catch (error) {
+      console.error('Erro em canAccessRoute:', error);
+      return false;
+    }
   };
 
   const getDefaultRoute = (): string => {
-    switch (userLevel) {
-      case 'gabineteemendas':
-        return '/consultar-tetos';
-      case 'gabinetejuridico':
-        return '/projetos';
-      default:
-        return '/painel-aplicacoes';
+    try {
+      switch (userLevel) {
+        case 'gabineteemendas':
+          return '/consultar-tetos';
+        case 'gabinetejuridico':
+          return '/projetos';
+        default:
+          return '/painel-aplicacoes';
+      }
+    } catch (error) {
+      console.error('Erro em getDefaultRoute:', error);
+      return '/painel-aplicacoes';
     }
   };
 

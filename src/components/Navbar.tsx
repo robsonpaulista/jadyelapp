@@ -95,39 +95,31 @@ export default function Navbar() {
     }
   };
 
-  // Filtra os menus baseado nas permissões do usuário
+  // Sistema de permissões
   const getVisibleMenus = () => {
+    if (isLoading) return []; // Não mostrar menus enquanto carrega
+    
     return MENUS.filter(menu => {
-      // Se não tem permissão definida, sempre mostra (caso do menu de configurações sem label)
-      if (!menu.permission) {
-        return hasMenuAccess('configuracoes');
-      }
+      // Se não tem permissão definida, mostrar sempre (como o ícone de configurações)
+      if (!menu.permission) return true;
       
+      // Verificar se tem acesso ao menu baseado no nível do usuário
       return hasMenuAccess(menu.permission);
     });
   };
 
-  // Filtra os submenus baseado no acesso às rotas
   const getVisibleSubmenus = (submenus: Submenu[] | undefined) => {
-    if (!submenus) return [];
+    if (isLoading || !submenus) return [];
     
-    return submenus.filter(submenu => hasAccess(submenu.href));
+    // Por enquanto, mostrar todos os submenus se o menu principal está visível
+    // Posteriormente podemos adicionar permissões específicas para submenus
+    return submenus;
   };
-
-  if (isLoading) {
-    return (
-      <nav className="bg-blue-600 flex items-center px-6 py-2 shadow z-[9998] relative">
-        <div className="h-10 w-10 rounded-full bg-gray-300 animate-pulse mr-4"></div>
-        <span className="text-white font-bold text-lg mr-8">Carregando...</span>
-      </nav>
-    );
-  }
 
   const visibleMenus = getVisibleMenus();
 
   return (
     <nav className="bg-blue-600 flex items-center px-6 py-2 shadow z-[9998] relative">
-      {/* Avatar do deputado - estilo igual à sidebar */}
       <Link href="/painel-aplicacoes" className="cursor-pointer">
         <div className="h-10 w-10 rounded-full shadow-xl border-4 border-white bg-gradient-to-r from-blue-50 to-blue-100 flex items-center justify-center overflow-hidden mr-4">
           <img src="/avatar-banner.png" alt="Deputado" className="w-full h-full object-contain" />
@@ -167,12 +159,19 @@ export default function Navbar() {
         {user && (
           <div className="mr-2">
             <p className="text-sm text-white">
-              Usuário: {user.name.split(' ')[0]}
+              Usuário: {user.name?.split(' ')[0] || (user as any).nome?.split(' ')[0] || user.email?.split('@')[0] || 'Admin'}
               {userLevel && (
                 <Badge variant="secondary" className="ml-2 text-xs">
                   {userLevel}
                 </Badge>
               )}
+            </p>
+          </div>
+        )}
+        {!user && (
+          <div className="mr-2">
+            <p className="text-sm text-white">
+              Usuário: Carregando...
             </p>
           </div>
         )}

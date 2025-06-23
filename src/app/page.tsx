@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { AuthProps } from '@/types/Auth';
 import { motion } from 'framer-motion';
 import { FiUser, FiLock, FiAlertCircle, FiMail, FiEye, FiEyeOff } from 'react-icons/fi';
-import { disableConsoleLogging } from '@/lib/logger';
+// import { disableConsoleLogging } from '@/lib/logger';
 import { auth, db } from '@/lib/firebase';
 import { signInWithEmailAndPassword, AuthError } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
@@ -19,11 +19,11 @@ export default function Home() {
   const [error, setError] = useState('');
   const router = useRouter();
 
+
+
   const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (typeof window !== 'undefined') {
-      disableConsoleLogging();
-    }
+    
     if (isSubmitting) return;
     
     setError('');
@@ -41,12 +41,10 @@ export default function Home() {
         throw new Error('Firebase não está configurado. Verifique as variáveis de ambiente.');
       }
       
-      console.log('🔥 Tentando login Firebase para:', email);
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
 
       if (firebaseUser) {
-        console.log('✅ Login Firebase bem-sucedido:', firebaseUser.uid);
         
         // Buscar dados adicionais do usuário no Firestore
         let userRole = 'admin'; // Perfil padrão para usuários logados
@@ -89,14 +87,6 @@ export default function Home() {
             userLevel = userDataFromDb.level || 'admin'; // Campo level para o sistema de permissões
             userName = userDataFromDb.name || userName; // Nome do usuário
             userPermissions = userDataFromDb.permissions || userPermissions;
-            console.log('📄 Dados do Firestore carregados:', { 
-              role: userRole, 
-              level: userLevel, 
-              name: userName, 
-              permissions: userPermissions 
-            });
-          } else {
-            console.log('📄 Usuário não encontrado no Firestore, usando permissões admin padrão');
           }
         } catch (firestoreError) {
           console.warn('⚠️ Erro ao acessar Firestore, usando permissões admin padrão:', firestoreError);
@@ -121,12 +111,20 @@ export default function Home() {
         localStorage.setItem('userPermissions', JSON.stringify(userData.permissions));
         localStorage.setItem('lastLoginTime', Date.now().toString());
         
-        console.log('🚀 Dados do usuário salvos:', userData);
-        console.log('🚀 Redirecionando para painel de aplicações');
+        // Detectar rota baseada no level
+        let targetRoute = '/painel-aplicacoes';
+        switch (userLevel) {
+          case 'gabineteemendas':
+            targetRoute = '/consultar-tetos';
+            break;
+          case 'gabinetejuridico':
+            targetRoute = '/projetos';
+            break;
+        }
         
         // Aguardar um momento para garantir que os dados foram salvos
         setTimeout(() => {
-          router.push('/painel-aplicacoes');
+          router.push(targetRoute);
         }, 100);
       } else {
         setError('Falha na autenticação. Usuário não encontrado.');

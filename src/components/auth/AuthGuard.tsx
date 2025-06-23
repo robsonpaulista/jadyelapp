@@ -15,11 +15,21 @@ const AuthGuard = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        // Usuário está logado no Firebase
         setUser(user);
         
-        // Buscar dados adicionais do usuário no Firestore
-        let userRole = 'admin'; // Perfil padrão para usuários logados
+        // Verificar se os dados já existem no localStorage (vindos do login)
+        const existingUserData = localStorage.getItem('user');
+        const isLoggedIn = localStorage.getItem('isLoggedIn');
+        
+        if (existingUserData && isLoggedIn === 'true') {
+          setLoading(false);
+          return;
+        }
+        
+        // Se não há dados, buscar no Firestore
+        let userRole = 'admin';
+        let userLevel = 'admin';
+        let userName = user.displayName || user.email || '';
         let userPermissions: string[] = [
           'painel-aplicacoes',
           'acoes',
@@ -45,7 +55,7 @@ const AuthGuard = ({ children }: { children: React.ReactNode }) => {
           'criaremendas',
           'dashboardemendas',
           'relatorios'
-        ]; // Todas as permissões por padrão
+        ];
 
         try {
           const userDocRef = doc(db, 'users', user.uid);
@@ -54,25 +64,25 @@ const AuthGuard = ({ children }: { children: React.ReactNode }) => {
           if (userDoc.exists()) {
             const userDataFromDb = userDoc.data();
             userRole = userDataFromDb.role || 'admin';
+            userLevel = userDataFromDb.level || 'admin';
+            userName = userDataFromDb.name || userName;
             userPermissions = userDataFromDb.permissions || userPermissions;
-            console.log('📄 Dados do Firestore carregados:', { role: userRole, permissions: userPermissions });
-          } else {
-            console.log('📄 Usuário não encontrado no Firestore, usando permissões admin padrão');
           }
         } catch (firestoreError) {
-          console.warn('⚠️ Erro ao acessar Firestore, usando permissões admin padrão:', firestoreError);
+          console.warn('Erro ao acessar Firestore:', firestoreError);
         }
         
-        // Salvar dados do usuário no localStorage para compatibilidade
+        // Salvar dados com estrutura compatível com sistema de permissões
         const userData = {
           id: user.uid,
           username: user.email || '',
-          nome: user.displayName || user.email || '',
+          nome: userName,
+          name: userName, // Campo obrigatório para sistema de permissões
           email: user.email || '',
           perfil: userRole,
-          role: userRole,
+          level: userLevel, // Campo obrigatório para sistema de permissões
           permissions: userPermissions,
-          token: '',
+          token: await user.getIdToken(),
         };
         
         localStorage.setItem('isLoggedIn', 'true');
@@ -80,12 +90,6 @@ const AuthGuard = ({ children }: { children: React.ReactNode }) => {
         localStorage.setItem('userAuthenticated', 'true');
         localStorage.setItem('userPermissions', JSON.stringify(userPermissions));
         localStorage.setItem('lastLoginTime', Date.now().toString());
-        
-        console.log('✅ Usuário configurado:', { 
-          email: user.email, 
-          role: userRole, 
-          permissionsCount: userPermissions.length 
-        });
         
         setLoading(false);
       } else {
@@ -100,7 +104,6 @@ const AuthGuard = ({ children }: { children: React.ReactNode }) => {
       }
     });
 
-    // Limpar o listener quando o componente for desmontado
     return () => unsubscribe();
   }, [router]);
 
@@ -115,7 +118,6 @@ const AuthGuard = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  // Se o usuário estiver logado, renderiza as páginas filhas
   return <>{children}</>;
 };
 
