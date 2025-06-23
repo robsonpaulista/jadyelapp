@@ -116,10 +116,14 @@ export default function ConsultarTetosPage() {
       if (municipio && municipio !== 'todos' && !municipio.includes('force_update')) {
         // Busca específica por município
         url += `?municipio=${encodeURIComponent(municipio)}`;
+      } else if (municipio && municipio.includes('&force_update=')) {
+        // Busca específica por município com force update
+        const [nomeMunicipio, forceParam] = municipio.split('&force_update=');
+        url += `?municipio=${encodeURIComponent(nomeMunicipio)}&${forceParam}`;
       } else {
         // Busca limitada para carregamento inicial
         url += '?limit=30';
-        // Se for força atualização, adicionar timestamp para quebrar cache
+        // Se for força atualização geral, adicionar timestamp para quebrar cache
         if (municipio && municipio.includes('force_update')) {
           url += `&${municipio}`;
         }
@@ -425,9 +429,15 @@ export default function ConsultarTetosPage() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => {
-                  // Forçar atualização limpando cache
+                  // Forçar atualização respeitando município selecionado
                   const timestamp = new Date().getTime();
-                  loadPropostas(`force_update=${timestamp}`);
+                  if (filter !== 'todos') {
+                    // Se há município selecionado, buscar só ele com force update
+                    loadPropostas(`${filter}&force_update=${timestamp}`);
+                  } else {
+                    // Se "todos", buscar geral com force update
+                    loadPropostas(`force_update=${timestamp}`);
+                  }
                 }}
                 className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-white hover:bg-gray-50 text-gray-700 cursor-pointer border-gray-200"
                 title="Atualizar dados (força nova busca)"
