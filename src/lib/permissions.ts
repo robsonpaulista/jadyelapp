@@ -67,7 +67,8 @@ export const ROUTE_PERMISSIONS: Record<UserLevel, string[]> = {
   gabineteemendas: [
     '/',
     '/painel-aplicacoes',
-    '/consultar-tetos'
+    '/consultar-tetos',
+    '/emendas2025'
   ],
   gabinetejuridico: [
     '/',
@@ -92,7 +93,7 @@ export const MENU_PERMISSIONS: Record<UserLevel, UserPermissions['menuAccess']> 
   },
   gabineteemendas: {
     leads: false,
-    municipios: false,
+    municipios: true,
     eleicoes: false,
     configuracoes: false
   },

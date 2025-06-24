@@ -24,12 +24,14 @@ O sistema de permissões foi implementado para controlar o acesso de usuários b
 - **Menus ocultos**: Municípios, Configurações
 
 ### Gabinete Emendas (`gabineteemendas`)
-- **Acesso**: Muito restrito, apenas consulta de tetos
+- **Acesso**: Restrito à área de emendas e consulta de tetos
 - **Páginas permitidas**:
   - Página inicial (`/`)
   - Painel de aplicações (`/painel-aplicacoes`)
   - Consultar Tetos (`/consultar-tetos`)
-- **Menus visíveis**: Nenhum menu principal
+  - Emendas 2025 (`/emendas2025`)
+- **Menus visíveis**: Municípios (apenas submenus permitidos)
+- **Submenus permitidos**: Consultar Tetos, Emendas 2025
 - **Redirecionamento**: Automaticamente direcionado para `/consultar-tetos`
 
 ### Gabinete Jurídico (`gabinetejuridico`)

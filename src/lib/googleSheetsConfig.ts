@@ -447,12 +447,12 @@ export async function ensureAtendimentosSheetExists(): Promise<GoogleSpreadsheet
           await doc.loadInfo();
           sheet = null;
         }
-            } catch (error) {
+      } catch (error) {
         console.log('Erro ao carregar cabeçalhos de atendimentos. Recriando aba...');
         if (sheet) {
-          await sheet.delete();
+        await sheet.delete();
         }
-
+        
         // Recarregar informações do documento após excluir
         await doc.loadInfo();
         sheet = null;

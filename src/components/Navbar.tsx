@@ -112,6 +112,13 @@ export default function Navbar() {
   const getVisibleSubmenus = (submenus: Submenu[] | undefined) => {
     if (isLoading || !submenus) return [];
     
+    // Para usuários gabineteemendas, filtrar apenas as rotas permitidas
+    if (userLevel === 'gabineteemendas') {
+      return submenus.filter(submenu => {
+        return submenu.href === '/consultar-tetos' || submenu.href === '/emendas2025';
+      });
+    }
+    
     // Por enquanto, mostrar todos os submenus se o menu principal está visível
     // Posteriormente podemos adicionar permissões específicas para submenus
     return submenus;

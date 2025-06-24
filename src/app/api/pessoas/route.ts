@@ -56,8 +56,8 @@ async function ensurePessoasSheetExists(): Promise<GoogleSpreadsheetWorksheet> {
       } catch (error) {
         console.log('Erro ao carregar cabeçalhos. Recriando aba...');
         if (sheet) {
-          await sheet.delete();
-          sheet = undefined;
+        await sheet.delete();
+        sheet = undefined;
         }
       }
     }

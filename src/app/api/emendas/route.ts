@@ -2,6 +2,8 @@ import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 import { apiCache } from '@/lib/apiCache';
 import { GoogleAuth } from 'google-auth-library';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, query, orderBy, limit, where } from 'firebase/firestore';
 
 interface EmendaRow {
   id: string;
@@ -18,126 +20,60 @@ interface EmendaRow {
   rowIndex: number;
 }
 
-export async function GET(req: Request) {
-  // Check for force refresh parameter in the URL
-  const url = new URL(req.url);
-  const forceRefresh = url.searchParams.get('forceRefresh') === 'true';
-  
-  const CACHE_KEY = 'emendas_data';
-  const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-  
-  // Check if we have cached data and not forcing refresh
-  const cachedData = !forceRefresh ? apiCache.get(CACHE_KEY) : null;
-  if (cachedData) {
-    return NextResponse.json({ sucesso: true, dados: cachedData }, { status: 200 });
-  }
-
-  // If force refresh was requested, clear the cache
-  if (forceRefresh) {
-    console.log('Forçando atualização de cache para emendas');
-    apiCache.delete(CACHE_KEY);
-  }
-
+export async function GET(request: Request) {
   try {
-    if (!process.env.EMENDAS_SHEETS_CLIENT_EMAIL || !process.env.EMENDAS_SHEETS_PRIVATE_KEY || !process.env.EMENDAS_SHEET_ID) {
-      console.error('Missing emendas configuration.');
-      return NextResponse.json({ sucesso: false, mensagem: 'Missing emendas configuration.' }, { status: 500 });
+    const { searchParams } = new URL(request.url);
+    const limitParam = searchParams.get('limit');
+    const municipio = searchParams.get('municipio');
+    const bloco = searchParams.get('bloco');
+
+    let q = query(collection(db, 'emendas'));
+    
+    // Aplicar filtros se fornecidos
+    if (municipio) {
+      q = query(q, where('municipioBeneficiario', '==', municipio));
+    }
+    
+    if (bloco) {
+      q = query(q, where('bloco', '==', bloco));
     }
 
-    const auth = new GoogleAuth({
-      credentials: {
-        client_email: process.env.EMENDAS_SHEETS_CLIENT_EMAIL,
-        private_key: process.env.EMENDAS_SHEETS_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    // Ordenar por valor indicado (decrescente)
+    q = query(q, orderBy('valorIndicado', 'desc'));
+
+    // Aplicar limite se fornecido
+    if (limitParam) {
+      const limitNumber = parseInt(limitParam, 10);
+      if (limitNumber > 0 && limitNumber <= 1000) {
+        q = query(q, limit(limitNumber));
+      }
+    }
+
+    const querySnapshot = await getDocs(q);
+    const emendas = [];
+
+    querySnapshot.forEach((doc) => {
+      emendas.push({
+        id: doc.id,
+        ...doc.data()
+      });
+    });
+
+    return NextResponse.json({
+      success: true,
+      count: emendas.length,
+      emendas
+    });
+
+  } catch (error) {
+    console.error('Erro ao buscar emendas:', error);
+    return NextResponse.json(
+      { 
+        error: 'Erro interno do servidor',
+        details: error instanceof Error ? error.message : 'Erro desconhecido'
       },
-      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-    });
-
-    const sheets = google.sheets({ version: 'v4', auth });
-    
-    const sheetName = process.env.EMENDAS_SHEET_NAME || 'Atualizado2025';
-    
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: process.env.EMENDAS_SHEET_ID,
-      range: `${sheetName}!A:Z`,
-    });
-
-    const rows = response.data.values || [];
-    
-    console.log(`Total de linhas na planilha: ${rows.length}`);
-    console.log('Primeiras 3 linhas:', rows.slice(0, 3));
-    
-    // Localizar onde começam os dados (procurar por "Emenda" no cabeçalho)
-    let headerRowIndex = -1;
-    let currentFase = '';
-    
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
-      if (row.some(cell => cell && cell.toString().toLowerCase().includes('emenda') && 
-                          row.some(c => c && c.toString().toLowerCase().includes('município')))) {
-        headerRowIndex = i;
-        break;
-      }
-    }
-    
-    if (headerRowIndex === -1) {
-      console.error('Cabeçalho da tabela não encontrado');
-      return NextResponse.json({ sucesso: false, mensagem: 'Estrutura da planilha não reconhecida' }, { status: 500 });
-    }
-    
-    console.log(`Cabeçalho encontrado na linha ${headerRowIndex + 1}`);
-    console.log('Cabeçalho:', rows[headerRowIndex]);
-    
-    // Processar dados a partir da linha após o cabeçalho
-    const dataRows = rows.slice(headerRowIndex + 1);
-    const emendas: EmendaRow[] = [];
-    
-    for (let i = 0; i < dataRows.length; i++) {
-      const row = dataRows[i];
-      
-      // Verificar se é uma linha de fase (contém "fase" no texto)
-      if (row[0] && row[0].toString().toLowerCase().includes('fase')) {
-        currentFase = row[0].toString();
-        continue;
-      }
-      
-      // Pular linhas vazias ou que não tem dados suficientes
-      if (!row[0] || row.length < 4) {
-        continue;
-      }
-      
-      // Mapear os dados baseado na estrutura da planilha mostrada
-      // Baseado na imagem: Emenda | Município/Beneficiário | Valor Indicado | Objeto | Valor a Empenhar | Lideranças | Classificação | Natureza | Status
-      const emenda: EmendaRow = {
-        id: row[0] || `emenda_${i}`,
-        emenda: row[0] || '', // Coluna A - Emenda
-        municipio: row[1] || '', // Coluna B - Município/Beneficiário  
-        valor_indicado: parseFloat(String(row[2] || '0').replace(/[^\d,.-]/g, '').replace(',', '.')) || 0, // Coluna C - Valor Indicado
-        objeto: row[3] || '', // Coluna D - Objeto
-        valor_empenhado: parseFloat(String(row[4] || '0').replace(/[^\d,.-]/g, '').replace(',', '.')) || 0, // Coluna E - Valor a Empenhar
-        liderancas: row[5] || '', // Coluna F - Lideranças
-        classificacao_emenda: row[6] || '', // Coluna G - Classificação
-        natureza: row[7] || 'SEM NATUREZA', // Coluna H - Natureza
-        status: row[8] || 'ok', // Coluna I - Status
-        fase: currentFase || 'Sem fase definida',
-        rowIndex: headerRowIndex + 2 + i // Índice real na planilha
-      };
-      
-      emendas.push(emenda);
-    }
-    
-         console.log(`${emendas.length} emendas processadas`);
-     console.log('Primeira emenda:', emendas[0]);
-     console.log('Fases encontradas:', Array.from(new Set(emendas.map(e => e.fase))));
-
-     // Cache the results
-    apiCache.set(CACHE_KEY, emendas, CACHE_TTL);
-
-    // Retornar os dados
-    return NextResponse.json({ sucesso: true, dados: emendas }, { status: 200 });
-
-  } catch (error: any) {
-    console.error('Erro ao buscar dados:', error);
-    return NextResponse.json({ sucesso: false, mensagem: error.message }, { status: 500 });
+      { status: 500 }
+    );
   }
 }
 

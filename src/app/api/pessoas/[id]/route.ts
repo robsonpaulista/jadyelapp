@@ -81,7 +81,7 @@ export async function GET(
           pessoa[header] = row.get(header) || '';
         });
       } else {
-        console.error('Erro: headerValues não encontrado na planilha');
+      console.error('Erro: headerValues não encontrado na planilha');
         // Usar os headers padrão definidos na configuração
         PESSOAS_CONFIG.HEADERS.forEach(header => {
           pessoa[header] = row.get(header) || '';
@@ -193,23 +193,23 @@ export async function PUT(
           pessoaAtualizada[header] = row.get(header) || '';
         });
       } else {
-        console.log('Aviso: sheet ou headerValues não disponível. Usando campos padrão.');
-        
-        // Usar os headers padrão da configuração
-        PESSOAS_CONFIG.HEADERS.forEach(header => {
-          pessoaAtualizada[header] = row.get(header) || '';
-        });
-        
-        // Incluir os campos que acabamos de atualizar
-        Object.keys(data).forEach(key => {
-          if (camposAtualizaveis.includes(key)) {
-            pessoaAtualizada[key] = data[key];
-          }
-        });
-        
-        // Garantir que temos o ID e campos de auditoria
-        pessoaAtualizada.id = params.id;
-        pessoaAtualizada.atualizadoEm = new Date().toISOString();
+      console.log('Aviso: sheet ou headerValues não disponível. Usando campos padrão.');
+      
+      // Usar os headers padrão da configuração
+      PESSOAS_CONFIG.HEADERS.forEach(header => {
+        pessoaAtualizada[header] = row.get(header) || '';
+      });
+      
+      // Incluir os campos que acabamos de atualizar
+      Object.keys(data).forEach(key => {
+        if (camposAtualizaveis.includes(key)) {
+          pessoaAtualizada[key] = data[key];
+        }
+      });
+      
+      // Garantir que temos o ID e campos de auditoria
+      pessoaAtualizada.id = params.id;
+      pessoaAtualizada.atualizadoEm = new Date().toISOString();
       }
     } catch (sheetError) {
       console.error('Erro ao acessar sheet:', sheetError);
