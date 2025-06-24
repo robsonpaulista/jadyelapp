@@ -5,6 +5,7 @@ import { GoogleAuth } from 'google-auth-library';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, query, orderBy, limit, where } from 'firebase/firestore';
 
+// Interface para o tipo de dados das emendas
 interface EmendaRow {
   id: string;
   emenda: string;
@@ -20,26 +21,52 @@ interface EmendaRow {
   rowIndex: number;
 }
 
+// Interface específica para os dados Firebase
+interface EmendaFirebase {
+  id: string;
+  bloco?: string;
+  emenda?: string;
+  municipioBeneficiario?: string;
+  funcional?: string;
+  gnd?: string;
+  valorIndicado?: number;
+  objeto?: string;
+  alteracao?: string;
+  numeroProposta?: string;
+  valorEmpenhado?: number;
+  empenho?: string;
+  dataEmpenho?: string;
+  portariaConvenioContrato?: string;
+  valorAEmpenhar?: number;
+  pagamento?: string;
+  valorPago?: number;
+  valorASerPago?: number;
+  liderancas?: string;
+  createdAt?: any;
+  updatedAt?: any;
+  [key: string]: any;
+}
+
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const limitParam = searchParams.get('limit');
-    const municipio = searchParams.get('municipio');
-    const bloco = searchParams.get('bloco');
-
-    let q = query(collection(db, 'emendas'));
+    console.log('🔥 Buscando emendas do Firebase...');
     
+    const url = new URL(request.url);
+    const limitParam = url.searchParams.get('limite');
+    const municipioParam = url.searchParams.get('municipio');
+    const blocoParam = url.searchParams.get('bloco');
+
+    // Query base
+    let q = query(collection(db, 'emendas'), orderBy('valorIndicado', 'desc'));
+
     // Aplicar filtros se fornecidos
-    if (municipio) {
-      q = query(q, where('municipioBeneficiario', '==', municipio));
-    }
-    
-    if (bloco) {
-      q = query(q, where('bloco', '==', bloco));
+    if (municipioParam && municipioParam !== 'todos') {
+      q = query(q, where('municipioBeneficiario', '==', municipioParam));
     }
 
-    // Ordenar por valor indicado (decrescente)
-    q = query(q, orderBy('valorIndicado', 'desc'));
+    if (blocoParam && blocoParam !== 'todos') {
+      q = query(q, where('bloco', '==', blocoParam));
+    }
 
     // Aplicar limite se fornecido
     if (limitParam) {
@@ -50,13 +77,13 @@ export async function GET(request: Request) {
     }
 
     const querySnapshot = await getDocs(q);
-    const emendas = [];
+    const emendas: EmendaFirebase[] = [];
 
     querySnapshot.forEach((doc) => {
       emendas.push({
         id: doc.id,
         ...doc.data()
-      });
+      } as EmendaFirebase);
     });
 
     return NextResponse.json({
