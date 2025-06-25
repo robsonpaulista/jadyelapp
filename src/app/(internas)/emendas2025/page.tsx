@@ -127,10 +127,16 @@ export default function Emendas2025() {
   };
 
   const handleCampoEdicao = (campo: keyof Emenda, valor: any) => {
-    setDadosEdicao(prev => ({
-      ...prev,
-      [campo]: valor
-    }));
+    setDadosEdicao(prev => {
+      let novo = { ...prev, [campo]: valor };
+      if (campo === 'valorEmpenhado' || campo === 'valorIndicado') {
+        const valorIndicado = campo === 'valorIndicado' ? valor : novo.valorIndicado ?? 0;
+        const valorEmpenhado = campo === 'valorEmpenhado' ? valor : novo.valorEmpenhado ?? 0;
+        novo.valorAEmpenhar = (valorIndicado || 0) - (valorEmpenhado || 0);
+        if (novo.valorAEmpenhar < 0) novo.valorAEmpenhar = 0;
+      }
+      return novo;
+    });
   };
 
   const salvarEdicao = async () => {
@@ -329,6 +335,29 @@ export default function Emendas2025() {
   const municipiosDisponiveis = Array.from(new Set(emendas.map(e => e.municipioBeneficiario).filter((municipio): municipio is string => Boolean(municipio)))).sort();
   const emendasDisponiveis = Array.from(new Set(emendas.map(e => e.emenda).filter((emenda): emenda is string => Boolean(emenda)))).sort();
 
+  // Função utilitária para corrigir todos os valores a empenhar já preenchidos
+  const corrigirValoresAEmpenhar = async () => {
+    if (!emendas.length) return;
+    let count = 0;
+    for (const emenda of emendas) {
+      const valorIndicado = emenda.valorIndicado || 0;
+      const valorEmpenhado = emenda.valorEmpenhado || 0;
+      const valorAEmpenharCorreto = Math.max(valorIndicado - valorEmpenhado, 0);
+      if (emenda.valorAEmpenhar !== valorAEmpenharCorreto) {
+        try {
+          const response = await fetch(`/api/emendas/${emenda.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...emenda, valorAEmpenhar: valorAEmpenharCorreto, updatedAt: new Date().toISOString() })
+          });
+          if (response.ok) count++;
+        } catch (e) { /* ignorar erro individual */ }
+      }
+    }
+    toast.success(`${count} emendas corrigidas!`);
+    fetchEmendas();
+  };
+
   if (isLoading) {
     return (
       <div className="flex-1 flex flex-col min-h-screen">
@@ -400,6 +429,13 @@ export default function Emendas2025() {
           </div>
           <div className="flex items-center gap-2">
             <Button
+              onClick={corrigirValoresAEmpenhar}
+              variant="destructive"
+              size="sm"
+            >
+              Corrigir valores a empenhar
+            </Button>
+            <Button
               onClick={expandirTodosBlocos}
               variant="outline"
               size="sm"
@@ -432,43 +468,6 @@ export default function Emendas2025() {
 
       {/* Conteúdo principal */}
       <main className="p-6 w-full flex-1">
-        {/* Resumo geral */}
-        <div className="mb-6">
-          <div className="p-4">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Resumo Geral</h2>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <DollarSign className="h-4 w-4 text-gray-600" />
-                  <p className="text-sm font-medium text-gray-900">Valor Total Indicado</p>
-                </div>
-                <p className="text-base font-semibold text-gray-900">{formatarValor(totaisGerais.valorIndicado)}</p>
-              </div>
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <TrendingUp className="h-4 w-4 text-gray-600" />
-                  <p className="text-sm font-medium text-gray-900">Valor Total a Empenhar</p>
-                </div>
-                <p className="text-base font-semibold text-gray-900">{formatarValor(totaisGerais.valorAEmpenhar)}</p>
-              </div>
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <CheckCircle className="h-4 w-4 text-gray-600" />
-                  <p className="text-sm font-medium text-gray-900">Valor Total Empenhado</p>
-                </div>
-                <p className="text-base font-semibold text-gray-900">{formatarValor(totaisGerais.valorEmpenhado)}</p>
-              </div>
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <CreditCard className="h-4 w-4 text-gray-600" />
-                  <p className="text-sm font-medium text-gray-900">Valor Total Pago</p>
-                </div>
-                <p className="text-base font-semibold text-gray-900">{formatarValor(totaisGerais.valorPago)}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Filtros */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
           <div className="p-4">
@@ -538,6 +537,43 @@ export default function Emendas2025() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Resumo geral */}
+        <div className="mb-6">
+          <div className="p-4">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Resumo Geral</h2>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <DollarSign className="h-4 w-4 text-gray-600" />
+                  <p className="text-sm font-medium text-gray-900">Valor Total Indicado</p>
+                </div>
+                <p className="text-base font-semibold text-gray-900">{formatarValor(totaisGerais.valorIndicado)}</p>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <TrendingUp className="h-4 w-4 text-gray-600" />
+                  <p className="text-sm font-medium text-gray-900">Valor Total a Empenhar</p>
+                </div>
+                <p className="text-base font-semibold text-gray-900">{formatarValor(totaisGerais.valorAEmpenhar)}</p>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <CheckCircle className="h-4 w-4 text-gray-600" />
+                  <p className="text-sm font-medium text-gray-900">Valor Total Empenhado</p>
+                </div>
+                <p className="text-base font-semibold text-gray-900">{formatarValor(totaisGerais.valorEmpenhado)}</p>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <CreditCard className="h-4 w-4 text-gray-600" />
+                  <p className="text-sm font-medium text-gray-900">Valor Total Pago</p>
+                </div>
+                <p className="text-base font-semibold text-gray-900">{formatarValor(totaisGerais.valorPago)}</p>
               </div>
             </div>
           </div>
