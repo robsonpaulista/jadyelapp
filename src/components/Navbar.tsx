@@ -136,11 +136,11 @@ export default function Navbar() {
       <nav className="bg-blue-600 flex items-center px-4 lg:px-6 py-2 shadow z-[9998] relative">
         {/* Logo e Título */}
         <div className="flex items-center flex-shrink-0">
-          <Link href="/painel-aplicacoes" className="cursor-pointer">
+      <Link href="/painel-aplicacoes" className="cursor-pointer">
             <div className="h-8 w-8 lg:h-10 lg:w-10 rounded-full shadow-xl border-2 lg:border-4 border-white bg-gradient-to-r from-blue-50 to-blue-100 flex items-center justify-center overflow-hidden mr-2 lg:mr-4">
-              <img src="/avatar-banner.png" alt="Deputado" className="w-full h-full object-contain" />
-            </div>
-          </Link>
+          <img src="/avatar-banner.png" alt="Deputado" className="w-full h-full object-contain" />
+        </div>
+      </Link>
           <span className="text-white font-bold text-sm lg:text-lg mr-2 lg:mr-8">
             Dynamics Integration
           </span>
@@ -153,10 +153,10 @@ export default function Navbar() {
             
             return (
               <div key={menu.label || 'config'} className="relative group">
-                <Link href={menu.href} className="flex items-center gap-2 text-white font-medium px-3 py-2 rounded hover:bg-blue-700 transition whitespace-nowrap">
-                  {menu.icon}
-                  {menu.label}
-                </Link>
+            <Link href={menu.href} className="flex items-center gap-2 text-white font-medium px-3 py-2 rounded hover:bg-blue-700 transition whitespace-nowrap">
+              {menu.icon}
+              {menu.label}
+            </Link>
                 {visibleSubmenus.length > 0 && (
                   <div className="absolute left-0 mt-0 bg-white rounded shadow-lg py-2 min-w-[220px] invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 z-[9999]">
                     <div className="absolute top-0 left-0 w-full h-2 bg-transparent -translate-y-full"></div>
@@ -167,12 +167,12 @@ export default function Navbar() {
                         className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-blue-50 whitespace-nowrap"
                       >
                         {sub.icon}
-                        {sub.label}
-                      </Link>
-                    ))}
-                  </div>
-                )}
+                    {sub.label}
+                  </Link>
+                ))}
               </div>
+            )}
+          </div>
             );
           })}
         </div>
@@ -289,8 +289,8 @@ export default function Navbar() {
                             {sub.icon}
                             {sub.label}
                           </Link>
-                        ))}
-                      </div>
+        ))}
+      </div>
                     )}
                   </div>
                 );

@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { carregarChapas, atualizarChapa, excluirChapa, Chapa } from "@/services/chapasService";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 const initialPartidos = [
   {
@@ -88,11 +90,14 @@ export default function ChapasPage() {
 
   const [partidos, setPartidos] = useState(initialPartidos);
   const [quociente, setQuociente] = useState(initialQuociente);
-  const [editVoto, setEditVoto] = useState<{ partidoIdx: number; candIdx: number } | null>(null);
-  const [hoveredRow, setHoveredRow] = useState<{ partidoIdx: number; candIdx: number } | null>(null);
-  const [editingName, setEditingName] = useState<{ partidoIdx: number; candIdx: number; originalName: string } | null>(null);
-
-
+  const [editVoto, setEditVoto] = useState<{ partidoIdx: number; candidatoNome: string } | null>(null);
+  const [hoveredRow, setHoveredRow] = useState<{ partidoIdx: number; candidatoNome: string } | null>(null);
+  const [editingName, setEditingName] = useState<{ partidoIdx: number; candidatoNome: string; originalName: string } | null>(null);
+  
+  // Estados para adicionar novo candidato
+  const [dialogAberto, setDialogAberto] = useState<number | null>(null);
+  const [novoCandidato, setNovoCandidato] = useState({ nome: '', votos: 0 });
+  const [salvandoCandidato, setSalvandoCandidato] = useState(false);
 
   // Carregar dados do Firestore ao abrir a página
   useEffect(() => {
@@ -119,11 +124,11 @@ export default function ChapasPage() {
   }, []);
 
   // Função para atualizar apenas o estado local (sem salvar no Firestore)
-  const updateLocalState = (partidoIdx: number, candIdx: number, field: 'nome' | 'votos', value: string) => {
+  const updateLocalState = (partidoIdx: number, candidatoNome: string, field: 'nome' | 'votos', value: string) => {
     setPartidos(prev => prev.map((p, i) => {
       if (i !== partidoIdx) return p;
-      const candidatos = p.candidatos.map((c, j) => {
-        if (j !== candIdx) return c;
+      const candidatos = p.candidatos.map((c) => {
+        if (c.nome !== candidatoNome) return c;
         if (field === 'nome') {
           return { ...c, nome: value };
         }
@@ -136,17 +141,18 @@ export default function ChapasPage() {
   };
 
   // Função para iniciar edição de nome
-  const startEditingName = (partidoIdx: number, candIdx: number) => {
-    const originalName = partidos[partidoIdx].candidatos[candIdx].nome;
-    setEditingName({ partidoIdx, candIdx, originalName });
+  const startEditingName = (partidoIdx: number, candidatoNome: string) => {
+    setEditingName({ partidoIdx, candidatoNome, originalName: candidatoNome });
   };
 
   // Função para salvar nome no Firestore
-  const saveNameChange = async (partidoIdx: number, candIdx: number) => {
+  const saveNameChange = async (partidoIdx: number, candidatoNome: string) => {
     if (!editingName) return;
     
     const partido = partidos[partidoIdx];
-    const candidato = partido.candidatos[candIdx];
+    const candidato = partido.candidatos.find(c => c.nome === candidatoNome);
+    if (!candidato) return;
+    
     const originalName = editingName.originalName;
     const newName = candidato.nome;
 
@@ -162,16 +168,17 @@ export default function ChapasPage() {
     } catch (error) {
       console.error('Erro ao salvar nome:', error);
       // Reverter para o nome original em caso de erro
-      updateLocalState(partidoIdx, candIdx, 'nome', originalName);
+      updateLocalState(partidoIdx, candidatoNome, 'nome', originalName);
     } finally {
       setEditingName(null);
     }
   };
 
   // Função para salvar votos no Firestore
-  const saveVotosChange = async (partidoIdx: number, candIdx: number, votos: number) => {
+  const saveVotosChange = async (partidoIdx: number, candidatoNome: string, votos: number) => {
     const partido = partidos[partidoIdx];
-    const candidato = partido.candidatos[candIdx];
+    const candidato = partido.candidatos.find(c => c.nome === candidatoNome);
+    if (!candidato) return;
     
     try {
       await atualizarChapa(partido.nome, candidato.nome, votos);
@@ -185,9 +192,10 @@ export default function ChapasPage() {
   const getProjecaoEleitos = (votosProjetados: number) => (votosProjetados / quociente).toFixed(2);
 
   // Função para excluir candidato
-  const handleExcluirCandidato = async (partidoIdx: number, candIdx: number) => {
+  const handleExcluirCandidato = async (partidoIdx: number, candidatoNome: string) => {
     const partido = partidos[partidoIdx];
-    const candidato = partido.candidatos[candIdx];
+    const candidato = partido.candidatos.find(c => c.nome === candidatoNome);
+    if (!candidato) return;
     
     try {
       await excluirChapa(partido.nome, candidato.nome);
@@ -195,12 +203,46 @@ export default function ChapasPage() {
         if (i !== partidoIdx) return p;
         return {
           ...p,
-          candidatos: p.candidatos.filter((_, j) => j !== candIdx)
+          candidatos: p.candidatos.filter(c => c.nome !== candidatoNome)
         };
       }));
     } catch (error) {
       console.error('Erro ao excluir candidato:', error);
       alert('Erro ao excluir candidato. Tente novamente.');
+    }
+  };
+
+  // Função para adicionar novo candidato
+  const handleAdicionarCandidato = async (partidoIdx: number) => {
+    if (!novoCandidato.nome.trim()) {
+      alert('Por favor, digite o nome do candidato');
+      return;
+    }
+
+    setSalvandoCandidato(true);
+    const partido = partidos[partidoIdx];
+    
+    try {
+      // Salvar no Firestore
+      await atualizarChapa(partido.nome, novoCandidato.nome, novoCandidato.votos);
+      
+      // Atualizar estado local
+      setPartidos(prev => prev.map((p, i) => {
+        if (i !== partidoIdx) return p;
+        return {
+          ...p,
+          candidatos: [...p.candidatos, { nome: novoCandidato.nome, votos: novoCandidato.votos }]
+        };
+      }));
+
+      // Limpar formulário e fechar dialog
+      setNovoCandidato({ nome: '', votos: 0 });
+      setDialogAberto(null);
+    } catch (error) {
+      console.error('Erro ao adicionar candidato:', error);
+      alert('Erro ao adicionar candidato. Tente novamente.');
+    } finally {
+      setSalvandoCandidato(false);
     }
   };
 
@@ -248,10 +290,12 @@ export default function ChapasPage() {
                   <div className="w-full flex flex-col flex-1">
                     <table className="w-full text-xs mb-2">
                       <tbody>
-                        {partido.candidatos.map((c, idx) => (
+                        {partido.candidatos
+                          .sort((a, b) => b.votos - a.votos) // Ordenar por votos (maior para menor)
+                          .map((c, idx) => (
                           <tr 
-                            key={idx}
-                            onMouseEnter={() => setHoveredRow({ partidoIdx: pIdx, candIdx: idx })}
+                            key={c.nome}
+                            onMouseEnter={() => setHoveredRow({ partidoIdx: pIdx, candidatoNome: c.nome })}
                             onMouseLeave={() => setHoveredRow(null)}
                             className="group relative hover:bg-gray-50 transition-colors"
                           >
@@ -259,12 +303,12 @@ export default function ChapasPage() {
                               <input
                                 type="text"
                                 value={c.nome}
-                                onFocus={() => startEditingName(pIdx, idx)}
+                                onFocus={() => startEditingName(pIdx, c.nome)}
                                 onChange={e => {
                                   const value = e.target.value;
-                                  updateLocalState(pIdx, idx, 'nome', value);
+                                  updateLocalState(pIdx, c.nome, 'nome', value);
                                 }}
-                                onBlur={() => saveNameChange(pIdx, idx)}
+                                onBlur={() => saveNameChange(pIdx, c.nome)}
                                 onKeyDown={e => {
                                   if (e.key === 'Enter') {
                                     e.currentTarget.blur(); // Isso vai disparar o onBlur
@@ -274,7 +318,7 @@ export default function ChapasPage() {
                               />
                             </td>
                             <td className="text-right whitespace-nowrap font-normal align-top">
-                              {editVoto && editVoto.partidoIdx === pIdx && editVoto.candIdx === idx ? (
+                              {editVoto && editVoto.partidoIdx === pIdx && editVoto.candidatoNome === c.nome ? (
                                 <input
                                   type="number"
                                   min={0}
@@ -282,15 +326,15 @@ export default function ChapasPage() {
                                   autoFocus
                                   onChange={e => {
                                     const value = e.target.value;
-                                    updateLocalState(pIdx, idx, 'votos', value);
+                                    updateLocalState(pIdx, c.nome, 'votos', value);
                                   }}
                                   onBlur={() => {
-                                    saveVotosChange(pIdx, idx, c.votos);
+                                    saveVotosChange(pIdx, c.nome, c.votos);
                                     setEditVoto(null);
                                   }}
                                   onKeyDown={e => {
                                     if (e.key === 'Enter') {
-                                      saveVotosChange(pIdx, idx, c.votos);
+                                      saveVotosChange(pIdx, c.nome, c.votos);
                                       setEditVoto(null);
                                     }
                                   }}
@@ -300,14 +344,14 @@ export default function ChapasPage() {
                               ) : (
                                 <span
                                   className="cursor-pointer select-text"
-                                  onClick={() => setEditVoto({ partidoIdx: pIdx, candIdx: idx })}
+                                  onClick={() => setEditVoto({ partidoIdx: pIdx, candidatoNome: c.nome })}
                                 >
                                   {Number(c.votos).toLocaleString('pt-BR')}
                                 </span>
                               )}
                             </td>
                             <td className="pl-2 text-right whitespace-nowrap font-normal align-top w-8">
-                              {hoveredRow?.partidoIdx === pIdx && hoveredRow?.candIdx === idx && (
+                              {hoveredRow?.partidoIdx === pIdx && hoveredRow?.candidatoNome === c.nome && (
                                 <AlertDialog>
                                   <AlertDialogTrigger asChild>
                                     <Button
@@ -329,7 +373,7 @@ export default function ChapasPage() {
                                     <AlertDialogFooter>
                                       <AlertDialogCancel>Cancelar</AlertDialogCancel>
                                       <AlertDialogAction
-                                        onClick={() => handleExcluirCandidato(pIdx, idx)}
+                                        onClick={() => handleExcluirCandidato(pIdx, c.nome)}
                                         className="bg-red-500 hover:bg-red-600 text-white"
                                       >
                                         Excluir
@@ -344,6 +388,74 @@ export default function ChapasPage() {
                       </tbody>
                     </table>
                   </div>
+                  
+                  {/* Botão para adicionar novo candidato */}
+                  <div className="w-full mt-2 mb-3">
+                    <Dialog open={dialogAberto === pIdx} onOpenChange={(open) => {
+                      if (!open) {
+                        setDialogAberto(null);
+                        setNovoCandidato({ nome: '', votos: 0 });
+                      }
+                    }}>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full h-8 text-xs border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-50"
+                          onClick={() => setDialogAberto(pIdx)}
+                        >
+                          <Plus className="h-3 w-3 mr-1" />
+                          Adicionar Candidato
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                          <DialogTitle>Adicionar Candidato - {partido.nome}</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">Nome do Candidato</label>
+                            <Input
+                              placeholder="Digite o nome do candidato"
+                              value={novoCandidato.nome}
+                              onChange={(e) => setNovoCandidato(prev => ({ ...prev, nome: e.target.value }))}
+                              disabled={salvandoCandidato}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">Votos Projetados</label>
+                            <Input
+                              type="number"
+                              placeholder="0"
+                              min="0"
+                              value={novoCandidato.votos}
+                              onChange={(e) => setNovoCandidato(prev => ({ ...prev, votos: parseInt(e.target.value) || 0 }))}
+                              disabled={salvandoCandidato}
+                            />
+                          </div>
+                          <div className="flex gap-2 justify-end">
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                setDialogAberto(null);
+                                setNovoCandidato({ nome: '', votos: 0 });
+                              }}
+                              disabled={salvandoCandidato}
+                            >
+                              Cancelar
+                            </Button>
+                            <Button
+                              onClick={() => handleAdicionarCandidato(pIdx)}
+                              disabled={salvandoCandidato || !novoCandidato.nome.trim()}
+                            >
+                              {salvandoCandidato ? 'Salvando...' : 'Adicionar'}
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+
                   <div className="w-full mt-auto pt-2">
                     <div className="font-bold text-xs mb-0.5 text-center">VOTOS PROJETADOS</div>
                     <div className="text-base font-extrabold mb-1 text-center">{getVotosProjetados(partido.candidatos).toLocaleString('pt-BR')}</div>

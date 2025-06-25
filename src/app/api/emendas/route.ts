@@ -55,10 +55,10 @@ export async function GET(request: Request) {
     const limitParam = url.searchParams.get('limite');
     const municipioParam = url.searchParams.get('municipio');
     const blocoParam = url.searchParams.get('bloco');
-
+    
     // Query base
     let q = query(collection(db, 'emendas'), orderBy('valorIndicado', 'desc'));
-
+      
     // Aplicar filtros se fornecidos
     if (municipioParam && municipioParam !== 'todos') {
       q = query(q, where('municipioBeneficiario', '==', municipioParam));
