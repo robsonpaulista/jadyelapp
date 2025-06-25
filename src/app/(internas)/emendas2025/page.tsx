@@ -518,7 +518,7 @@ export default function Emendas2025() {
                   <SelectTrigger>
                     <SelectValue placeholder="Todos os blocos" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-[200px] overflow-y-auto">
                     <SelectItem value="TODOS_BLOCOS">Todos os blocos</SelectItem>
                     {blocosDisponiveis.map(bloco => (
                       <SelectItem key={bloco} value={bloco}>{bloco}</SelectItem>
@@ -532,7 +532,7 @@ export default function Emendas2025() {
                   <SelectTrigger>
                     <SelectValue placeholder="Todos os municípios" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-[300px] overflow-y-auto">
                     <SelectItem value="TODOS_MUNICIPIOS">Todos os municípios</SelectItem>
                     {municipiosDisponiveis.map(municipio => (
                       <SelectItem key={municipio} value={municipio}>{municipio}</SelectItem>
@@ -546,7 +546,7 @@ export default function Emendas2025() {
                   <SelectTrigger>
                     <SelectValue placeholder="Todas as emendas" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-[300px] overflow-y-auto">
                     <SelectItem value="TODAS_EMENDAS">Todas as emendas</SelectItem>
                     {emendasDisponiveis.map(emenda => (
                       <SelectItem key={emenda} value={emenda}>{emenda}</SelectItem>
