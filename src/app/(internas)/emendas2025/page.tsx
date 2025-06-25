@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Loader2, RefreshCw, Search, Filter, ChevronDown, ChevronRight } from 'lucide-react';
+import { Loader2, RefreshCw, Search, Filter, ChevronDown, ChevronRight, DollarSign, TrendingUp, CheckCircle, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -433,25 +433,37 @@ export default function Emendas2025() {
       {/* Conteúdo principal */}
       <main className="p-6 w-full flex-1">
         {/* Resumo geral */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+        <div className="mb-6">
           <div className="p-4">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Resumo Geral</h2>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-green-50 p-4 rounded-lg">
-                <p className="text-sm text-green-600 font-medium">Valor Total Indicado</p>
-                <p className="text-2xl font-bold text-green-900">{formatarValor(totaisGerais.valorIndicado)}</p>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <DollarSign className="h-4 w-4 text-gray-600" />
+                  <p className="text-sm font-medium text-gray-900">Valor Total Indicado</p>
+                </div>
+                <p className="text-base font-semibold text-gray-900">{formatarValor(totaisGerais.valorIndicado)}</p>
               </div>
-              <div className="bg-purple-50 p-4 rounded-lg">
-                <p className="text-sm text-purple-600 font-medium">Valor Total a Empenhar</p>
-                <p className="text-2xl font-bold text-purple-900">{formatarValor(totaisGerais.valorAEmpenhar)}</p>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <TrendingUp className="h-4 w-4 text-gray-600" />
+                  <p className="text-sm font-medium text-gray-900">Valor Total a Empenhar</p>
+                </div>
+                <p className="text-base font-semibold text-gray-900">{formatarValor(totaisGerais.valorAEmpenhar)}</p>
               </div>
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <p className="text-sm text-blue-600 font-medium">Valor Total Empenhado</p>
-                <p className="text-2xl font-bold text-blue-900">{formatarValor(totaisGerais.valorEmpenhado)}</p>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <CheckCircle className="h-4 w-4 text-gray-600" />
+                  <p className="text-sm font-medium text-gray-900">Valor Total Empenhado</p>
+                </div>
+                <p className="text-base font-semibold text-gray-900">{formatarValor(totaisGerais.valorEmpenhado)}</p>
               </div>
-              <div className="bg-yellow-50 p-4 rounded-lg">
-                <p className="text-sm text-yellow-600 font-medium">Valor Total Pago</p>
-                <p className="text-2xl font-bold text-yellow-900">{formatarValor(totaisGerais.valorPago)}</p>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <CreditCard className="h-4 w-4 text-gray-600" />
+                  <p className="text-sm font-medium text-gray-900">Valor Total Pago</p>
+                </div>
+                <p className="text-base font-semibold text-gray-900">{formatarValor(totaisGerais.valorPago)}</p>
               </div>
             </div>
           </div>
