@@ -76,12 +76,20 @@ export default function Emendas2025() {
   const [salvandoEdicao, setSalvandoEdicao] = useState(false);
 
   // Buscar dados das emendas do Firebase
-  const fetchEmendas = async () => {
+  const fetchEmendas = async (forceRefresh = false) => {
     setIsLoading(true);
     setError(null);
     
     try {
-      const res = await fetch('/api/emendas');
+      // Adicionar cache busting para forçar busca de dados atualizados
+      const timestamp = forceRefresh ? `?t=${Date.now()}` : '';
+      const res = await fetch(`/api/emendas${timestamp}`, {
+        cache: 'no-store', // Evitar cache do browser
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        }
+      });
       
       if (!res.ok) {
         throw new Error(`Erro HTTP: ${res.status}`);
@@ -95,7 +103,9 @@ export default function Emendas2025() {
         setEmendas(data.emendas);
         setEmendasFiltradas(data.emendas);
         processarBlocos(data.emendas);
-        toast.success(`${data.emendas.length} emendas carregadas com sucesso do Firebase!`);
+        if (forceRefresh) {
+          toast.success(`${data.emendas.length} emendas atualizadas com sucesso!`);
+        }
       } else {
         throw new Error(data.error || 'Erro ao carregar dados das emendas');
       }
@@ -168,13 +178,19 @@ export default function Emendas2025() {
       if (resultado.success) {
         toast.success('Emenda atualizada com sucesso!');
         
-        // Atualizar a lista local
+        // Atualização local imediata e silenciosa
+        const emendaAtualizada = { ...emendaEditando, ...dadosEdicao };
         setEmendas(prev => prev.map(emenda => 
-          emenda.id === dadosEdicao.id ? {...emenda, ...dadosEdicao} : emenda
+          emenda.id === dadosEdicao.id ? emendaAtualizada : emenda
         ));
         
-        // Reprocessar filtros
-        fetchEmendas();
+        // Reprocessar filtros com dados atualizados
+        const novasEmendas = emendas.map(emenda => 
+          emenda.id === dadosEdicao.id ? emendaAtualizada : emenda
+        );
+        setEmendasFiltradas(novasEmendas);
+        processarBlocos(novasEmendas);
+        
         fecharModalEdicao();
       } else {
         throw new Error(resultado.error || 'Erro ao salvar alterações');
@@ -450,7 +466,7 @@ export default function Emendas2025() {
               Recolher Todos
             </Button>
             <Button
-              onClick={fetchEmendas}
+              onClick={() => fetchEmendas(true)}
               disabled={isLoading}
               variant="outline"
               size="sm"
