@@ -49,6 +49,7 @@ interface BlocoData {
   emendas: Emenda[];
   totalValorIndicado: number;
   totalValorAEmpenhar: number;
+  totalValorEmpenhado: number;
   totalMunicipios: number;
 }
 
@@ -241,6 +242,7 @@ export default function Emendas2025() {
 
       const totalValorIndicado = emendasOrdenadas.reduce((acc, emenda) => acc + (emenda.valorIndicado || 0), 0);
       const totalValorAEmpenhar = emendasOrdenadas.reduce((acc, emenda) => acc + (emenda.valorAEmpenhar || 0), 0);
+      const totalValorEmpenhado = emendasOrdenadas.reduce((acc, emenda) => acc + (emenda.valorEmpenhado || 0), 0);
       const municipiosUnicos = new Set(emendasOrdenadas.map(e => e.municipioBeneficiario).filter(Boolean));
       
       return {
@@ -248,6 +250,7 @@ export default function Emendas2025() {
         emendas: emendasOrdenadas,
         totalValorIndicado,
         totalValorAEmpenhar,
+        totalValorEmpenhado,
         totalMunicipios: municipiosUnicos.size
       };
     });
@@ -427,7 +430,7 @@ export default function Emendas2025() {
   const totaisGerais = {
     valorIndicado: blocos.reduce((acc, bloco) => acc + bloco.totalValorIndicado, 0),
     valorAEmpenhar: blocos.reduce((acc, bloco) => acc + bloco.totalValorAEmpenhar, 0),
-    valorEmpenhado: emendasFiltradas.reduce((acc, emenda) => acc + (emenda.valorEmpenhado || 0), 0),
+    valorEmpenhado: blocos.reduce((acc, bloco) => acc + bloco.totalValorEmpenhado, 0),
     valorPago: emendasFiltradas.reduce((acc, emenda) => acc + (emenda.valorPago || 0), 0),
     totalMunicipios: new Set(emendasFiltradas.map(e => e.municipioBeneficiario).filter(Boolean)).size
   };
@@ -621,6 +624,12 @@ export default function Emendas2025() {
                       <span className="text-gray-600">Valor Indicado:</span>
                       <span className="ml-2 font-medium text-gray-900">
                         {formatarValor(bloco.totalValorIndicado)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Empenhado:</span>
+                      <span className="ml-2 font-medium text-gray-900">
+                        {formatarValor(bloco.totalValorEmpenhado)}
                       </span>
                     </div>
                     <div>
