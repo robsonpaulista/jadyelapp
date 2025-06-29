@@ -204,26 +204,29 @@ export default function ConfiguracoesPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-b from-gray-50 to-gray-100">
-      <header className="sticky top-0 z-10 bg-gradient-to-r from-blue-800 to-indigo-900 text-white shadow-md p-4">
-        <div className="container mx-auto px-2">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <Settings className="h-6 w-6" />
-              <h1 className="text-2xl font-bold">Configurações do Sistema</h1>
-            </div>
-            <Button 
-              variant="ghost" 
-              className="text-white hover:bg-white/10"
+    <div className="flex-1 flex flex-col min-h-screen">
+      {/* Navbar interna do conteúdo */}
+      <nav className="w-full bg-white border-b border-gray-100 shadow-sm">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex flex-col items-start">
+            <span className="text-base md:text-lg font-semibold text-gray-900">Configurações do Sistema</span>
+            <span className="text-xs text-gray-500 font-light">Gerencie as configurações e preferências do sistema</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => router.push('/painel-aplicacoes')}
+              className="flex items-center gap-1 text-gray-600 hover:text-blue-700 transition-colors"
             >
-              <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
+              <ChevronLeft className="h-4 w-4" />
+              Voltar
             </Button>
           </div>
         </div>
-      </header>
+      </nav>
 
-      <div className="container mx-auto p-4 flex-1">
+      <div className="container mx-auto p-6">
         {isLoading ? (
           <div className="flex items-center justify-center h-64">
             <div className="flex flex-col items-center">

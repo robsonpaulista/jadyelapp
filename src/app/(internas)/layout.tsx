@@ -15,7 +15,9 @@ export default function InternasLayout({
         <div className="min-h-screen">
           <Navbar />
           <Providers>
-            {children}
+            <div className="pt-14">
+              {children}
+            </div>
           </Providers>
           <Toaster 
             position="bottom-right"

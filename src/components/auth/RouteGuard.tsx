@@ -34,17 +34,8 @@ export function RouteGuard({ children }: RouteGuardProps) {
       if (!hasAccess(pathname)) {
         console.log(`Usuário ${user.name} (${userLevel}) tentou acessar ${pathname} sem permissão`);
         
-        // Redireciona baseado no nível do usuário
-        switch (userLevel) {
-          case 'gabineteemendas':
-            router.replace('/consultar-tetos');
-            break;
-          case 'gabinetejuridico':
-            router.replace('/projetos');
-            break;
-          default:
-            router.replace('/painel-aplicacoes');
-        }
+        // Redirecionar para o painel de aplicações quando não tiver acesso
+        router.replace('/painel-aplicacoes');
         return;
       }
 

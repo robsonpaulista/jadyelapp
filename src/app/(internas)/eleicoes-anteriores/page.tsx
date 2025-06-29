@@ -298,10 +298,10 @@ export default function EleicoesAnterioresPage() {
         if (partes.length === 2 && partes[1].length <= 2) {
           // Provavelmente decimal: 100,50
           valorLimpo = valorLimpo.replace(',', '.');
-        } else {
+      } else {
           // Provavelmente separador de milhares: 1,000
           valorLimpo = valorLimpo.replace(/,/g, '');
-        }
+      }
       }
       
       numeroLimpo = parseFloat(valorLimpo);
@@ -339,7 +339,7 @@ export default function EleicoesAnterioresPage() {
       } else {
         // Provavelmente separador de milhares: 1,000
         valorLimpo = valorLimpo.replace(/,/g, '');
-      }
+    }
     }
     
     const numero = parseFloat(valorLimpo);
@@ -384,8 +384,8 @@ export default function EleicoesAnterioresPage() {
 
   // Função para buscar dados do Google Sheets
   const buscarDados = async () => {
-    if (!cidade) return;
-    
+      if (!cidade) return;
+      
     setBuscaIniciada(true);
     setLoading(true);
     setError(null);
@@ -396,8 +396,8 @@ export default function EleicoesAnterioresPage() {
     setLiderancaSelecionada('');
     setDemandas([]);
     setModalDemandasOpen(false);
-
-    try {
+      
+      try {
       // Buscar dados da planilha
       const resEleicoes = await fetch(`/api/resultado-eleicoes?cidade=${encodeURIComponent(cidade)}`);
       const jsonEleicoes = await resEleicoes.json();
@@ -437,17 +437,17 @@ export default function EleicoesAnterioresPage() {
       const populacao = await fetchPopulacaoMunicipio(cidade);
       const mac = getLimiteMacByMunicipio(cidade);
       const pap = getLimitePapByMunicipio(cidade);
-      
+        
       setLimiteMac(mac);
       setLimitePap(pap);
 
-      if (populacao) {
-        const suas = classificaPorteESUAS(populacao);
+        if (populacao) {
+          const suas = classificaPorteESUAS(populacao);
         setPopulacaoSUAS(populacao);
-        setPorteSUAS(suas.porte);
-        setValorSUAS(suas.valor);
-      }
-
+          setPorteSUAS(suas.porte);
+          setValorSUAS(suas.valor);
+        }
+        
       // Buscar propostas
       const resPropostas = await fetch(`/api/consultar-tetos?municipio=${encodeURIComponent(cidade)}`);
       if (!resPropostas.ok) throw new Error('Erro ao buscar propostas');
@@ -506,21 +506,21 @@ export default function EleicoesAnterioresPage() {
     if (totalPages <= 1) return null;
 
     return (
-      <div className="flex justify-center gap-2 mt-2">
+      <div className="flex justify-center items-center gap-1 md:gap-2 mt-2">
         <button
           onClick={() => setCurrentPage(prev => ({ ...prev, [tipo]: Math.max(1, currentPage - 1) }))}
           disabled={currentPage === 1}
-          className="px-2 py-1 text-xs bg-gray-100 rounded disabled:opacity-50"
+          className="px-1.5 md:px-2 py-1 text-[10px] md:text-xs bg-gray-100 rounded disabled:opacity-50 whitespace-nowrap"
         >
           Anterior
         </button>
-        <span className="text-xs py-1">
-          Página {currentPage} de {totalPages}
+        <span className="text-[10px] md:text-xs py-1 whitespace-nowrap">
+          Pág {currentPage}/{totalPages}
         </span>
         <button
           onClick={() => setCurrentPage(prev => ({ ...prev, [tipo]: Math.min(totalPages, currentPage + 1) }))}
           disabled={currentPage === totalPages}
-          className="px-2 py-1 text-xs bg-gray-100 rounded disabled:opacity-50"
+          className="px-1.5 md:px-2 py-1 text-[10px] md:text-xs bg-gray-100 rounded disabled:opacity-50 whitespace-nowrap"
         >
           Próxima
         </button>
@@ -548,58 +548,64 @@ export default function EleicoesAnterioresPage() {
     <div className="flex-1 flex flex-col min-h-screen">
       {/* Navbar interna do conteúdo */}
       <nav className="w-full bg-white border-b border-gray-100 shadow-sm">
-        <div className="flex items-center justify-between px-4 py-3">
+        <div className="flex flex-col md:flex-row md:items-center justify-between px-4 py-3 space-y-3 md:space-y-0">
           <div className="flex flex-col items-start">
             <span className="text-base md:text-lg font-semibold text-gray-900">Eleições Anteriores</span>
             <span className="text-xs text-gray-500 font-light">Análise de resultados eleitorais e projeções por município</span>
           </div>
-          <div className="flex items-center gap-2">
-            <select
-              value={cidade}
-              onChange={e => setCidade(e.target.value)}
-              className="text-sm border border-gray-200 rounded px-2 py-1"
-            >
-              <option value="">Selecione município...</option>
-              {cidades.map(c => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-            <button
-              onClick={buscarDados}
-              disabled={loading || !cidade}
-              className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-white hover:bg-blue-50 text-blue-700 cursor-pointer border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <RefreshCw className="h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4" />
-              )}
-              Buscar
-            </button>
-            
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
+            <div className="flex items-center gap-2 w-full md:w-auto">
+              <span className="text-sm font-medium whitespace-nowrap">Cidade:</span>
+              <select
+                value={cidade}
+                onChange={e => setCidade(e.target.value)}
+                className="text-sm border border-gray-200 rounded px-2 py-1 flex-1 md:flex-none min-w-[200px]"
+              >
+                <option value="">Selecione município...</option>
+                {cidades.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+              <button
+                onClick={buscarDados}
+                disabled={loading || !cidade}
+                className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-white hover:bg-blue-50 text-blue-700 cursor-pointer border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+              >
+                {loading ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                Buscar
+              </button>
+            </div>
+
             {/* Dropdown de lideranças e botão de demandas */}
             {buscaIniciada && !loading && liderancasSelecionadas.length > 0 && (
-              <div className="flex items-center gap-2 ml-4">
-                <Select value={liderancaSelecionada} onValueChange={setLiderancaSelecionada}>
-                  <SelectTrigger className="w-64 text-sm">
-                    <SelectValue placeholder="Selecione uma liderança..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="TODAS">
-                      <strong>📋 Todas as lideranças</strong>
-                    </SelectItem>
-                    {liderancasSelecionadas.map((lideranca, index) => (
-                      <SelectItem key={index} value={lideranca.lideranca}>
-                        {lideranca.lideranca}
+              <div className="flex flex-col md:flex-row items-start md:items-center gap-2 w-full md:w-auto md:ml-4">
+                <div className="flex items-center gap-2 w-full md:w-auto">
+                  <span className="text-sm font-medium whitespace-nowrap">Liderança:</span>
+                  <Select value={liderancaSelecionada} onValueChange={setLiderancaSelecionada}>
+                    <SelectTrigger className="w-full md:w-64 text-sm">
+                      <SelectValue placeholder="Selecione uma liderança..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="TODAS">
+                        <strong>📋 Todas as lideranças</strong>
                       </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                      {liderancasSelecionadas.map((lideranca, index) => (
+                        <SelectItem key={index} value={lideranca.lideranca}>
+                          {lideranca.lideranca}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 
                 <button
                   onClick={buscarDemandasLideranca}
                   disabled={!liderancaSelecionada || loadingDemandas}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-blue-600 hover:bg-blue-700 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-blue-600 hover:bg-blue-700 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto justify-center"
                 >
                   {loadingDemandas ? (
                     <RefreshCw className="h-4 w-4 animate-spin" />
@@ -616,7 +622,7 @@ export default function EleicoesAnterioresPage() {
 
       {/* Conteúdo principal */}
       <main className="p-0 w-full flex-1">
-        <div className="px-4 py-8">
+        <div className="px-2 md:px-4 py-4 md:py-8">
 
         {buscaIniciada && loading && (
           <div className="flex items-center justify-center mt-8">
@@ -635,284 +641,284 @@ export default function EleicoesAnterioresPage() {
 
         {cidade && !loading && dados.length > 0 && (
           <>
-            <div className="w-full px-1 mb-6">
-              <div className="bg-white rounded shadow p-1">
-                <h2 className="text-sm font-semibold mb-2 text-center">Lideranças e Projeção de Votos</h2>
-                <div className="w-full overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr>
-                        <th className="py-0.5 px-2 text-left font-medium bg-gray-50">Município</th>
-                        <th className="py-0.5 px-2 text-left font-medium bg-gray-50">Lideranças Atuais</th>
-                        <th className="py-0.5 px-2 text-right font-medium bg-gray-50">Votação 2022</th>
-                        <th className="py-0.5 px-2 text-right font-medium bg-gray-50">Expectativa 2026</th>
-                        <th className="py-0.5 px-2 text-right font-medium bg-gray-50">Crescimento</th>
-                        <th className="py-0.5 px-2 text-right font-medium bg-gray-50">Eleitores</th>
-                        <th className="py-0.5 px-2 text-right font-medium bg-gray-50">% Alcance</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(() => {
-                        // Agrupar dados por município
-                        const dadosAgrupados = dadosLiderancas
-                          .filter(item => 
-                            !cidade || normalizeString(item.municipio) === normalizeString(cidade)
-                          )
-                          .reduce((acc: any, item) => {
-                            const municipio = item.municipio;
-                            if (!acc[municipio]) {
-                              acc[municipio] = {
-                                municipio,
-                                liderancasAtuais: 0,
-                                votacao2022: 0,
-                                expectativa2026: 0
-                              };
-                            }
+              <div className="w-full mb-6 overflow-x-auto">
+                <div className="bg-white rounded shadow p-1 min-w-[800px]">
+                  <h2 className="text-sm font-semibold mb-2 text-center">Lideranças e Projeção de Votos</h2>
+                    <div className="w-full">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr>
+                            <th className="py-0.5 px-2 text-left font-medium bg-gray-50 whitespace-nowrap">Município</th>
+                            <th className="py-0.5 px-2 text-left font-medium bg-gray-50 whitespace-nowrap">Lideranças Atuais</th>
+                            <th className="py-0.5 px-2 text-right font-medium bg-gray-50 whitespace-nowrap">Votação 2022</th>
+                            <th className="py-0.5 px-2 text-right font-medium bg-gray-50 whitespace-nowrap">Expectativa 2026</th>
+                            <th className="py-0.5 px-2 text-right font-medium bg-gray-50 whitespace-nowrap">Crescimento</th>
+                            <th className="py-0.5 px-2 text-right font-medium bg-gray-50 whitespace-nowrap">Eleitores</th>
+                            <th className="py-0.5 px-2 text-right font-medium bg-gray-50 whitespace-nowrap">% Alcance</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(() => {
+                            // Agrupar dados por município
+                            const dadosAgrupados = dadosLiderancas
+                              .filter(item => 
+                                !cidade || normalizeString(item.municipio) === normalizeString(cidade)
+                              )
+                              .reduce((acc: any, item) => {
+                                const municipio = item.municipio;
+                                if (!acc[municipio]) {
+                                  acc[municipio] = {
+                                    municipio,
+                                    liderancasAtuais: 0,
+                                    votacao2022: 0,
+                                    expectativa2026: 0
+                                  };
+                                }
+                                
+                                // Contar lideranças atuais
+                                if (item.liderancaAtual === 'SIM') {
+                                  acc[municipio].liderancasAtuais++;
+                                }
+                                
+                                // Somar votação 2022
+                                const votacao2022 = parseInt(item.votacao2022 || '0');
+                                acc[municipio].votacao2022 += votacao2022;
+                                
+                                // Somar expectativa 2026
+                                const expectativa2026 = parseInt(item.expectativa2026 || '0');
+                                acc[municipio].expectativa2026 += expectativa2026;
+                                
+                                return acc;
+                              }, {});
                             
-                            // Contar lideranças atuais
-                            if (item.liderancaAtual === 'SIM') {
-                              acc[municipio].liderancasAtuais++;
-                            }
+                            // Converter para array e ordenar por município
+                            const dadosConsolidados = Object.values(dadosAgrupados)
+                              .sort((a: any, b: any) => a.municipio.localeCompare(b.municipio));
                             
-                            // Somar votação 2022
-                            const votacao2022 = parseInt(item.votacao2022 || '0');
-                            acc[municipio].votacao2022 += votacao2022;
-                            
-                            // Somar expectativa 2026
-                            const expectativa2026 = parseInt(item.expectativa2026 || '0');
-                            acc[municipio].expectativa2026 += expectativa2026;
-                            
-                            return acc;
-                          }, {});
-                        
-                        // Converter para array e ordenar por município
-                        const dadosConsolidados = Object.values(dadosAgrupados)
-                          .sort((a: any, b: any) => a.municipio.localeCompare(b.municipio));
-                        
                         const rows = paginateData(dadosConsolidados, currentPage.liderancas).map((item: any, idx: number): JSX.Element => {
-                          // Calcular percentual de crescimento
-                          const crescimento = item.votacao2022 > 0 
-                            ? ((item.expectativa2026 - item.votacao2022) / item.votacao2022) * 100
-                            : 0;
+                              // Calcular percentual de crescimento
+                              const crescimento = item.votacao2022 > 0 
+                                ? ((item.expectativa2026 - item.votacao2022) / item.votacao2022) * 100
+                                : 0;
 
-                          // Buscar dados de eleitores do município
-                          const dadosMunicipio = dadosEleitores[normalizeString(item.municipio)];
-                          const totalEleitores = dadosMunicipio?.eleitores_2024 || 0;
-                          const percentualAlcance = totalEleitores > 0 
-                            ? (item.expectativa2026 / totalEleitores) * 100 
-                            : 0;
-                          
-                          return (
-                            <tr key={idx} className="border-b hover:bg-gray-50">
-                              <td className="py-0.5 px-2">{item.municipio}</td>
-                              <td className="py-0.5 px-2">
-                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                  item.liderancasAtuais > 0 
-                                    ? 'bg-green-100 text-green-800' 
-                                    : 'bg-gray-100 text-gray-800'
+                              // Buscar dados de eleitores do município
+                              const dadosMunicipio = dadosEleitores[normalizeString(item.municipio)];
+                              const totalEleitores = dadosMunicipio?.eleitores_2024 || 0;
+                              const percentualAlcance = totalEleitores > 0 
+                                ? (item.expectativa2026 / totalEleitores) * 100 
+                                : 0;
+                              
+                              return (
+                                <tr key={idx} className="border-b hover:bg-gray-50">
+                                  <td className="py-0.5 px-2">{item.municipio}</td>
+                                  <td className="py-0.5 px-2">
+                                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                      item.liderancasAtuais > 0 
+                                        ? 'bg-green-100 text-green-800' 
+                                        : 'bg-gray-100 text-gray-800'
                                 }`}
                                 onClick={() => handleExpectativaClick({ municipio: item.municipio })}
                                 title="Clique para ver detalhes"
                                 style={{ cursor: 'pointer' }}
                                 >
-                                  {item.liderancasAtuais}
-                                </span>
-                              </td>
+                                      {item.liderancasAtuais}
+                                    </span>
+                                  </td>
+                                  <td className="py-0.5 px-2 text-right">
+                                    {item.votacao2022.toLocaleString()}
+                                  </td>
                               <td className="py-0.5 px-2 text-right">
-                                {item.votacao2022.toLocaleString()}
-                              </td>
-                              <td className="py-0.5 px-2 text-right">
-                                {item.expectativa2026.toLocaleString()}
-                              </td>
-                              <td className="py-0.5 px-2 text-right">
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                                  crescimento > 0 
-                                    ? 'bg-green-100 text-green-800'
-                                    : crescimento < 0
-                                    ? 'bg-red-100 text-red-800'
-                                    : 'bg-gray-100 text-gray-800'
-                                }`}>
-                                  {crescimento > 0 ? '+' : ''}{crescimento.toFixed(1)}%
-                                </span>
-                              </td>
-                              <td className="py-0.5 px-2 text-right">
-                                {totalEleitores.toLocaleString()}
-                              </td>
-                              <td className="py-0.5 px-2 text-right">
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                                  percentualAlcance >= 50
-                                    ? 'bg-green-100 text-green-800'
-                                    : percentualAlcance >= 30
-                                    ? 'bg-yellow-100 text-yellow-800'
-                                    : 'bg-red-100 text-red-800'
-                                }`}>
-                                  {percentualAlcance.toFixed(1)}%
-                                </span>
-                              </td>
-                            </tr>
-                          );
-                        });
+                                    {item.expectativa2026.toLocaleString()}
+                                  </td>
+                                  <td className="py-0.5 px-2 text-right">
+                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                      crescimento > 0 
+                                        ? 'bg-green-100 text-green-800'
+                                        : crescimento < 0
+                                        ? 'bg-red-100 text-red-800'
+                                        : 'bg-gray-100 text-gray-800'
+                                    }`}>
+                                      {crescimento > 0 ? '+' : ''}{crescimento.toFixed(1)}%
+                                    </span>
+                                  </td>
+                                  <td className="py-0.5 px-2 text-right">
+                                    {totalEleitores.toLocaleString()}
+                                  </td>
+                                  <td className="py-0.5 px-2 text-right">
+                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                      percentualAlcance >= 50
+                                        ? 'bg-green-100 text-green-800'
+                                        : percentualAlcance >= 30
+                                        ? 'bg-yellow-100 text-yellow-800'
+                                        : 'bg-red-100 text-red-800'
+                                    }`}>
+                                      {percentualAlcance.toFixed(1)}%
+                                    </span>
+                                  </td>
+                                </tr>
+                              );
+                            });
                         
                         return rows;
-                      })()}
-                    </tbody>
-                  </table>
-                  <PaginationButtons 
-                    totalItems={(() => {
-                      const dadosAgrupados = dadosLiderancas
-                        .filter(item => 
-                          !cidade || normalizeString(item.municipio) === normalizeString(cidade)
-                        )
-                        .reduce((acc: any, item) => {
-                          const municipio = item.municipio;
-                          if (!acc[municipio]) {
-                            acc[municipio] = true;
-                          }
-                          return acc;
-                        }, {});
-                      return Object.keys(dadosAgrupados).length;
-                    })()} 
-                    currentPage={currentPage.liderancas} 
-                    tipo="liderancas"
-                  />
+                          })()}
+                        </tbody>
+                      </table>
+                      <PaginationButtons 
+                        totalItems={(() => {
+                          const dadosAgrupados = dadosLiderancas
+                            .filter(item => 
+                              !cidade || normalizeString(item.municipio) === normalizeString(cidade)
+                            )
+                            .reduce((acc: any, item) => {
+                              const municipio = item.municipio;
+                              if (!acc[municipio]) {
+                                acc[municipio] = true;
+                              }
+                              return acc;
+                            }, {});
+                          return Object.keys(dadosAgrupados).length;
+                        })()} 
+                        currentPage={currentPage.liderancas} 
+                        tipo="liderancas"
+                      />
+                    </div>
                 </div>
               </div>
-            </div>
 
-            <div className="w-full px-1">
-              <div className="flex flex-nowrap gap-1 overflow-x-auto min-w-0 pb-2">
-                {[
-                  { grupo: 'Deputado Estadual 2022', tipo: 'deputado_estadual', containerClass: 'flex-1 min-w-[220px] max-w-[280px]' },
-                  { grupo: 'Deputado Federal 2022', tipo: 'deputado_federal', containerClass: 'flex-1 min-w-[220px] max-w-[280px]' },
-                  { grupo: 'Prefeito 2024', tipo: 'prefeito_2024', containerClass: 'flex-1 min-w-[220px] max-w-[280px]' },
-                  { grupo: 'Vereador 2024', tipo: 'vereador_2024', containerClass: 'flex-1 min-w-[250px] max-w-[350px]' },
-                  { grupo: 'Votação por Partido 2024', tipo: 'partido_2024', containerClass: 'flex-1 min-w-[250px] max-w-[350px]' },
-                ].map(({ grupo, tipo, containerClass }) => {
-                  // Filtrar os dados conforme o grupo
-                  let lista: any[] = [];
-                  if (tipo === 'deputado_estadual') {
-                    lista = dados
-                      .filter(item => 
-                        item.cargo?.toLowerCase().includes('estadual') && 
-                        item.anoEleicao === '2022'
-                      )
-                      .sort((a, b) => (b.quantidadeVotosNominais || 0) - (a.quantidadeVotosNominais || 0));
-                  } else if (tipo === 'deputado_federal') {
-                    lista = dados
-                      .filter(item => 
-                        item.cargo?.toLowerCase().includes('federal') && 
-                        item.anoEleicao === '2022'
-                      )
-                      .sort((a, b) => (b.quantidadeVotosNominais || 0) - (a.quantidadeVotosNominais || 0));
-                  } else if (tipo === 'prefeito_2024') {
-                    lista = dados
-                      .filter(item => 
-                        item.cargo?.toLowerCase().includes('prefeito') && 
+              <div className="w-full px-1">
+              <div className="grid grid-cols-1 md:flex md:flex-nowrap gap-4 md:gap-1 overflow-x-auto min-w-0 pb-2">
+                  {[
+                  { grupo: 'Deputado Estadual 2022', tipo: 'deputado_estadual', containerClass: 'md:flex-1 min-w-[220px] max-w-full md:max-w-[280px]' },
+                  { grupo: 'Deputado Federal 2022', tipo: 'deputado_federal', containerClass: 'md:flex-1 min-w-[220px] max-w-full md:max-w-[280px]' },
+                  { grupo: 'Prefeito 2024', tipo: 'prefeito_2024', containerClass: 'md:flex-1 min-w-[220px] max-w-full md:max-w-[280px]' },
+                  { grupo: 'Vereador 2024', tipo: 'vereador_2024', containerClass: 'md:flex-1 min-w-[250px] max-w-full md:max-w-[350px]' },
+                  { grupo: 'Votação por Partido 2024', tipo: 'partido_2024', containerClass: 'md:flex-1 min-w-[250px] max-w-full md:max-w-[350px]' },
+                  ].map(({ grupo, tipo, containerClass }) => {
+                    // Filtrar os dados conforme o grupo
+                    let lista: any[] = [];
+                    if (tipo === 'deputado_estadual') {
+                      lista = dados
+                        .filter(item => 
+                          item.cargo?.toLowerCase().includes('estadual') && 
+                          item.anoEleicao === '2022'
+                        )
+                        .sort((a, b) => (b.quantidadeVotosNominais || 0) - (a.quantidadeVotosNominais || 0));
+                    } else if (tipo === 'deputado_federal') {
+                      lista = dados
+                        .filter(item => 
+                          item.cargo?.toLowerCase().includes('federal') && 
+                          item.anoEleicao === '2022'
+                        )
+                        .sort((a, b) => (b.quantidadeVotosNominais || 0) - (a.quantidadeVotosNominais || 0));
+                    } else if (tipo === 'prefeito_2024') {
+                      lista = dados
+                        .filter(item => 
+                          item.cargo?.toLowerCase().includes('prefeito') && 
                         item.anoEleicao === '2024' &&
                         (!partidoSelecionado || item.partido === partidoSelecionado)
-                      )
-                      .sort((a, b) => (b.quantidadeVotosNominais || 0) - (a.quantidadeVotosNominais || 0));
-                  } else if (tipo === 'vereador_2024') {
-                    lista = dados
-                      .filter(item => 
-                        item.cargo?.toLowerCase().includes('vereador') && 
+                        )
+                        .sort((a, b) => (b.quantidadeVotosNominais || 0) - (a.quantidadeVotosNominais || 0));
+                    } else if (tipo === 'vereador_2024') {
+                      lista = dados
+                        .filter(item => 
+                          item.cargo?.toLowerCase().includes('vereador') && 
                         item.anoEleicao === '2024' &&
                         (!partidoSelecionado || item.partido === partidoSelecionado)
-                      )
-                      .sort((a, b) => (b.quantidadeVotosNominais || 0) - (a.quantidadeVotosNominais || 0));
-                  } else if (tipo === 'partido_2024') {
-                    // Agrupar por partido e somar votos
-                    const partidos: Record<string, { partido: string, votos: number, eleitos: number }> = {};
-                    dados
-                      .filter(item => item.anoEleicao === '2024')
-                      .forEach(item => {
-                        const partido = item.partido || '-';
-                        if (!partidos[partido]) {
-                          partidos[partido] = { partido, votos: 0, eleitos: 0 };
-                        }
-                        partidos[partido].votos += parseInt(item.quantidadeVotosNominais) || 0;
-                        if (item.situacao?.toLowerCase().includes('eleito')) {
-                          partidos[partido].eleitos++;
-                        }
-                      });
-                    lista = Object.values(partidos).sort((a, b) => b.votos - a.votos);
-                  }
+                        )
+                        .sort((a, b) => (b.quantidadeVotosNominais || 0) - (a.quantidadeVotosNominais || 0));
+                    } else if (tipo === 'partido_2024') {
+                      // Agrupar por partido e somar votos
+                      const partidos: Record<string, { partido: string, votos: number, eleitos: number }> = {};
+                      dados
+                        .filter(item => item.anoEleicao === '2024')
+                        .forEach(item => {
+                          const partido = item.partido || '-';
+                          if (!partidos[partido]) {
+                            partidos[partido] = { partido, votos: 0, eleitos: 0 };
+                          }
+                          partidos[partido].votos += parseInt(item.quantidadeVotosNominais) || 0;
+                          if (item.situacao?.toLowerCase().includes('eleito')) {
+                            partidos[partido].eleitos++;
+                          }
+                        });
+                      lista = Object.values(partidos).sort((a, b) => b.votos - a.votos);
+                    }
 
-                  return (
-                    <div key={tipo} className={`bg-white rounded shadow p-1 ${containerClass}`}>
+                    return (
+                      <div key={tipo} className={`bg-white rounded shadow p-1 ${containerClass}`}>
                       <h2 className="text-xs font-semibold mb-1 text-center truncate px-2">{grupo}</h2>
-                      <div className="w-full overflow-x-auto">
+                        <div className="w-full overflow-x-auto">
                         <table className="w-full text-xs">
-                          <thead>
-                            <tr>
+                            <thead>
+                              <tr>
                               <th className={`py-0.5 px-1 text-left font-medium bg-gray-50 ${
                                 ['deputado_estadual', 'deputado_federal', 'prefeito_2024'].includes(tipo) 
                                 ? 'max-w-[120px] truncate' 
                                 : ''
                               }`}>
-                                {tipo === 'partido_2024' ? 'Partido' : 'Candidato'}
-                              </th>
+                                  {tipo === 'partido_2024' ? 'Partido' : 'Candidato'}
+                                </th>
                               <th className="py-0.5 px-1 text-right font-medium bg-gray-50">Votos</th>
-                              {tipo === 'partido_2024' && (
+                                {tipo === 'partido_2024' && (
                                 <th className="py-0.5 px-1 text-right font-medium bg-gray-50">Eleitos</th>
-                              )}
-                              {tipo === 'vereador_2024' && (
+                                )}
+                                {tipo === 'vereador_2024' && (
                                 <th className="py-0.5 px-1 text-center font-medium bg-gray-50">Situação</th>
-                              )}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {paginateData(lista, currentPage[tipo]).map((item, idx) => (
-                              <tr key={idx} className="border-b hover:bg-gray-50">
+                                )}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {paginateData(lista, currentPage[tipo]).map((item, idx) => (
+                                <tr key={idx} className="border-b hover:bg-gray-50">
                                 <td className={`py-0.5 px-1 ${
                                   ['deputado_estadual', 'deputado_federal', 'prefeito_2024'].includes(tipo) 
                                   ? 'max-w-[120px] truncate' 
                                   : ''
                                 }`}>
-                                  {tipo === 'partido_2024' ? (
+                                    {tipo === 'partido_2024' ? (
                                     <button
                                       onClick={() => setPartidoSelecionado(partidoSelecionado === item.partido ? null : item.partido)}
                                       className={`text-left w-full hover:text-blue-600 ${partidoSelecionado === item.partido ? 'text-blue-600 font-medium' : ''}`}
                                     >
                                       {item.partido}
                                     </button>
-                                  ) : (
-                                    tipo === 'deputado_federal' && 
-                                    item.nomeUrnaCandidato?.toUpperCase() === 'JADYEL DA JUPI' ? (
-                                      <span className="inline-flex items-center px-1 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                        {item.nomeUrnaCandidato}
-                                      </span>
                                     ) : (
+                                      tipo === 'deputado_federal' && 
+                                      item.nomeUrnaCandidato?.toUpperCase() === 'JADYEL DA JUPI' ? (
+                                      <span className="inline-flex items-center px-1 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                          {item.nomeUrnaCandidato}
+                                        </span>
+                                      ) : (
                                       <span title={item.nomeUrnaCandidato}>{item.nomeUrnaCandidato}</span>
-                                    )
-                                  )}
-                                </td>
-                                <td className="py-0.5 px-1 text-right">
-                                  {tipo === 'partido_2024' 
-                                    ? item.votos.toLocaleString()
-                                    : parseInt(item.quantidadeVotosNominais || '0').toLocaleString()
-                                  }
-                                </td>
-                                {tipo === 'partido_2024' && (
-                                  <td className="py-0.5 px-1 text-right">
-                                    {item.eleitos}
+                                      )
+                                    )}
                                   </td>
-                                )}
-                                {tipo === 'vereador_2024' && (
+                                <td className="py-0.5 px-1 text-right">
+                                    {tipo === 'partido_2024' 
+                                      ? item.votos.toLocaleString()
+                                      : parseInt(item.quantidadeVotosNominais || '0').toLocaleString()
+                                    }
+                                  </td>
+                                  {tipo === 'partido_2024' && (
+                                  <td className="py-0.5 px-1 text-right">
+                                      {item.eleitos}
+                                    </td>
+                                  )}
+                                  {tipo === 'vereador_2024' && (
                                   <td className="py-0.5 px-1 text-center">
                                     <span className={`inline-flex items-center px-1 py-0.5 rounded-full text-xs font-medium ${
-                                      item.situacao?.toLowerCase().includes('eleito') 
-                                        ? 'bg-green-100 text-green-800'
-                                        : item.situacao?.toLowerCase().includes('suplente')
-                                        ? 'bg-yellow-100 text-yellow-800'
-                                        : 'bg-gray-100 text-gray-800'
-                                    }`}>
-                                      {item.situacao}
-                                    </span>
-                                  </td>
-                                )}
-                              </tr>
-                            ))}
+                                        item.situacao?.toLowerCase().includes('eleito') 
+                                          ? 'bg-green-100 text-green-800'
+                                          : item.situacao?.toLowerCase().includes('suplente')
+                                          ? 'bg-yellow-100 text-yellow-800'
+                                          : 'bg-gray-100 text-gray-800'
+                                      }`}>
+                                        {item.situacao}
+                                      </span>
+                                    </td>
+                                  )}
+                                </tr>
+                              ))}
                             {/* Linha de Total */}
                             {(() => {
                               if (tipo === 'partido_2024') {
@@ -945,19 +951,19 @@ export default function EleicoesAnterioresPage() {
                                 );
                               }
                             })() as React.JSX.Element}
-                          </tbody>
-                        </table>
-                        <PaginationButtons 
-                          totalItems={lista.length} 
-                          currentPage={currentPage[tipo]} 
-                          tipo={tipo}
-                        />
+                            </tbody>
+                          </table>
+                          <PaginationButtons 
+                            totalItems={lista.length} 
+                            currentPage={currentPage[tipo]} 
+                            tipo={tipo}
+                          />
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
           </>
         )}
 
@@ -969,54 +975,54 @@ export default function EleicoesAnterioresPage() {
               <h3 className="text-sm font-semibold text-blue-800 mb-2">Limite MAC - {cidade}</h3>
               {limiteMac ? (
                 <div className="space-y-2">
-                  <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center">
                     <span className="text-xs text-blue-700">Limite MAC:</span>
                     <span className="text-sm font-bold text-blue-900">{formatCurrency(limiteMac.valor)}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
+                </div>
+                <div className="flex justify-between items-center">
                     <span className="text-xs text-blue-700">Propostas MAC:</span>
                     <span className="text-sm font-bold text-blue-900">{formatCurrency(calcularTotaisPropostas('MAC').total)}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
+                </div>
+                <div className="flex justify-between items-center">
                     <span className="text-xs text-blue-700">Valor a Pagar MAC:</span>
                     <span className="text-sm font-bold text-blue-900">{formatCurrency(calcularTotaisPropostas('MAC').valorPagar)}</span>
-                  </div>
+                </div>
                   <div className="flex justify-between items-center">
                     <span className="text-xs text-blue-700">Saldo MAC:</span>
                     <span className="text-sm font-bold text-blue-900">{formatCurrency(calcularTotaisPropostas('MAC').saldo)}</span>
-                  </div>
+              </div>
                 </div>
               ) : (
                 <div className="text-xs text-blue-700">Nenhum limite MAC encontrado para este município.</div>
               )}
-            </div>
-            
+                  </div>
+                  
             {/* Card Limite PAP */}
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
               <h3 className="text-sm font-semibold text-green-800 mb-2">Limite PAP - {cidade}</h3>
               {limitePap ? (
                 <div className="space-y-2">
-                  <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center">
                     <span className="text-xs text-green-700">Limite PAP:</span>
                     <span className="text-sm font-bold text-green-900">{formatCurrency(limitePap.valor)}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
+                    </div>
+                      <div className="flex justify-between items-center">
                     <span className="text-xs text-green-700">Propostas PAP:</span>
                     <span className="text-sm font-bold text-green-900">{formatCurrency(calcularTotaisPropostas('PAP').total)}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
+                        </div>
+                <div className="flex justify-between items-center">
                     <span className="text-xs text-green-700">Valor a Pagar PAP:</span>
                     <span className="text-sm font-bold text-green-900">{formatCurrency(calcularTotaisPropostas('PAP').valorPagar)}</span>
-                  </div>
+                      </div>
                   <div className="flex justify-between items-center">
                     <span className="text-xs text-green-700">Saldo PAP:</span>
                     <span className="text-sm font-bold text-green-900">{formatCurrency(calcularTotaisPropostas('PAP').saldo)}</span>
-                  </div>
+                    </div>
                 </div>
               ) : (
                 <div className="text-xs text-green-700">Nenhum limite PAP encontrado para este município.</div>
               )}
-            </div>
+                  </div>
 
             {/* Card Limite SUAS */}
             <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
@@ -1069,6 +1075,7 @@ export default function EleicoesAnterioresPage() {
                   </TableHeader>
                   <TableBody>
                     {[...selectedLideranca.todasLiderancas]
+                      .filter((lideranca: Lideranca) => lideranca.liderancaAtual === 'SIM')
                       .sort((a: Lideranca, b: Lideranca) => {
                         const expA = parseInt(a.expectativa2026 || '0');
                         const expB = parseInt(b.expectativa2026 || '0');
@@ -1080,8 +1087,8 @@ export default function EleicoesAnterioresPage() {
                           <TableRow key={idx}>
                             <TableCell className="py-1.5">{lideranca.lideranca}</TableCell>
                             <TableCell className="py-1.5">
-                              <Badge variant={lideranca.liderancaAtual === 'SIM' ? 'default' : 'secondary'}>
-                                {lideranca.liderancaAtual === 'SIM' ? 'Atual' : 'Anterior'}
+                              <Badge variant="default">
+                                Atual
                               </Badge>
                             </TableCell>
                             <TableCell className="py-1.5">{lideranca.cargo2024 || 'Não definido'}</TableCell>
@@ -1091,7 +1098,7 @@ export default function EleicoesAnterioresPage() {
                       })}
                   </TableBody>
                 </Table>
-              </div>
+        </div>
             )}
           </DialogContent>
         </Dialog>

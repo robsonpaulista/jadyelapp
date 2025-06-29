@@ -111,21 +111,8 @@ export default function Home() {
         localStorage.setItem('userPermissions', JSON.stringify(userData.permissions));
         localStorage.setItem('lastLoginTime', Date.now().toString());
         
-        // Detectar rota baseada no level
-        let targetRoute = '/painel-aplicacoes';
-        switch (userLevel) {
-          case 'gabineteemendas':
-            targetRoute = '/consultar-tetos';
-            break;
-          case 'gabinetejuridico':
-            targetRoute = '/projetos';
-            break;
-        }
-        
-        // Aguardar um momento para garantir que os dados foram salvos
-        setTimeout(() => {
-          router.push(targetRoute);
-        }, 100);
+        // Após login bem sucedido, sempre redirecionar para o painel de aplicações
+        router.push('/painel-aplicacoes');
       } else {
         setError('Falha na autenticação. Usuário não encontrado.');
       }

@@ -1008,7 +1008,7 @@ const CentralLeadsPage = () => {
       const userData = await getCurrentUser();
       if (userData) {
         setCurrentUser(userData);
-        updateGreeting();
+      updateGreeting();
       }
     } catch (error) {
       // Erro silencioso - não exibir logs por segurança

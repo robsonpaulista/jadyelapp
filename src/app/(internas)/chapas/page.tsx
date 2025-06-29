@@ -93,7 +93,7 @@ export default function ChapasPage() {
   const [editVoto, setEditVoto] = useState<{ partidoIdx: number; candidatoNome: string } | null>(null);
   const [hoveredRow, setHoveredRow] = useState<{ partidoIdx: number; candidatoNome: string } | null>(null);
   const [editingName, setEditingName] = useState<{ partidoIdx: number; candidatoNome: string; originalName: string } | null>(null);
-  
+
   // Estados para adicionar novo candidato
   const [dialogAberto, setDialogAberto] = useState<number | null>(null);
   const [novoCandidato, setNovoCandidato] = useState({ nome: '', votos: 0 });

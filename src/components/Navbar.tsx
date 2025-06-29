@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { 
   Settings, Users, BarChart, ListTree, FileText, Building2, UserCheck, Instagram, 
   MapPin, ArrowLeft, LogOut, Newspaper, BarChart2, Building, Coins, Users2,
-  Vote, UserCog, LineChart, Menu, X
+  Vote, UserCog, LineChart, Menu, X, Home
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { getCurrentUser } from '@/lib/storage';
@@ -32,7 +32,7 @@ interface Menu {
 const MENUS: Menu[] = [
   {
     label: 'Leads',
-    href: '/acoes',
+    href: '#',
     icon: <UserCheck size={20} />,
     permission: 'leads',
     submenus: [
@@ -42,7 +42,7 @@ const MENUS: Menu[] = [
   },
   {
     label: 'Municípios',
-    href: '/obras_demandas',
+    href: '#',
     icon: <MapPin size={20} />,
     permission: 'municipios',
     submenus: [
@@ -54,13 +54,13 @@ const MENUS: Menu[] = [
   },
   {
     label: 'Eleições',
-    href: '/projecao2026',
+    href: '#',
     icon: <BarChart size={20} />,
     permission: 'eleicoes',
     submenus: [
       { label: 'Formação de chapas 2026', href: '/chapas', icon: <Vote size={16} /> },
       { label: 'Pesquisas Eleitorais', href: '/pesquisas-eleitorais', icon: <BarChart2 size={16} /> },
-      { label: 'Dashboard Resultados', href: '/eleicoes-anteriores', icon: <LineChart size={16} /> }
+      { label: 'Dashboard Municípios', href: '/eleicoes-anteriores', icon: <LineChart size={16} /> }
     ]
   },
   {
@@ -133,97 +133,99 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="bg-blue-600 flex items-center px-4 lg:px-6 py-2 shadow z-[9998] relative">
-        {/* Logo e Título */}
-        <div className="flex items-center flex-shrink-0">
-      <Link href="/painel-aplicacoes" className="cursor-pointer">
-            <div className="h-8 w-8 lg:h-10 lg:w-10 rounded-full shadow-xl border-2 lg:border-4 border-white bg-gradient-to-r from-blue-50 to-blue-100 flex items-center justify-center overflow-hidden mr-2 lg:mr-4">
-          <img src="/avatar-banner.png" alt="Deputado" className="w-full h-full object-contain" />
-        </div>
-      </Link>
-          <span className="text-white font-bold text-sm lg:text-lg mr-2 lg:mr-8">
-            Dynamics Integration
-          </span>
-        </div>
+      <nav className="fixed top-0 left-0 right-0 bg-blue-600 text-white z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-14">
+            <div className="flex items-center">
+              <Link href="/painel-aplicacoes" className="text-lg font-semibold mr-8">
+                Dynamics Integration
+              </Link>
+              <Link href="/painel-aplicacoes" className="flex items-center gap-2 text-sm font-medium hover:bg-blue-700 px-3 py-2 rounded-lg transition-colors mr-6">
+                <Home className="h-5 w-5" />
+                <span>Home</span>
+              </Link>
+            </div>
 
-        {/* Menu Desktop - Oculto no mobile */}
-        <div className="hidden lg:flex gap-8 flex-1">
-          {visibleMenus.map(menu => {
-            const visibleSubmenus = getVisibleSubmenus(menu.submenus);
-            
-            return (
-              <div key={menu.label || 'config'} className="relative group">
-            <Link href={menu.href} className="flex items-center gap-2 text-white font-medium px-3 py-2 rounded hover:bg-blue-700 transition whitespace-nowrap">
+            {/* Menu Desktop - Oculto no mobile */}
+            <div className="hidden lg:flex gap-8 flex-1">
+              {visibleMenus.map(menu => {
+                const visibleSubmenus = getVisibleSubmenus(menu.submenus);
+                
+                return (
+                  <div key={menu.label || 'config'} className="relative group">
+                    <div className={`flex items-center gap-2 text-white font-medium px-3 py-2 rounded hover:bg-blue-700 transition whitespace-nowrap cursor-pointer ${menu.href === '#' ? 'pointer-events-none' : ''}`}>
               {menu.icon}
               {menu.label}
-            </Link>
-                {visibleSubmenus.length > 0 && (
-                  <div className="absolute left-0 mt-0 bg-white rounded shadow-lg py-2 min-w-[220px] invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 z-[9999]">
-                    <div className="absolute top-0 left-0 w-full h-2 bg-transparent -translate-y-full"></div>
-                    {visibleSubmenus.map(sub => (
-                      <Link 
-                        key={sub.href} 
-                        href={sub.href} 
-                        className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-blue-50 whitespace-nowrap"
-                      >
-                        {sub.icon}
+                    </div>
+                    {visibleSubmenus.length > 0 && (
+                      <div className="absolute left-0 mt-0 bg-white rounded shadow-lg py-2 min-w-[220px] invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 z-[9999]">
+                        <div className="absolute top-0 left-0 w-full h-2 bg-transparent -translate-y-full"></div>
+                        {visibleSubmenus.map(sub => (
+                          <Link 
+                            key={sub.href} 
+                            href={sub.href} 
+                            className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-blue-50 whitespace-nowrap"
+                          >
+                            {sub.icon}
                     {sub.label}
                   </Link>
                 ))}
               </div>
             )}
           </div>
-            );
-          })}
-        </div>
-
-        {/* Informações do usuário - Adaptadas para mobile */}
-        <div className="flex items-center gap-2 ml-auto">
-          {user && (
-            <div className="mr-2 hidden sm:block">
-              <p className="text-xs lg:text-sm text-white">
-                <span className="hidden lg:inline">Usuário: </span>
-                {user.name?.split(' ')[0] || (user as any).nome?.split(' ')[0] || user.email?.split('@')[0] || 'Admin'}
-                {userLevel && (
-                  <Badge variant="secondary" className="ml-1 lg:ml-2 text-xs">
-                    {userLevel}
-                  </Badge>
-                )}
-              </p>
+                );
+              })}
             </div>
-          )}
-          
-          {/* Botões Desktop */}
-          <div className="hidden lg:flex items-center gap-2">
-            <Button 
-              onClick={() => router.back()} 
-              variant="ghost" 
-              size="sm"
-              className="text-white hover:text-white hover:bg-blue-700"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Voltar
-            </Button>
-            <Button 
-              onClick={handleLogout} 
-              variant="ghost" 
-              size="sm"
-              className="text-white hover:text-white hover:bg-blue-700"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Sair
-            </Button>
-          </div>
 
-          {/* Botão Menu Mobile */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="lg:hidden text-white hover:text-white hover:bg-blue-700 p-2"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-          </Button>
+            {/* Informações do usuário - Adaptadas para mobile */}
+            <div className="flex items-center gap-2 ml-auto">
+              {user && (
+                <div className="mr-2 hidden sm:block">
+                  <p className="text-xs lg:text-sm text-white">
+                    <span className="hidden lg:inline">Usuário: </span>
+                    {user.name?.split(' ')[0] || (user as any).nome?.split(' ')[0] || user.email?.split('@')[0] || 'Admin'}
+                    {userLevel && (
+                      <Badge variant="secondary" className="ml-1 lg:ml-2 text-xs">
+                        {userLevel}
+                      </Badge>
+                    )}
+                  </p>
+                </div>
+              )}
+              
+              {/* Botões Desktop */}
+              <div className="hidden lg:flex items-center gap-2">
+                <Button 
+                  onClick={() => router.back()} 
+                  variant="ghost" 
+                  size="sm"
+                  className="text-white hover:text-white hover:bg-blue-700"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Voltar
+                </Button>
+                <Button 
+                  onClick={handleLogout} 
+                  variant="ghost" 
+                  size="sm"
+                  className="text-white hover:text-white hover:bg-blue-700"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sair
+                </Button>
+              </div>
+
+              {/* Botão Menu Mobile */}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="lg:hidden text-white hover:text-white hover:bg-blue-700 p-2"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              >
+                {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+              </Button>
+            </div>
+          </div>
         </div>
       </nav>
 
@@ -268,14 +270,21 @@ export default function Navbar() {
                 
                 return (
                   <div key={menu.label || 'config'} className="space-y-1">
-                    <Link 
-                      href={menu.href} 
-                      className="flex items-center gap-3 p-3 text-gray-700 hover:bg-blue-50 rounded-lg transition"
-                      onClick={handleMobileLinkClick}
-                    >
-                      {menu.icon}
-                      <span className="font-medium">{menu.label || 'Configurações'}</span>
-                    </Link>
+                    {menu.href === '#' ? (
+                      <div className="flex items-center gap-3 p-3 text-gray-700 rounded-lg transition">
+                        {menu.icon}
+                        <span className="font-medium">{menu.label || 'Configurações'}</span>
+                      </div>
+                    ) : (
+                      <Link 
+                        href={menu.href} 
+                        className="flex items-center gap-3 p-3 text-gray-700 hover:bg-blue-50 rounded-lg transition"
+                        onClick={handleMobileLinkClick}
+                      >
+                        {menu.icon}
+                        <span className="font-medium">{menu.label || 'Configurações'}</span>
+                      </Link>
+                    )}
                     
                     {visibleSubmenus.length > 0 && (
                       <div className="ml-6 space-y-1">

@@ -123,14 +123,7 @@ export function usePermissions() {
 
   const getDefaultRoute = (): string => {
     try {
-      switch (userLevel) {
-        case 'gabineteemendas':
-          return '/consultar-tetos';
-        case 'gabinetejuridico':
-          return '/projetos';
-        default:
-          return '/painel-aplicacoes';
-      }
+      return '/painel-aplicacoes';
     } catch (error) {
       console.error('Erro em getDefaultRoute:', error);
       return '/painel-aplicacoes';

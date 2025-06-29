@@ -452,63 +452,66 @@ export default function ConsultarTetosPage() {
         
         {/* Conteúdo principal */}
         <main className="p-0 w-full">
-          <div className="px-4 py-3 mb-2 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <Filter className="h-4 w-4 text-gray-500" />
-              <span className="text-sm font-medium text-gray-700">Filtros:</span>
-              <select 
-                className="text-sm border border-gray-200 rounded px-2 py-1"
-                value={filter}
-                onChange={(e) => {
-                  const municipio = e.target.value;
-                  setFilter(municipio);
-                  // Se selecionou um município específico, fazer busca direcionada
-                  if (municipio !== 'todos') {
-                    loadPropostas(municipio);
-                  }
-                }}
-                disabled={loading}
-              >
-                {municipios.map((municipio, index) => (
-                  <option key={index} value={municipio}>
-                    {municipio === 'todos' ? 'Todos os municípios' : municipio}
-                  </option>
-                ))}
-              </select>
-              <select
-                className="text-sm border border-gray-200 rounded px-2 py-1"
-                value={tipoPropostaFilter}
-                onChange={e => setTipoPropostaFilter(e.target.value)}
-                disabled={loading}
-              >
-                {tiposProposta.map((tipo, idx) => (
-                  <option key={idx} value={tipo}>
-                    {tipo === 'todos' ? 'Todos os tipos de proposta' : tipo}
-                  </option>
-                ))}
-              </select>
-              <select
-                className="text-sm border border-gray-200 rounded px-2 py-1"
-                value={tipoRecursoFilter}
-                onChange={e => setTipoRecursoFilter(e.target.value)}
-                disabled={loading}
-              >
-                {tiposRecurso.map((tipo, idx) => (
-                  <option key={idx} value={tipo}>
-                    {tipo === 'todos' ? 'Todos os tipos de recurso' : tipo}
-                  </option>
-                ))}
-              </select>
+          {/* Seção de filtros */}
+          <div className="px-4 py-3 mb-2 space-y-4">
+            <div className="flex flex-col space-y-3">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-gray-500" />
+                <span className="text-sm font-medium text-gray-700">Filtros:</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <select 
+                  className="w-full text-sm border border-gray-200 rounded px-2 py-1.5"
+                  value={filter}
+                  onChange={(e) => {
+                    const municipio = e.target.value;
+                    setFilter(municipio);
+                    if (municipio !== 'todos') {
+                      loadPropostas(municipio);
+                    }
+                  }}
+                  disabled={loading}
+                >
+                  {municipios.map((municipio, index) => (
+                    <option key={index} value={municipio}>
+                      {municipio === 'todos' ? 'Todos os municípios' : municipio}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  className="w-full text-sm border border-gray-200 rounded px-2 py-1.5"
+                  value={tipoPropostaFilter}
+                  onChange={e => setTipoPropostaFilter(e.target.value)}
+                  disabled={loading}
+                >
+                  {tiposProposta.map((tipo, idx) => (
+                    <option key={idx} value={tipo}>
+                      {tipo === 'todos' ? 'Todos os tipos de proposta' : tipo}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  className="w-full text-sm border border-gray-200 rounded px-2 py-1.5"
+                  value={tipoRecursoFilter}
+                  onChange={e => setTipoRecursoFilter(e.target.value)}
+                  disabled={loading}
+                >
+                  {tiposRecurso.map((tipo, idx) => (
+                    <option key={idx} value={tipo}>
+                      {tipo === 'todos' ? 'Todos os tipos de recurso' : tipo}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
               <div className="text-xs text-gray-500">
                 Total: {filteredPropostas.length} proposta(s)
                 {filter !== 'todos' && ` em ${filter}`}
               </div>
-              
               <button
                 onClick={downloadCSV}
-                className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-white hover:bg-green-50 text-green-700 cursor-pointer border-gray-200"
+                className="w-full md:w-auto flex items-center justify-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-white hover:bg-green-50 text-green-700 cursor-pointer border-gray-200"
                 title="Exportar dados para CSV"
                 disabled={loading || filteredPropostas.length === 0}
               >
@@ -517,7 +520,8 @@ export default function ConsultarTetosPage() {
               </button>
             </div>
           </div>
-          
+
+          {/* Estados de loading e erro */}
           {loading && (
             <div className="px-4 text-center text-gray-500 py-6">
               <div className="inline-block animate-spin mr-2">⟳</div>
@@ -526,11 +530,12 @@ export default function ConsultarTetosPage() {
           )}
           
           {error && (
-            <div className="px-4 bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg mb-4">
+            <div className="mx-4 bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg mb-4">
               Erro ao carregar propostas: {error}
             </div>
           )}
           
+          {/* Tabela de propostas */}
           {!loading && !error && filteredPropostas.length === 0 ? (
             <div className="px-4 text-center text-gray-500 py-16">
               {filter !== 'todos' 
@@ -538,129 +543,148 @@ export default function ConsultarTetosPage() {
                 : 'Nenhuma proposta encontrada. Tente atualizar os dados.'}
             </div>
           ) : !loading && (
-            <div className="overflow-hidden overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Município</th>
-                    <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Tipo Proposta</th>
-                    <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Tipo Recurso</th>
-                    <th className="text-right text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Valor Proposta</th>
-                    <th className="text-right text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Valor Pagar</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 bg-white">
-                  {filteredPropostas.map((proposta, idx) => (
-                    <tr key={idx} className="hover:bg-gray-50 transition-colors">
-                      <td className="py-3 px-4 text-sm text-gray-700 whitespace-nowrap">{proposta.municipio}</td>
-                      <td className="py-3 px-4 text-sm text-gray-800">{proposta.coTipoProposta}</td>
-                      <td className="py-3 px-4 text-sm text-gray-800">{proposta.dsTipoRecurso || "N/A"}</td>
-                      <td className="py-3 px-4 text-sm text-gray-800 text-right whitespace-nowrap">{formatCurrency(proposta.vlProposta)}</td>
-                      <td className="py-3 px-4 text-sm text-gray-800 text-right whitespace-nowrap">{formatCurrency(proposta.vlPagar || 0)}</td>
+            <>
+              {/* Tabela para desktop */}
+              <div className="hidden md:block overflow-hidden overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-200">
+                      <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Município</th>
+                      <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Tipo Proposta</th>
+                      <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Tipo Recurso</th>
+                      <th className="text-right text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Valor Proposta</th>
+                      <th className="text-right text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Valor Pagar</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-          
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 bg-white">
+                    {filteredPropostas.map((proposta, idx) => (
+                      <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                        <td className="py-3 px-4 text-sm text-gray-700 whitespace-nowrap">{proposta.municipio}</td>
+                        <td className="py-3 px-4 text-sm text-gray-800">{proposta.coTipoProposta}</td>
+                        <td className="py-3 px-4 text-sm text-gray-800">{proposta.dsTipoRecurso || "N/A"}</td>
+                        <td className="py-3 px-4 text-sm text-gray-800 text-right whitespace-nowrap">{formatCurrency(proposta.vlProposta)}</td>
+                        <td className="py-3 px-4 text-sm text-gray-800 text-right whitespace-nowrap">{formatCurrency(proposta.vlPagar || 0)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
+              {/* Cards para mobile */}
+              <div className="block md:hidden">
+                <div className="divide-y divide-gray-200">
+                  {filteredPropostas.map((proposta, idx) => (
+                    <div key={idx} className="p-4 bg-white">
+                      <div className="space-y-2">
+                        <div>
+                          <div className="font-medium text-gray-900">{proposta.municipio}</div>
+                          <div className="text-sm text-gray-600">{proposta.coTipoProposta}</div>
+                        </div>
+                        <div className="text-sm text-gray-600">{proposta.dsTipoRecurso || "N/A"}</div>
+                        <div className="grid grid-cols-2 gap-4 pt-2">
+                          <div>
+                            <div className="text-xs text-gray-500">Valor Proposta</div>
+                            <div className="font-medium text-gray-900">{formatCurrency(proposta.vlProposta)}</div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-gray-500">Valor a Pagar</div>
+                            <div className="font-medium text-gray-900">{formatCurrency(proposta.vlPagar || 0)}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Cards de Limite MAC, PAP e SUAS */}
-          <div className="w-full flex flex-col md:flex-row gap-4 px-4 pt-4">
+          <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-4 p-4">
             {/* Card MAC */}
-            <div className="flex-1 bg-blue-50 border border-blue-200 rounded-lg p-4 flex flex-col gap-2 shadow-sm">
-              <div className="text-xs text-blue-900 font-semibold mb-1">{municipioSelecionado ? `Município: ${municipioSelecionado}` : 'Selecione um município para ver o Limite MAC'}</div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex flex-col gap-2 shadow-sm">
+              <div className="text-xs text-blue-900 font-semibold mb-1">
+                {municipioSelecionado ? `Município: ${municipioSelecionado}` : 'Selecione um município para ver o Limite MAC'}
+              </div>
               {municipioSelecionado && limiteMac ? (
-                <>
-                  <div className="flex flex-wrap gap-6">
-                    <div>
-                      <div className="text-[11px] text-blue-800 font-medium">Limite MAC</div>
-                      <div className="text-lg font-bold text-blue-900">{formatCurrency(limiteMac.valor)}</div>
-                    </div>
-                    <div>
-                      <div className="text-[11px] text-blue-800 font-medium">Propostas MAC</div>
-                      <div className="text-lg font-bold text-blue-900">{formatCurrency(somaPropostasMac)}</div>
-                    </div>
-                    <div>
-                      <div className="text-[11px] text-blue-800 font-medium">Valor a Pagar MAC</div>
-                      <div className="text-lg font-bold text-blue-900">{formatCurrency(somaValorPagarMac)}</div>
-                    </div>
-                    <div>
-                      <div className="text-[11px] text-blue-800 font-medium">Saldo MAC</div>
-                      <div className="text-lg font-bold text-blue-900">{saldoMac !== null ? formatCurrency(saldoMac) : '-'}</div>
-                    </div>
+                <div className="grid grid-cols-2 md:grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-[11px] text-blue-800 font-medium">Limite MAC</div>
+                    <div className="text-base md:text-lg font-bold text-blue-900">{formatCurrency(limiteMac.valor)}</div>
                   </div>
-                </>
+                  <div>
+                    <div className="text-[11px] text-blue-800 font-medium">Propostas MAC</div>
+                    <div className="text-base md:text-lg font-bold text-blue-900">{formatCurrency(somaPropostasMac)}</div>
+                  </div>
+                  <div>
+                    <div className="text-[11px] text-blue-800 font-medium">Valor a Pagar MAC</div>
+                    <div className="text-base md:text-lg font-bold text-blue-900">{formatCurrency(somaValorPagarMac)}</div>
+                  </div>
+                  <div>
+                    <div className="text-[11px] text-blue-800 font-medium">Saldo MAC</div>
+                    <div className="text-base md:text-lg font-bold text-blue-900">{saldoMac !== null ? formatCurrency(saldoMac) : '-'}</div>
+                  </div>
+                </div>
               ) : (
                 <div className="text-xs text-blue-700">Nenhum limite MAC encontrado para o município selecionado.</div>
               )}
             </div>
+
             {/* Card PAP */}
-            <div className="flex-1 bg-green-50 border border-green-200 rounded-lg p-4 flex flex-col gap-2 shadow-sm">
-              <div className="text-xs text-green-900 font-semibold mb-1">{municipioSelecionado ? `Município: ${municipioSelecionado}` : 'Selecione um município para ver o Limite PAP'}</div>
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex flex-col gap-2 shadow-sm">
+              <div className="text-xs text-green-900 font-semibold mb-1">
+                {municipioSelecionado ? `Município: ${municipioSelecionado}` : 'Selecione um município para ver o Limite PAP'}
+              </div>
               {municipioSelecionado && limitePap ? (
-                <>
-                  <div className="flex flex-wrap gap-6">
-                    <div>
-                      <div className="text-[11px] text-green-800 font-medium">Limite PAP</div>
-                      <div className="text-lg font-bold text-green-900">{formatCurrency(limitePap.valor)}</div>
-                    </div>
-                    <div>
-                      <div className="text-[11px] text-green-800 font-medium">Propostas PAP</div>
-                      <div className="text-lg font-bold text-green-900">{formatCurrency(somaPropostasPap)}</div>
-                    </div>
-                    <div>
-                      <div className="text-[11px] text-green-800 font-medium">Valor a Pagar PAP</div>
-                      <div className="text-lg font-bold text-green-900">{formatCurrency(somaValorPagarPap)}</div>
-                    </div>
-                    <div>
-                      <div className="text-[11px] text-green-800 font-medium">Saldo PAP</div>
-                      <div className="text-lg font-bold text-green-900">{saldoPap !== null ? formatCurrency(saldoPap) : '-'}</div>
-                    </div>
+                <div className="grid grid-cols-2 md:grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-[11px] text-green-800 font-medium">Limite PAP</div>
+                    <div className="text-base md:text-lg font-bold text-green-900">{formatCurrency(limitePap.valor)}</div>
                   </div>
-                </>
+                  <div>
+                    <div className="text-[11px] text-green-800 font-medium">Propostas PAP</div>
+                    <div className="text-base md:text-lg font-bold text-green-900">{formatCurrency(somaPropostasPap)}</div>
+                  </div>
+                  <div>
+                    <div className="text-[11px] text-green-800 font-medium">Valor a Pagar PAP</div>
+                    <div className="text-base md:text-lg font-bold text-green-900">{formatCurrency(somaValorPagarPap)}</div>
+                  </div>
+                  <div>
+                    <div className="text-[11px] text-green-800 font-medium">Saldo PAP</div>
+                    <div className="text-base md:text-lg font-bold text-green-900">{saldoPap !== null ? formatCurrency(saldoPap) : '-'}</div>
+                  </div>
+                </div>
               ) : (
                 <div className="text-xs text-green-700">Nenhum limite PAP encontrado para o município selecionado.</div>
               )}
             </div>
+
             {/* Card SUAS */}
-            <div className="flex-1 bg-orange-50 border border-orange-200 rounded-lg p-4 flex flex-col gap-2 shadow-sm">
-              <div className="text-xs text-orange-900 font-semibold mb-1">{municipioSelecionado ? `Município: ${municipioSelecionado}` : 'Selecione um município para ver o Limite SUAS'}</div>
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 flex flex-col gap-2 shadow-sm">
+              <div className="text-xs text-purple-900 font-semibold mb-1">
+                {municipioSelecionado ? `Município: ${municipioSelecionado}` : 'Selecione um município para ver o Limite SUAS'}
+              </div>
               {municipioSelecionado ? (
-                <>
-                  <div className="flex flex-wrap gap-6">
-                    <div>
-                      <div className="text-[11px] text-orange-800 font-medium">População Estimada</div>
-                      <div className="text-lg font-bold text-orange-900">{populacaoSUAS !== null ? populacaoSUAS.toLocaleString('pt-BR') : '-'}</div>
-                    </div>
-                    <div>
-                      <div className="text-[11px] text-orange-800 font-medium">Porte</div>
-                      <div className="text-lg font-bold text-orange-900">{porteSUAS}</div>
-                    </div>
-                    <div>
-                      <div className="text-[11px] text-orange-800 font-medium">Valor Máximo SUAS (MDS)</div>
-                      <div className="text-lg font-bold text-orange-900">{valorSUAS}</div>
-                    </div>
-                    <div>
-                      <div className="text-[11px] text-orange-800 font-medium">Propostas SUAS</div>
-                      <div className="text-lg font-bold text-orange-900">{formatCurrency(totalPropostasSUAS)}</div>
-                    </div>
-                    <div>
-                      <div className="text-[11px] text-orange-800 font-medium">Valor a Pagar SUAS</div>
-                      <div className="text-lg font-bold text-orange-900">{formatCurrency(totalPagarSUAS)}</div>
-                    </div>
+                <div className="grid grid-cols-2 md:grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-[11px] text-purple-800 font-medium">Porte</div>
+                    <div className="text-base md:text-lg font-bold text-purple-900">{porteSUAS}</div>
                   </div>
-                  <button
-                    onClick={() => setShowEmendasSUASModal(true)}
-                    className="mt-2 flex items-center justify-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-orange-100 hover:bg-orange-200 text-orange-700 cursor-pointer border-orange-200"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Adicionar Emenda SUAS
-                  </button>
-                </>
+                  <div>
+                    <div className="text-[11px] text-purple-800 font-medium">Limite SUAS</div>
+                    <div className="text-base md:text-lg font-bold text-purple-900">{valorSUAS}</div>
+                  </div>
+                  <div>
+                    <div className="text-[11px] text-purple-800 font-medium">Total Propostas</div>
+                    <div className="text-base md:text-lg font-bold text-purple-900">{formatCurrency(totalPropostasSUAS)}</div>
+                  </div>
+                  <div>
+                    <div className="text-[11px] text-purple-800 font-medium">Total a Pagar</div>
+                    <div className="text-base md:text-lg font-bold text-purple-900">{formatCurrency(totalPagarSUAS)}</div>
+                  </div>
+                </div>
               ) : (
-                <div className="text-xs text-orange-700">Nenhum limite SUAS encontrado para o município selecionado.</div>
+                <div className="text-xs text-purple-700">Nenhum limite SUAS encontrado para o município selecionado.</div>
               )}
             </div>
           </div>

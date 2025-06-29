@@ -17,30 +17,27 @@ export default function BaseLiderancasPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Cabeçalho */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Base de Lideranças</h1>
-              <p className="mt-1 text-sm text-gray-500">
-                Bem-vindo à Base de Lideranças
-              </p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Button
-                variant="outline"
-                onClick={() => router.push('/painel-aplicacoes')}
-                className="flex items-center"
-              >
-                <Home className="h-4 w-4 mr-2" />
-                Voltar ao Painel
-              </Button>
-            </div>
+    <div className="flex-1 flex flex-col min-h-screen">
+      {/* Navbar interna do conteúdo */}
+      <nav className="w-full bg-white border-b border-gray-100 shadow-sm">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex flex-col items-start">
+            <span className="text-base md:text-lg font-semibold text-gray-900">Base de Lideranças</span>
+            <span className="text-xs text-gray-500 font-light">Gerencie e acompanhe a base de lideranças políticas</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push('/painel-aplicacoes')}
+              className="flex items-center gap-1 text-gray-600 hover:text-blue-700 transition-colors"
+            >
+              <Home className="h-4 w-4" />
+              Voltar ao Painel
+            </Button>
           </div>
         </div>
-      </header>
+      </nav>
 
       {/* Conteúdo Principal */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

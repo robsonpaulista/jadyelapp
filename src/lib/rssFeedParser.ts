@@ -6,6 +6,7 @@ interface NewsItem {
   link: string;
   pubDate?: string;
   source: string;
+  image?: string;
 }
 
 // Função para realizar uma solicitação direta via fetch com mais opções de headers
@@ -128,12 +129,14 @@ export async function parseRssWithXml2js(xmlData: string, source: string): Promi
       const title = extractTextContent(item.title);
       const link = extractLinkUrl(item);
       const pubDate = extractDate(item);
+      const image = extractImageUrl(item);
       
       return {
         title: removeHtmlTags(title),
         link,
         pubDate,
-        source
+        source,
+        image
       };
     });
   } catch (e) {
@@ -213,6 +216,166 @@ function extractDate(item: any): string | undefined {
   return undefined;
 }
 
+function extractImageUrl(item: any): string | undefined {
+  if (!item) return undefined;
+  
+  // Campos comuns para imagens em RSS/Atom
+  const imageFields = [
+    'enclosure', 'media:thumbnail', 'media:content', 'image', 
+    'thumbnail', 'media:group', 'content:encoded', 'description'
+  ];
+  
+  // 1. Verificar enclosure (muito comum em RSS)
+  if (item.enclosure) {
+    if (typeof item.enclosure === 'string' && isImageUrl(item.enclosure)) {
+      return item.enclosure;
+    }
+    if (typeof item.enclosure === 'object') {
+      if (item.enclosure.url && isImageUrl(item.enclosure.url)) {
+        return item.enclosure.url;
+      }
+      if (item.enclosure.href && isImageUrl(item.enclosure.href)) {
+        return item.enclosure.href;
+      }
+      // Se é um array de enclosures
+      if (Array.isArray(item.enclosure)) {
+        for (const enc of item.enclosure) {
+          if (typeof enc === 'string' && isImageUrl(enc)) {
+            return enc;
+          }
+          if (typeof enc === 'object') {
+            if (enc.url && isImageUrl(enc.url)) {
+              return enc.url;
+            }
+            if (enc.href && isImageUrl(enc.href)) {
+              return enc.href;
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // 2. Verificar media:thumbnail (namespace media)
+  if (item['media:thumbnail']) {
+    const thumb = item['media:thumbnail'];
+    if (typeof thumb === 'string' && isImageUrl(thumb)) {
+      return thumb;
+    }
+    if (typeof thumb === 'object') {
+      if (thumb.url && isImageUrl(thumb.url)) {
+        return thumb.url;
+      }
+      if (thumb.href && isImageUrl(thumb.href)) {
+        return thumb.href;
+      }
+    }
+  }
+  
+  // 3. Verificar media:content
+  if (item['media:content']) {
+    const content = item['media:content'];
+    if (typeof content === 'string' && isImageUrl(content)) {
+      return content;
+    }
+    if (typeof content === 'object') {
+      if (content.url && isImageUrl(content.url)) {
+        return content.url;
+      }
+      if (content.href && isImageUrl(content.href)) {
+        return content.href;
+      }
+    }
+  }
+  
+  // 4. Verificar campo image direto
+  if (item.image) {
+    if (typeof item.image === 'string' && isImageUrl(item.image)) {
+      return item.image;
+    }
+    if (typeof item.image === 'object') {
+      if (item.image.url && isImageUrl(item.image.url)) {
+        return item.image.url;
+      }
+      if (item.image.href && isImageUrl(item.image.href)) {
+        return item.image.href;
+      }
+    }
+  }
+  
+  // 5. Procurar em content:encoded ou description (HTML content)
+  const htmlFields = ['content:encoded', 'description', 'content', 'summary'];
+  for (const field of htmlFields) {
+    if (item[field]) {
+      const htmlContent = extractTextContent(item[field]);
+      const imageFromHtml = extractImageFromHtml(htmlContent);
+      if (imageFromHtml) {
+        return imageFromHtml;
+      }
+    }
+  }
+  
+  // 6. Como fallback, gerar um avatar baseado no título
+  if (item.title) {
+    return generateAvatarUrl(item.title);
+  }
+  
+  return undefined;
+}
+
+function generateAvatarUrl(title: string): string {
+  // Usar o serviço DiceBear para gerar avatares únicos baseados no título
+  const seed = encodeURIComponent(title.substring(0, 50)); // Usar primeiros 50 caracteres como seed
+  return `https://api.dicebear.com/7.x/initials/svg?seed=${seed}&backgroundColor=3b82f6,8b5cf6,ef4444,f59e0b,10b981&size=48`;
+}
+
+function isImageUrl(url: string): boolean {
+  if (!url || typeof url !== 'string') return false;
+  
+  // Verificar se é uma URL válida
+  try {
+    new URL(url);
+  } catch {
+    return false;
+  }
+  
+  // Verificar extensões de imagem comuns
+  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp'];
+  const urlLower = url.toLowerCase();
+  
+  // Verificar extensão
+  if (imageExtensions.some(ext => urlLower.includes(ext))) {
+    return true;
+  }
+  
+  // Verificar se contém parâmetros que indicam imagem
+  if (urlLower.includes('image') || urlLower.includes('photo') || urlLower.includes('picture')) {
+    return true;
+  }
+  
+  return false;
+}
+
+function extractImageFromHtml(html: string): string | undefined {
+  if (!html || typeof html !== 'string') return undefined;
+  
+  // Regex para encontrar tags img
+  const imgRegex = /<img[^>]+src\s*=\s*["']([^"']+)["'][^>]*>/gi;
+  const matches = html.match(imgRegex);
+  
+  if (matches && matches.length > 0) {
+    // Extrair o src da primeira imagem encontrada
+    const srcRegex = /src\s*=\s*["']([^"']+)["']/i;
+    const srcMatch = matches[0].match(srcRegex);
+    
+    if (srcMatch && srcMatch[1] && isImageUrl(srcMatch[1])) {
+      return srcMatch[1];
+    }
+  }
+  
+  return undefined;
+}
+
 function removeHtmlTags(text: string): string {
   return text.replace(/<\/?[^>]+(>|$)/g, "");
 }
@@ -221,7 +384,11 @@ function removeHtmlTags(text: string): string {
 export async function fetchRssFeed(url: string, sourceName: string): Promise<NewsItem[]> {
   const parser = new Parser({
     customFields: {
-      item: ['pubDate', 'title', 'link', 'content', 'contentSnippet', 'guid', 'dc:date', 'isoDate'],
+      item: [
+        'pubDate', 'title', 'link', 'content', 'contentSnippet', 'guid', 'dc:date', 'isoDate',
+        'enclosure', 'media:thumbnail', 'media:content', 'image', 'thumbnail', 'media:group',
+        'content:encoded', 'description', 'summary'
+      ],
     },
   });
   
@@ -242,7 +409,8 @@ export async function fetchRssFeed(url: string, sourceName: string): Promise<New
             title: (item.title || '').replace(/<\/?[^>]+(>|$)/g, ""),
             link: item.link || '',
             pubDate: item.pubDate || item.isoDate || item['dc:date'],
-            source: sourceName
+            source: sourceName,
+            image: extractImageUrl(item)
           }));
         } else {
           // Se o parser padrão não encontrou itens, tentar com xml2js
@@ -264,7 +432,8 @@ export async function fetchRssFeed(url: string, sourceName: string): Promise<New
             title: (item.title || '').replace(/<\/?[^>]+(>|$)/g, ""),
             link: item.link || '',
             pubDate: item.pubDate || item.isoDate || item['dc:date'],
-            source: sourceName
+            source: sourceName,
+            image: extractImageUrl(item)
           }));
         }
       } catch (e) {
