@@ -110,18 +110,46 @@ export default function ChapasPage() {
           if (!partidosMap[chapa.partido]) {
             partidosMap[chapa.partido] = {
               nome: chapa.partido,
-              cor: "bg-gray-200",
-              corTexto: "text-gray-800",
+              cor: getPartidoCor(chapa.partido),
+              corTexto: getPartidoCorTexto(chapa.partido),
               candidatos: []
             };
           }
           partidosMap[chapa.partido].candidatos.push({ nome: chapa.nome, votos: chapa.votos });
         });
-        setPartidos(Object.values(partidosMap));
+
+        // Definir a ordem dos partidos
+        const ordemPartidos = ["PT", "PSD/MDB", "PP", "REPUBLICANOS"];
+        const partidosOrdenados = ordemPartidos
+          .map(partidoNome => partidosMap[partidoNome])
+          .filter(Boolean);
+
+        setPartidos(partidosOrdenados);
       }
     }
     fetchChapasFirestore();
   }, []);
+
+  // Funções auxiliares para definir cores dos partidos
+  function getPartidoCor(partido: string): string {
+    const cores: { [key: string]: string } = {
+      "PT": "bg-red-600",
+      "PSD/MDB": "bg-yellow-400",
+      "PP": "bg-sky-400",
+      "REPUBLICANOS": "bg-blue-900"
+    };
+    return cores[partido] || "bg-gray-200";
+  }
+
+  function getPartidoCorTexto(partido: string): string {
+    const cores: { [key: string]: string } = {
+      "PT": "text-white",
+      "PSD/MDB": "text-gray-900",
+      "PP": "text-white",
+      "REPUBLICANOS": "text-white"
+    };
+    return cores[partido] || "text-gray-800";
+  }
 
   // Função para atualizar apenas o estado local (sem salvar no Firestore)
   const updateLocalState = (partidoIdx: number, candidatoNome: string, field: 'nome' | 'votos', value: string) => {
