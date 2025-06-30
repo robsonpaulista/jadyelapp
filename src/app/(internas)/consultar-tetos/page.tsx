@@ -389,7 +389,18 @@ export default function ConsultarTetosPage() {
       
       if (!res.ok) throw new Error('Erro ao adicionar emenda SUAS');
       
-      await loadEmendasSUAS();
+      const { id } = await res.json();
+      
+      // Atualiza o estado local com a nova emenda
+      setEmendasSUAS(prev => [...prev, {
+        id,
+        ...novaEmendaSUAS,
+        municipio: filter !== 'todos' ? filter : novaEmendaSUAS.municipio,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }]);
+
+      // Fecha o modal e limpa o formulário
       setShowEmendasSUASModal(false);
       setNovaEmendaSUAS({
         municipio: '',
@@ -399,7 +410,7 @@ export default function ConsultarTetosPage() {
         valor_pagar: 0
       });
     } catch (error) {
-      // Erro silencioso - não exibir logs por segurança
+      console.error('Erro ao adicionar emenda SUAS:', error);
     }
   };
 
