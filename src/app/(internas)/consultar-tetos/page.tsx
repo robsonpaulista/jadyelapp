@@ -88,11 +88,11 @@ export default function ConsultarTetosPage() {
 
   const [propostas, setPropostas] = useState<Proposta[]>([]);
   const [filteredPropostas, setFilteredPropostas] = useState<Proposta[]>([]);
-  const [filter, setFilter] = useState<string>('todos');
+  const [filter, setFilter] = useState('todos');
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [tipoPropostaFilter, setTipoPropostaFilter] = useState<string>('todos');
-  const [tipoRecursoFilter, setTipoRecursoFilter] = useState<string>('todos');
+  const [tipoPropostaFilter, setTipoPropostaFilter] = useState('todos');
+  const [tipoRecursoFilter, setTipoRecursoFilter] = useState('todos');
   const [sortConfig, setSortConfig] = useState<{ key: keyof Proposta, direction: 'asc' | 'desc' } | null>(null);
   const [municipiosPopulacao, setMunicipiosPopulacao] = useState<any[]>([]);
   const [populacaoSUAS, setPopulacaoSUAS] = useState<number | null>(null);
@@ -103,8 +103,8 @@ export default function ConsultarTetosPage() {
   const [novaEmendaSUAS, setNovaEmendaSUAS] = useState<EmendaSUAS>({
     id: undefined,
     municipio: '',
-    tipo_proposta: '',
-    tipo_recurso: '',
+    tipo_proposta: 'INCREMENTO SUAS',
+    tipo_recurso: 'EMENDA/PROJETO',
     valor_proposta: 0,
     valor_pagar: 0,
     created_at: undefined,
@@ -113,6 +113,24 @@ export default function ConsultarTetosPage() {
   
   // Lista completa de municípios do PI 
   const [todosOsMunicipios, setTodosOsMunicipios] = useState<string[]>(['todos']);
+
+  // Valores fixos para emendas SUAS
+  const TIPO_PROPOSTA_SUAS = 'INCREMENTO SUAS';
+  const TIPO_RECURSO_SUAS = 'EMENDA/PROJETO';
+
+  // Função para limpar o formulário
+  const limparFormularioSUAS = () => {
+    setNovaEmendaSUAS({
+      id: undefined,
+      municipio: '',
+      tipo_proposta: TIPO_PROPOSTA_SUAS,
+      tipo_recurso: TIPO_RECURSO_SUAS,
+      valor_proposta: 0,
+      valor_pagar: 0,
+      created_at: undefined,
+      updated_at: undefined
+    });
+  };
 
   // Função para carregar os dados das propostas
   const loadPropostas = async (municipio?: string) => {
@@ -408,18 +426,8 @@ export default function ConsultarTetosPage() {
         updated_at: new Date().toISOString()
       }]);
 
-      // Fecha o modal e limpa o formulário
       setShowEmendasSUASModal(false);
-      setNovaEmendaSUAS({
-        id: undefined,
-        municipio: '',
-        tipo_proposta: '',
-        tipo_recurso: '',
-        valor_proposta: 0,
-        valor_pagar: 0,
-        created_at: undefined,
-        updated_at: undefined
-      });
+      limparFormularioSUAS();
     } catch (error) {
       console.error('Erro ao adicionar emenda SUAS:', error);
     }
@@ -489,19 +497,22 @@ export default function ConsultarTetosPage() {
       ));
 
       setShowEmendasSUASModal(false);
-      setNovaEmendaSUAS({
-        id: undefined,
-        municipio: '',
-        tipo_proposta: '',
-        tipo_recurso: '',
-        valor_proposta: 0,
-        valor_pagar: 0,
-        created_at: undefined,
-        updated_at: undefined
-      });
+      limparFormularioSUAS();
     } catch (error) {
       console.error('Erro ao atualizar emenda SUAS:', error);
     }
+  };
+
+  // Função para extrair o valor numérico do formato "R$ X.XXX.XXX,XX"
+  const extrairValorNumerico = (valorFormatado: string): number => {
+    if (valorFormatado === '-') return 0;
+    return Number(valorFormatado.replace('R$ ', '').replace('.', '').replace(',', '.'));
+  };
+
+  // Calcular saldo SUAS
+  const calcularSaldoSUAS = (): number => {
+    const limiteNumerico = extrairValorNumerico(valorSUAS);
+    return limiteNumerico - totalPropostasSUAS;
   };
 
   return (
@@ -804,8 +815,8 @@ export default function ConsultarTetosPage() {
                     <div className="text-base md:text-lg font-bold text-purple-900">{formatCurrency(totalPropostasSUAS)}</div>
                   </div>
                   <div>
-                    <div className="text-[11px] text-purple-800 font-medium">Total a Pagar</div>
-                    <div className="text-base md:text-lg font-bold text-purple-900">{formatCurrency(totalPagarSUAS)}</div>
+                    <div className="text-[11px] text-purple-800 font-medium">Saldo SUAS</div>
+                    <div className="text-base md:text-lg font-bold text-purple-900">{formatCurrency(calcularSaldoSUAS())}</div>
                   </div>
                 </div>
               ) : (
@@ -827,8 +838,8 @@ export default function ConsultarTetosPage() {
                     <input
                       type="text"
                       value={novaEmendaSUAS.tipo_proposta}
-                      onChange={(e) => setNovaEmendaSUAS(prev => ({ ...prev, tipo_proposta: e.target.value }))}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm"
+                      disabled
+                      className="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm"
                     />
                   </div>
                   <div>
@@ -836,8 +847,8 @@ export default function ConsultarTetosPage() {
                     <input
                       type="text"
                       value={novaEmendaSUAS.tipo_recurso}
-                      onChange={(e) => setNovaEmendaSUAS(prev => ({ ...prev, tipo_recurso: e.target.value }))}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm"
+                      disabled
+                      className="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm"
                     />
                   </div>
                   <div>
@@ -861,7 +872,10 @@ export default function ConsultarTetosPage() {
                 </div>
                 <div className="mt-6 flex justify-end gap-3">
                   <button
-                    onClick={() => setShowEmendasSUASModal(false)}
+                    onClick={() => {
+                      setShowEmendasSUASModal(false);
+                      limparFormularioSUAS();
+                    }}
                     className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
                   >
                     Cancelar
