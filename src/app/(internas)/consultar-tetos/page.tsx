@@ -1,6 +1,6 @@
 "use client";
-import React, { useEffect, useState } from 'react';
-import { RefreshCw, Filter, FileDown, Plus } from 'lucide-react';
+import React, { useEffect, useState, useMemo } from 'react';
+import { RefreshCw, Filter, FileDown, Plus, Pencil } from 'lucide-react';
 import { getLimiteMacByMunicipio } from '@/utils/limitesmac';
 import { getLimitePapByMunicipio } from '@/utils/limitepap';
 import { disableConsoleLogging } from '@/lib/logger';
@@ -23,14 +23,19 @@ interface Proposta {
 }
 
 interface EmendaSUAS {
-  id: number;
+  id?: string;
   municipio: string;
   tipo_proposta: string;
   tipo_recurso: string;
   valor_proposta: number;
   valor_pagar: number;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+interface PropostaExtendida extends Proposta {
+  tipo: 'FNS' | 'SUAS';
+  emendaSUASId?: string;
 }
 
 // Função utilitária para remover acentos
@@ -95,12 +100,15 @@ export default function ConsultarTetosPage() {
   const [valorSUAS, setValorSUAS] = useState<string>('-');
   const [emendasSUAS, setEmendasSUAS] = useState<EmendaSUAS[]>([]);
   const [showEmendasSUASModal, setShowEmendasSUASModal] = useState(false);
-  const [novaEmendaSUAS, setNovaEmendaSUAS] = useState({
+  const [novaEmendaSUAS, setNovaEmendaSUAS] = useState<EmendaSUAS>({
+    id: undefined,
     municipio: '',
     tipo_proposta: '',
     tipo_recurso: '',
     valor_proposta: 0,
-    valor_pagar: 0
+    valor_pagar: 0,
+    created_at: undefined,
+    updated_at: undefined
   });
   
   // Lista completa de municípios do PI 
@@ -403,11 +411,14 @@ export default function ConsultarTetosPage() {
       // Fecha o modal e limpa o formulário
       setShowEmendasSUASModal(false);
       setNovaEmendaSUAS({
+        id: undefined,
         municipio: '',
         tipo_proposta: '',
         tipo_recurso: '',
         valor_proposta: 0,
-        valor_pagar: 0
+        valor_pagar: 0,
+        created_at: undefined,
+        updated_at: undefined
       });
     } catch (error) {
       console.error('Erro ao adicionar emenda SUAS:', error);
@@ -425,6 +436,73 @@ export default function ConsultarTetosPage() {
   const emendasSUASFiltradas = emendasSUAS.filter(e => e.municipio === filter);
   const totalPropostasSUAS = emendasSUASFiltradas.reduce((acc, curr) => acc + curr.valor_proposta, 0);
   const totalPagarSUAS = emendasSUASFiltradas.reduce((acc, curr) => acc + curr.valor_pagar, 0);
+
+  // Combinar propostas FNS com emendas SUAS
+  const todasPropostas = useMemo(() => {
+    const propostasFNS = propostas.map(p => ({
+      ...p,
+      tipo: 'FNS' as const
+    }));
+
+    const propostasSUAS = emendasSUAS.map(e => ({
+      nuProposta: `SUAS-${e.id}`,
+      acao: '',
+      nmPrograma: '',
+      nmTipoObjeto: '',
+      snPrincipal: '',
+      municipio: e.municipio,
+      vlProposta: e.valor_proposta,
+      vlGlobal: e.valor_proposta,
+      coSituacaoProposta: '',
+      dsSituacaoProposta: '',
+      dtCadastramento: e.created_at || new Date().toISOString(),
+      coTipoProposta: e.tipo_proposta,
+      dsTipoRecurso: e.tipo_recurso,
+      vlPagar: e.valor_pagar,
+      tipo: 'SUAS' as const,
+      emendaSUASId: e.id
+    }));
+
+    return [...propostasFNS, ...propostasSUAS] as PropostaExtendida[];
+  }, [propostas, emendasSUAS]);
+
+  // Função para editar emenda SUAS
+  const handleEditEmendaSUAS = async (emenda: EmendaSUAS) => {
+    setNovaEmendaSUAS(emenda);
+    setShowEmendasSUASModal(true);
+  };
+
+  // Função para atualizar emenda SUAS
+  const handleUpdateEmendaSUAS = async () => {
+    try {
+      const res = await fetch('/api/emendassuas', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(novaEmendaSUAS)
+      });
+      
+      if (!res.ok) throw new Error('Erro ao atualizar emenda SUAS');
+      
+      // Atualiza o estado local
+      setEmendasSUAS(prev => prev.map(e => 
+        e.id === novaEmendaSUAS.id ? novaEmendaSUAS : e
+      ));
+
+      setShowEmendasSUASModal(false);
+      setNovaEmendaSUAS({
+        id: undefined,
+        municipio: '',
+        tipo_proposta: '',
+        tipo_recurso: '',
+        valor_proposta: 0,
+        valor_pagar: 0,
+        created_at: undefined,
+        updated_at: undefined
+      });
+    } catch (error) {
+      console.error('Erro ao atualizar emenda SUAS:', error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white text-gray-800 flex flex-col md:flex-row">
@@ -575,24 +653,42 @@ export default function ConsultarTetosPage() {
             <>
               {/* Tabela para desktop */}
               <div className="hidden md:block overflow-hidden overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-gray-50 border-b border-gray-200">
-                      <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Município</th>
-                      <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Tipo Proposta</th>
-                      <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Tipo Recurso</th>
-                      <th className="text-right text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Valor Proposta</th>
-                      <th className="text-right text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Valor Pagar</th>
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Município</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo Proposta</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo Recurso</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Valor Proposta</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Valor a Pagar</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200 bg-white">
-                    {filteredPropostas.map((proposta, idx) => (
-                      <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {todasPropostas.map((proposta, idx) => (
+                      <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                         <td className="py-3 px-4 text-sm text-gray-700 whitespace-nowrap">{proposta.municipio}</td>
                         <td className="py-3 px-4 text-sm text-gray-800">{proposta.coTipoProposta}</td>
                         <td className="py-3 px-4 text-sm text-gray-800">{proposta.dsTipoRecurso || "N/A"}</td>
                         <td className="py-3 px-4 text-sm text-gray-800 text-right whitespace-nowrap">{formatCurrency(proposta.vlProposta)}</td>
                         <td className="py-3 px-4 text-sm text-gray-800 text-right whitespace-nowrap">{formatCurrency(proposta.vlPagar || 0)}</td>
+                        <td className="py-3 px-4 text-sm text-gray-800 text-right whitespace-nowrap">
+                          {proposta.tipo === 'SUAS' && (
+                            <button
+                              onClick={() => handleEditEmendaSUAS({
+                                id: proposta.emendaSUASId,
+                                municipio: proposta.municipio,
+                                tipo_proposta: proposta.coTipoProposta,
+                                tipo_recurso: proposta.dsTipoRecurso,
+                                valor_proposta: proposta.vlProposta,
+                                valor_pagar: proposta.vlPagar
+                              })}
+                              className="text-blue-600 hover:text-blue-800"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -718,11 +814,13 @@ export default function ConsultarTetosPage() {
             </div>
           </div>
 
-          {/* Modal de Adicionar Emenda SUAS */}
+          {/* Modal de Adicionar/Editar Emenda SUAS */}
           {showEmendasSUASModal && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
               <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                <h3 className="text-lg font-semibold mb-4">Adicionar Emenda SUAS</h3>
+                <h3 className="text-lg font-semibold mb-4">
+                  {novaEmendaSUAS.id ? 'Editar Emenda SUAS' : 'Adicionar Emenda SUAS'}
+                </h3>
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Tipo de Proposta</label>
@@ -769,10 +867,10 @@ export default function ConsultarTetosPage() {
                     Cancelar
                   </button>
                   <button
-                    onClick={handleAddEmendaSUAS}
+                    onClick={novaEmendaSUAS.id ? handleUpdateEmendaSUAS : handleAddEmendaSUAS}
                     className="px-4 py-2 text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 rounded-md"
                   >
-                    Adicionar
+                    {novaEmendaSUAS.id ? 'Salvar' : 'Adicionar'}
                   </button>
                 </div>
               </div>
