@@ -242,6 +242,20 @@ export default function EleicoesAnterioresPage() {
     }
   };
 
+  // Função para calcular totais das emendas SUAS
+  const calcularTotaisSUAS = () => {
+    if (!emendasSUAS || !Array.isArray(emendasSUAS) || !cidade) return { totalPropostas: 0, totalPagar: 0 };
+    
+    const emendasFiltradas = emendasSUAS.filter(e => 
+      normalizeString(e.municipio) === normalizeString(cidade)
+    );
+    
+    const totalPropostas = emendasFiltradas.reduce((acc, curr) => acc + (curr.valor_proposta || 0), 0);
+    const totalPagar = emendasFiltradas.reduce((acc, curr) => acc + (curr.valor_pagar || 0), 0);
+    
+    return { totalPropostas, totalPagar };
+  };
+
   // Função para calcular totais das propostas
   const calcularTotaisPropostas = (tipo: string) => {
     if (!propostas || !Array.isArray(propostas) || !cidade) return { total: 0, valorPagar: 0, saldo: 0 };
@@ -262,20 +276,6 @@ export default function EleicoesAnterioresPage() {
     }
     
     return { total, valorPagar, saldo: 0 };
-  };
-
-  // Função para calcular totais das emendas SUAS
-  const calcularTotaisSUAS = () => {
-    if (!emendasSUAS || !Array.isArray(emendasSUAS) || !cidade) return { totalPropostas: 0, totalPagar: 0 };
-    
-    const emendasFiltradas = emendasSUAS.filter(e => 
-      e.municipio.toUpperCase() === cidade.toUpperCase()
-    );
-    
-    const totalPropostas = emendasFiltradas.reduce((acc, curr) => acc + (curr.valor_proposta || 0), 0);
-    const totalPagar = emendasFiltradas.reduce((acc, curr) => acc + (curr.valor_pagar || 0), 0);
-    
-    return { totalPropostas, totalPagar };
   };
 
   // Função para formatar valor em moeda brasileira
@@ -473,6 +473,11 @@ export default function EleicoesAnterioresPage() {
     }
   };
 
+  // Carregar emendas SUAS quando a página carregar
+  useEffect(() => {
+    loadEmendasSUAS();
+  }, []);
+
   // Fechar modal com tecla ESC
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
@@ -542,6 +547,17 @@ export default function EleicoesAnterioresPage() {
   const closeModal = () => {
     setModalOpen(false);
     setSelectedLideranca(null);
+  };
+
+  // Função para extrair o valor numérico do formato "R$ X.XXX.XXX,XX"
+  const extrairValorNumerico = (valorFormatado: string): number => {
+    if (valorFormatado === '-') return 0;
+    // Remove "R$ " e converte para número
+    const valor = valorFormatado
+      .replace('R$ ', '')
+      .replace(/\./g, '')
+      .replace(',', '.');
+    return parseFloat(valor);
   };
 
   return (
@@ -1039,16 +1055,18 @@ export default function EleicoesAnterioresPage() {
                   <span className="text-sm font-bold text-orange-900">{porteSUAS}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-orange-700">Valor Máximo SUAS (MDS):</span>
+                  <span className="text-xs text-orange-700">Limite SUAS:</span>
                   <span className="text-sm font-bold text-orange-900">{valorSUAS}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-orange-700">Propostas SUAS:</span>
+                  <span className="text-xs text-orange-700">Total Propostas:</span>
                   <span className="text-sm font-bold text-orange-900">{formatCurrency(calcularTotaisSUAS().totalPropostas)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-orange-700">Valor a Pagar SUAS:</span>
-                  <span className="text-sm font-bold text-orange-900">{formatCurrency(calcularTotaisSUAS().totalPagar)}</span>
+                  <span className="text-xs text-orange-700">Saldo SUAS:</span>
+                  <span className="text-sm font-bold text-orange-900">
+                    {valorSUAS === '-' ? '-' : formatCurrency(extrairValorNumerico(valorSUAS) - calcularTotaisSUAS().totalPropostas)}
+                  </span>
                 </div>
               </div>
             </div>
