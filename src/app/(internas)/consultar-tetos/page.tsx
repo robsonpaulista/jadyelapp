@@ -506,11 +506,17 @@ export default function ConsultarTetosPage() {
   // Função para extrair o valor numérico do formato "R$ X.XXX.XXX,XX"
   const extrairValorNumerico = (valorFormatado: string): number => {
     if (valorFormatado === '-') return 0;
-    return Number(valorFormatado.replace('R$ ', '').replace('.', '').replace(',', '.'));
+    // Remove "R$ " e converte para número
+    const valor = valorFormatado
+      .replace('R$ ', '')
+      .replace(/\./g, '')
+      .replace(',', '.');
+    return parseFloat(valor);
   };
 
   // Calcular saldo SUAS
   const calcularSaldoSUAS = (): number => {
+    if (valorSUAS === '-') return 0;
     const limiteNumerico = extrairValorNumerico(valorSUAS);
     return limiteNumerico - totalPropostasSUAS;
   };
@@ -816,7 +822,9 @@ export default function ConsultarTetosPage() {
                   </div>
                   <div>
                     <div className="text-[11px] text-purple-800 font-medium">Saldo SUAS</div>
-                    <div className="text-base md:text-lg font-bold text-purple-900">{formatCurrency(calcularSaldoSUAS())}</div>
+                    <div className="text-base md:text-lg font-bold text-purple-900">
+                      {valorSUAS === '-' ? '-' : formatCurrency(calcularSaldoSUAS())}
+                    </div>
                   </div>
                 </div>
               ) : (
