@@ -446,6 +446,24 @@ export default function ConsultarTetosPage() {
                 <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                 Atualizar
               </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => downloadCSV()}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-white hover:bg-green-50 text-green-700 cursor-pointer border-gray-200"
+                >
+                  <FileDown className="h-4 w-4" />
+                  Exportar CSV
+                </button>
+                {filter !== 'todos' && (
+                  <button
+                    onClick={() => setShowEmendasSUASModal(true)}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-white hover:bg-orange-50 text-orange-700 cursor-pointer border-gray-200"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Adicionar Emenda SUAS
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </nav>
