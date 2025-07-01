@@ -264,35 +264,57 @@ export default function Emendas2025() {
 
   // Aplicar filtros
   useEffect(() => {
-    let dados = [...emendas];
+    // Primeiro, vamos agrupar as emendas por bloco
+    const blocoMap = new Map<string, Emenda[]>();
+    emendas.forEach(emenda => {
+      const bloco = emenda.bloco || 'SEM BLOCO';
+      if (!blocoMap.has(bloco)) {
+        blocoMap.set(bloco, []);
+      }
+      blocoMap.get(bloco)!.push(emenda);
+    });
 
-    // Filtro por texto
-    if (filtroTexto) {
-      dados = dados.filter(emenda => 
-        emenda.emenda?.toLowerCase().includes(filtroTexto.toLowerCase()) ||
-        emenda.municipioBeneficiario?.toLowerCase().includes(filtroTexto.toLowerCase()) ||
-        emenda.liderancas?.toLowerCase().includes(filtroTexto.toLowerCase()) ||
-        emenda.objeto?.toLowerCase().includes(filtroTexto.toLowerCase())
-      );
-    }
+    // Agora vamos aplicar os filtros dentro de cada bloco
+    const dadosFiltrados: Emenda[] = [];
+    blocoMap.forEach((emendasDoBloco, bloco) => {
+      // Se tiver filtro de bloco e não for o bloco atual, pula
+      if (filtroBloco && filtroBloco !== 'TODOS_BLOCOS' && bloco !== filtroBloco) {
+        return;
+      }
 
-    // Filtro por bloco
-    if (filtroBloco && filtroBloco !== 'TODOS_BLOCOS') {
-      dados = dados.filter(emenda => emenda.bloco === filtroBloco);
-    }
+      // Aplica os demais filtros nas emendas do bloco
+      let emendasFiltradas = [...emendasDoBloco];
 
-    // Filtro por município
-    if (filtroMunicipio && filtroMunicipio !== 'TODOS_MUNICIPIOS') {
-      dados = dados.filter(emenda => emenda.municipioBeneficiario === filtroMunicipio);
-    }
+      // Filtro por texto
+      if (filtroTexto) {
+        emendasFiltradas = emendasFiltradas.filter(emenda => 
+          emenda.emenda?.toLowerCase().includes(filtroTexto.toLowerCase()) ||
+          emenda.municipioBeneficiario?.toLowerCase().includes(filtroTexto.toLowerCase()) ||
+          emenda.liderancas?.toLowerCase().includes(filtroTexto.toLowerCase()) ||
+          emenda.objeto?.toLowerCase().includes(filtroTexto.toLowerCase())
+        );
+      }
 
-    // Filtro por emenda
-    if (filtroEmenda && filtroEmenda !== 'TODAS_EMENDAS') {
-      dados = dados.filter(emenda => emenda.emenda === filtroEmenda);
-    }
+      // Filtro por município
+      if (filtroMunicipio && filtroMunicipio !== 'TODOS_MUNICIPIOS') {
+        emendasFiltradas = emendasFiltradas.filter(emenda => 
+          emenda.municipioBeneficiario?.trim().toUpperCase() === filtroMunicipio.trim().toUpperCase()
+        );
+      }
 
-    setEmendasFiltradas(dados);
-    processarBlocos(dados);
+      // Filtro por emenda
+      if (filtroEmenda && filtroEmenda !== 'TODAS_EMENDAS') {
+        emendasFiltradas = emendasFiltradas.filter(emenda => 
+          emenda.emenda === filtroEmenda
+        );
+      }
+
+      // Adiciona as emendas filtradas ao resultado final
+      dadosFiltrados.push(...emendasFiltradas);
+    });
+
+    setEmendasFiltradas(dadosFiltrados);
+    processarBlocos(dadosFiltrados);
   }, [emendas, filtroTexto, filtroBloco, filtroMunicipio, filtroEmenda, ordenacaoAtual]);
 
   // Carregar dados iniciais
@@ -351,9 +373,18 @@ export default function Emendas2025() {
     return ordenacaoAtual.direcao === 'asc' ? '↑' : '↓';
   };
 
-  // Obter listas para filtros
+  // Obter listas para filtros - usando emendas não filtradas para os dropdowns
   const blocosDisponiveis = Array.from(new Set(emendas.map(e => e.bloco).filter((bloco): bloco is string => Boolean(bloco)))).sort();
-  const municipiosDisponiveis = Array.from(new Set(emendas.map(e => e.municipioBeneficiario).filter((municipio): municipio is string => Boolean(municipio)))).sort();
+  
+  // Normaliza os municípios antes de criar o Set para evitar duplicatas por case ou espaços
+  const municipiosNormalizados = emendas
+    .map(e => e.municipioBeneficiario?.trim().toUpperCase())
+    .filter((municipio): municipio is string => Boolean(municipio));
+  const municipiosUnicos = Array.from(new Set(municipiosNormalizados));
+  const municipiosDisponiveis = municipiosUnicos
+    .map(m => emendas.find(e => e.municipioBeneficiario?.trim().toUpperCase() === m)?.municipioBeneficiario?.trim() || m)
+    .sort();
+  
   const emendasDisponiveis = Array.from(new Set(emendas.map(e => e.emenda).filter((emenda): emenda is string => Boolean(emenda)))).sort();
 
   // Função utilitária para corrigir todos os valores a empenhar já preenchidos
@@ -444,7 +475,7 @@ export default function Emendas2025() {
         <div className="flex flex-col space-y-3 px-4 py-3">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div className="flex flex-col items-start">
-              <span className="text-base md:text-lg font-semibold text-gray-900">Emendas 2025 - Firebase</span>
+              <span className="text-base md:text-lg font-semibold text-gray-900">Painel de Acompanhamento das indicações de emendas 2025</span>
               <span className="text-xs text-gray-500 font-light">Acompanhe o status das emendas parlamentares.</span>
           </div>
             <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
