@@ -137,7 +137,8 @@ export async function GET(req: any) {
         liderancaAtual: row[4] || '',      // "Liderança Atual?" (índice 4)
         cargo2024,                         // "Cargo 2024"
         votacao2022: converterNumero(votacao2022).toString(),
-        expectativa2026: converterNumero(row[expectativaIndex] || '0').toString()
+        expectativa2026: converterNumero(row[expectativaIndex] || '0').toString(),
+        urlImagem: row[20] || ''           // "URL IMAGEM" (coluna U, índice 20)
       };
     });
 

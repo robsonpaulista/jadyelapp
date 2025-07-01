@@ -178,6 +178,7 @@ interface Lideranca {
   liderancaAtual: string;
   cargo2024?: string;
   expectativa2026?: string;
+  urlImagem?: string;
 }
 
 export default function EleicoesAnterioresPage() {
@@ -1103,7 +1104,23 @@ export default function EleicoesAnterioresPage() {
                         const expectativa2026 = parseInt(lideranca.expectativa2026 || '0');
                         return (
                           <TableRow key={idx}>
-                            <TableCell className="py-1.5">{lideranca.lideranca}</TableCell>
+                            <TableCell className="py-1.5">
+                              <div className="flex items-center gap-2">
+                                {lideranca.urlImagem ? (
+                                  <img 
+                                    src={lideranca.urlImagem} 
+                                    alt={`Foto de ${lideranca.lideranca}`}
+                                    className="w-8 h-8 rounded-full object-cover"
+                                    onError={(e) => {
+                                      // Se a imagem falhar, remove o src para não mostrar o ícone de erro
+                                      const target = e.target as HTMLImageElement;
+                                      target.style.display = 'none';
+                                    }}
+                                  />
+                                ) : null}
+                                <span>{lideranca.lideranca}</span>
+                              </div>
+                            </TableCell>
                             <TableCell className="py-1.5">
                               <Badge variant="default">
                                 Atual
