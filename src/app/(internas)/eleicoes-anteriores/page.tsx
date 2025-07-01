@@ -1134,6 +1134,18 @@ export default function EleicoesAnterioresPage() {
                 <Badge variant="outline" className="ml-2">
                   {cidade}
                 </Badge>
+                <button
+                  onClick={buscarDemandasLideranca}
+                  disabled={loadingDemandas}
+                  className="ml-auto flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors border bg-blue-600 hover:bg-blue-700 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loadingDemandas ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4" />
+                  )}
+                  Atualizar
+                </button>
               </DialogTitle>
             </DialogHeader>
             
