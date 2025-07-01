@@ -205,6 +205,8 @@ export default function EleicoesAnterioresPage() {
   // Estados para o modal
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedLideranca, setSelectedLideranca] = useState<any>(null);
+  const [imagemExpandidaUrl, setImagemExpandidaUrl] = useState<string | null>(null);
+  const [imagemExpandidaNome, setImagemExpandidaNome] = useState<string>('');
 
   const [populacaoSUAS, setPopulacaoSUAS] = useState<number | null>(null);
   const [porteSUAS, setPorteSUAS] = useState<string>('-');
@@ -1110,7 +1112,12 @@ export default function EleicoesAnterioresPage() {
                                   <img 
                                     src={lideranca.urlImagem} 
                                     alt={`Foto de ${lideranca.lideranca}`}
-                                    className="w-8 h-8 rounded-full object-cover"
+                                    className="w-8 h-8 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setImagemExpandidaUrl(lideranca.urlImagem || null);
+                                      setImagemExpandidaNome(lideranca.lideranca);
+                                    }}
                                     onError={(e) => {
                                       // Se a imagem falhar, remove o src para não mostrar o ícone de erro
                                       const target = e.target as HTMLImageElement;
@@ -1256,6 +1263,36 @@ export default function EleicoesAnterioresPage() {
                   )}
                 </div>
               )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de Imagem Expandida */}
+        <Dialog open={!!imagemExpandidaUrl} onOpenChange={() => setImagemExpandidaUrl(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden">
+            <div className="relative">
+              <div className="absolute top-2 right-2 z-10">
+                <button
+                  onClick={() => setImagemExpandidaUrl(null)}
+                  className="bg-black/50 hover:bg-black/70 text-white rounded-full p-1 transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="relative w-full h-full flex items-center justify-center bg-black/5">
+                <img
+                  src={imagemExpandidaUrl || ''}
+                  alt={`Foto de ${imagemExpandidaNome}`}
+                  className="max-w-full max-h-[80vh] object-contain"
+                  loading="eager"
+                  style={{
+                    imageRendering: 'crisp-edges'
+                  }}
+                />
+              </div>
+              <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white p-3 text-center">
+                {imagemExpandidaNome}
+              </div>
             </div>
           </DialogContent>
         </Dialog>
