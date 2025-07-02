@@ -299,6 +299,11 @@ export default function ChapasPage() {
     setSalvandoCandidato(true);
     
     try {
+      // Atualizar no Firestore primeiro
+      const candidato = partidoAtual.candidatos[candidatoIndex];
+      await atualizarChapa(partidoAtual.nome, newNome, candidato.votos);
+      
+      // Depois atualizar estado local
       const novoPartidos = [...partidos];
       novoPartidos[partidoIdx] = {
         ...partidoAtual,
@@ -308,12 +313,7 @@ export default function ChapasPage() {
           ...partidoAtual.candidatos.slice(candidatoIndex + 1)
         ]
       };
-
-      // Atualizar no Firestore
-      const candidato = partidoAtual.candidatos[candidatoIndex];
-      await atualizarChapa(partidoAtual.nome, newNome, candidato.votos);
       
-      // Atualizar estado local
       setPartidos(novoPartidos);
     } catch (error) {
       console.error('Erro ao salvar nome do candidato:', error);
