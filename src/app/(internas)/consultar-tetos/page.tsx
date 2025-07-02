@@ -4,6 +4,7 @@ import { RefreshCw, Filter, FileDown, Plus, Pencil } from 'lucide-react';
 import { getLimiteMacByMunicipio } from '@/utils/limitesmac';
 import { getLimitePapByMunicipio } from '@/utils/limitepap';
 import { disableConsoleLogging } from '@/lib/logger';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
 interface Proposta {
   nuProposta: string;
@@ -452,7 +453,12 @@ export default function ConsultarTetosPage() {
       tipo: 'FNS' as const
     }));
 
-    const propostasSUAS = emendasSUAS.map(e => ({
+    // Filtrar emendas SUAS pelo município selecionado
+    const emendasFiltradas = filter === 'todos' 
+      ? [] 
+      : emendasSUAS.filter(e => e.municipio === filter);
+
+    const propostasSUAS = emendasFiltradas.map(e => ({
       nuProposta: `SUAS-${e.id}`,
       acao: '',
       nmPrograma: '',
@@ -472,7 +478,7 @@ export default function ConsultarTetosPage() {
     }));
 
     return [...propostasFNS, ...propostasSUAS] as PropostaExtendida[];
-  }, [propostas, emendasSUAS]);
+  }, [propostas, emendasSUAS, filter]);
 
   // Função para editar emenda SUAS
   const handleEditEmendaSUAS = async (emenda: EmendaSUAS) => {
@@ -802,33 +808,33 @@ export default function ConsultarTetosPage() {
             </div>
 
             {/* Card SUAS */}
-            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 flex flex-col gap-2 shadow-sm">
-              <div className="text-xs text-purple-900 font-semibold mb-1">
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 flex flex-col gap-2 shadow-sm">
+              <div className="text-xs text-orange-900 font-semibold mb-1">
                 {municipioSelecionado ? `Município: ${municipioSelecionado}` : 'Selecione um município para ver o Limite SUAS'}
               </div>
               {municipioSelecionado ? (
                 <div className="grid grid-cols-2 md:grid-cols-1 lg:grid-cols-2 gap-4">
                   <div>
-                    <div className="text-[11px] text-purple-800 font-medium">Porte</div>
-                    <div className="text-base md:text-lg font-bold text-purple-900">{porteSUAS}</div>
+                    <div className="text-[11px] text-orange-800 font-medium">Porte</div>
+                    <div className="text-base md:text-lg font-bold text-orange-900">{porteSUAS}</div>
                   </div>
                   <div>
-                    <div className="text-[11px] text-purple-800 font-medium">Limite SUAS</div>
-                    <div className="text-base md:text-lg font-bold text-purple-900">{valorSUAS}</div>
+                    <div className="text-[11px] text-orange-800 font-medium">Limite SUAS</div>
+                    <div className="text-base md:text-lg font-bold text-orange-900">{valorSUAS}</div>
                   </div>
                   <div>
-                    <div className="text-[11px] text-purple-800 font-medium">Total Propostas</div>
-                    <div className="text-base md:text-lg font-bold text-purple-900">{formatCurrency(totalPropostasSUAS)}</div>
+                    <div className="text-[11px] text-orange-800 font-medium">Total Propostas</div>
+                    <div className="text-base md:text-lg font-bold text-orange-900">{formatCurrency(totalPropostasSUAS)}</div>
                   </div>
                   <div>
-                    <div className="text-[11px] text-purple-800 font-medium">Saldo SUAS</div>
-                    <div className="text-base md:text-lg font-bold text-purple-900">
+                    <div className="text-[11px] text-orange-800 font-medium">Saldo SUAS</div>
+                    <div className="text-base md:text-lg font-bold text-orange-900">
                       {valorSUAS === '-' ? '-' : formatCurrency(calcularSaldoSUAS())}
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="text-xs text-purple-700">Nenhum limite SUAS encontrado para o município selecionado.</div>
+                <div className="text-xs text-orange-700">Nenhum limite SUAS encontrado para o município selecionado.</div>
               )}
             </div>
           </div>

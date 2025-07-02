@@ -2,8 +2,10 @@
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  output: 'standalone',
+  generateEtags: true,
   images: {
-    unoptimized: true,
+    unoptimized: false,
     remotePatterns: [
       {
         protocol: 'https',
@@ -16,16 +18,50 @@ const nextConfig = {
         pathname: '/**',
       },
     ],
-    domains: ['images.unsplash.com', 'placehold.co'],
+    domains: ['images.unsplash.com', 'placehold.co', 'firebasestorage.googleapis.com'],
   },
   experimental: {
     optimizeCss: true,
     optimizePackageImports: ['lucide-react', '@/components/ui'],
   },
   compiler: {
-    removeConsole: {
-      exclude: ['error'], // Remove todos os console.log exceto errors críticos
-    },
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error', 'warn'], // Manter logs em desenvolvimento
+    } : false,
+  },
+  async headers() {
+    return [
+      {
+        source: '/sw.js',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-cache, no-store, max-age=0',
+          },
+          {
+            key: 'Content-Type',
+            value: 'application/javascript; charset=utf-8',
+          },
+          {
+            key: 'Service-Worker-Allowed',
+            value: '/',
+          },
+        ],
+      },
+      {
+        source: '/manifest.json',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-cache, no-store, max-age=0',
+          },
+          {
+            key: 'Content-Type',
+            value: 'application/manifest+json; charset=utf-8',
+          },
+        ],
+      },
+    ];
   },
   logging: {
     fetches: {

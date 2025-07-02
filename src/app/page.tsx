@@ -10,6 +10,7 @@ import { FiUser, FiLock, FiAlertCircle, FiMail, FiEye, FiEyeOff } from 'react-ic
 import { auth, db } from '@/lib/firebase';
 import { signInWithEmailAndPassword, AuthError } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
+import Image from 'next/image';
 
 export default function Home() {
   const [email, setEmail] = useState('');
@@ -169,18 +170,17 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 flex flex-col items-center justify-center p-4 relative overflow-hidden">
       {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute inset-0" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.1'%3E%3Ccircle cx='7' cy='7' r='7'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-        }} />
+      <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-[url('/avatar-banner.png')] bg-no-repeat bg-center opacity-5 blur-xl scale-150 transform rotate-12"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-black/10 via-black/5 to-transparent"></div>
       </div>
 
       {/* Floating Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
-          className="absolute top-1/4 left-1/4 w-64 h-64 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-20"
+          className="absolute top-1/4 left-1/4 w-96 h-96 bg-white rounded-full mix-blend-overlay filter blur-3xl opacity-10"
           animate={{
             x: [0, 100, 0],
             y: [0, -100, 0],
@@ -192,7 +192,7 @@ export default function Home() {
           }}
         />
         <motion.div
-          className="absolute top-3/4 right-1/4 w-64 h-64 bg-indigo-200 rounded-full mix-blend-multiply filter blur-xl opacity-20"
+          className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-200 rounded-full mix-blend-overlay filter blur-3xl opacity-10"
           animate={{
             x: [0, -100, 0],
             y: [0, 100, 0],
@@ -205,109 +205,104 @@ export default function Home() {
         />
       </div>
 
-      {/* Login Card */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="bg-white backdrop-blur-sm bg-opacity-80 rounded-xl shadow-2xl w-full max-w-md z-10 p-8 relative overflow-hidden border border-gray-100"
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-50 via-white to-gray-50 opacity-90 z-0"></div>
-        
-        <div className="relative z-10">
-          <div className="flex flex-col items-center justify-center mb-8">
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-              className="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mb-4 shadow-lg"
-            >
-              <FiUser className="text-white text-2xl" />
-            </motion.div>
-            <h1 className="text-2xl font-bold text-gray-800 text-center">Hub de aplicações Deputado Federal Jadyel Alencar</h1>
-            <p className="text-gray-500 mt-2 text-center">Faça login para acessar o sistema</p>
-          </div>
+      {/* Main Content */}
+      <div className="relative z-10 w-full max-w-md px-4">
+        <div className="flex flex-col items-center justify-center mb-8">
+          {/* Logo */}
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+            className="w-48 h-48 mb-6 relative"
+          >
+            <Image 
+              src="/avatar-banner.png" 
+              alt="Avatar Banner" 
+              width={192}
+              height={192}
+              priority
+              className="w-full h-full object-contain rounded-full shadow-xl"
+            />
+          </motion.div>
           
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-6 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex items-center"
-            >
-              <FiAlertCircle className="mr-2 flex-shrink-0" />
-              <p className="font-medium">{error}</p>
-            </motion.div>
-          )}
-          
-          <form onSubmit={handleLogin} className="space-y-6">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email
-              </label>
-              <div className="relative">
-                <FiMail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={handleEmailChange}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white/50 backdrop-blur-sm"
-                  placeholder="Digite seu email"
-                  required
-                  disabled={isSubmitting}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Senha
-              </label>
-              <div className="relative">
-                <FiLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={handlePasswordChange}
-                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white/50 backdrop-blur-sm"
-                  placeholder="Digite sua senha"
-                  required
-                  disabled={isSubmitting}
-                />
-                <button
-                  type="button"
-                  onClick={togglePasswordVisibility}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors duration-200"
-                >
-                  {showPassword ? <FiEyeOff /> : <FiEye />}
-                </button>
-              </div>
-            </div>
-
-            <motion.button
-              type="submit"
-              disabled={isSubmitting}
-              whileHover={{ scale: isSubmitting ? 1 : 1.02 }}
-              whileTap={{ scale: isSubmitting ? 1 : 0.98 }}
-              className={`w-full py-3 px-4 rounded-lg font-medium text-white transition-all duration-200 ${
-                isSubmitting
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-lg hover:shadow-xl'
-              }`}
-            >
-              {isSubmitting ? (
-                <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                  Entrando...
-                </div>
-              ) : (
-                'Entrar'
-              )}
-            </motion.button>
-          </form>
+          <h1 className="text-3xl font-bold text-white text-center mb-2">Hub de aplicações</h1>
+          <h2 className="text-2xl font-semibold text-white/90 text-center mb-4">Deputado Federal Jadyel Alencar</h2>
+          <div className="w-16 h-1 bg-white/30 rounded-full mb-6"></div>
+          <p className="text-white/80 text-center text-lg mb-4">Faça login para acessar o sistema</p>
         </div>
-      </motion.div>
+        
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 p-4 bg-white/10 backdrop-blur-sm border-l-4 border-red-500 rounded-r-lg text-white text-sm flex items-center"
+          >
+            <FiAlertCircle className="mr-2 flex-shrink-0 text-red-500" />
+            <p className="font-medium">{error}</p>
+          </motion.div>
+        )}
+        
+        <form onSubmit={handleLogin} className="space-y-6">
+          <div>
+            <div className="relative group">
+              <FiMail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 group-hover:text-white transition-colors" />
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={handleEmailChange}
+                className="w-full pl-10 pr-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg focus:ring-2 focus:ring-white/50 focus:border-transparent transition-all text-white placeholder-white/50 hover:bg-white/20"
+                placeholder="Digite seu email"
+              />
+            </div>
+          </div>
+
+          <div>
+            <div className="relative group">
+              <FiLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 group-hover:text-white transition-colors" />
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={handlePasswordChange}
+                className="w-full pl-10 pr-12 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg focus:ring-2 focus:ring-white/50 focus:border-transparent transition-all text-white placeholder-white/50 hover:bg-white/20"
+                placeholder="Digite sua senha"
+              />
+              <button
+                type="button"
+                onClick={togglePasswordVisibility}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/50 hover:text-white transition-colors"
+              >
+                {showPassword ? <FiEyeOff /> : <FiEye />}
+              </button>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full bg-white/10 backdrop-blur-sm border border-white/20 text-white py-3 rounded-lg font-medium hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/50 transform transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+          >
+            {isSubmitting ? (
+              <div className="flex items-center justify-center">
+                <motion.div
+                  className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                />
+                <span className="ml-2">Entrando...</span>
+              </div>
+            ) : (
+              "Entrar"
+            )}
+          </button>
+        </form>
+      </div>
+
+      {/* Footer */}
+      <div className="absolute bottom-4 text-center text-white/80 text-sm">
+        © 2024 86 Dynamics - Todos os direitos reservados
+      </div>
     </div>
   );
 } 
