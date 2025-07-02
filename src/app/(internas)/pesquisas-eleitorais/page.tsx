@@ -559,6 +559,7 @@ export default function PesquisasEleitoraisPage() {
         onSave={handleSubmit}
         loading={loading}
         error={error}
+        MUNICIPIOS_PIAUI={MUNICIPIOS_PIAUI}
       />
     </div>
   );
