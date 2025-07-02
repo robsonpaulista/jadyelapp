@@ -54,8 +54,8 @@ export default function ApplicationsDashboard() {
           {/* Card Instagram Analytics */}
           <div className="bg-white rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow">
             <div className="flex items-start space-x-4">
-              <div className="p-2.5 bg-pink-100 rounded-lg">
-                <Instagram className="h-6 w-6 text-pink-600" />
+              <div className="p-2.5 bg-blue-100/80 rounded-lg">
+                <Instagram className="h-6 w-6 text-blue-600/90" />
               </div>
               <div className="flex-1">
                 <h3 className="text-base font-medium text-gray-900">Instagram Analytics</h3>
@@ -72,8 +72,8 @@ export default function ApplicationsDashboard() {
           {/* Card Base de Lideranças */}
           <div className="bg-white rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow">
             <div className="flex items-start space-x-4">
-              <div className="p-2.5 bg-purple-100 rounded-lg">
-                <Users2 className="h-6 w-6 text-purple-600" />
+              <div className="p-2.5 bg-blue-100/70 rounded-lg">
+                <Users2 className="h-6 w-6 text-blue-600/80" />
               </div>
               <div className="flex-1">
                 <h3 className="text-base font-medium text-gray-900">Base de Lideranças</h3>
@@ -90,8 +90,8 @@ export default function ApplicationsDashboard() {
           {/* Card Formação de Chapas */}
           <div className="bg-white rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow">
             <div className="flex items-start space-x-4">
-              <div className="p-2.5 bg-cyan-100 rounded-lg">
-                <Vote className="h-6 w-6 text-cyan-600" />
+              <div className="p-2.5 bg-blue-100/60 rounded-lg">
+                <Vote className="h-6 w-6 text-blue-600/70" />
               </div>
               <div className="flex-1">
                 <h3 className="text-base font-medium text-gray-900">Formação de Chapas</h3>
@@ -108,8 +108,8 @@ export default function ApplicationsDashboard() {
           {/* Card Pesquisas Eleitorais */}
           <div className="bg-white rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow">
             <div className="flex items-start space-x-4">
-              <div className="p-2.5 bg-red-100 rounded-lg">
-                <BarChart2 className="h-6 w-6 text-red-600" />
+              <div className="p-2.5 bg-blue-100/50 rounded-lg">
+                <BarChart2 className="h-6 w-6 text-blue-600/60" />
               </div>
               <div className="flex-1">
                 <h3 className="text-base font-medium text-gray-900">Pesquisas Eleitorais</h3>
@@ -126,8 +126,8 @@ export default function ApplicationsDashboard() {
           {/* Card Dashboard Municípios */}
           <div className="bg-white rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow">
             <div className="flex items-start space-x-4">
-              <div className="p-2.5 bg-green-100 rounded-lg">
-                <LineChart className="h-6 w-6 text-green-600" />
+              <div className="p-2.5 bg-blue-100/40 rounded-lg">
+                <LineChart className="h-6 w-6 text-blue-600/50" />
               </div>
               <div className="flex-1">
                 <h3 className="text-base font-medium text-gray-900">Dashboard Municípios</h3>
@@ -144,8 +144,8 @@ export default function ApplicationsDashboard() {
           {/* Card Gestão de Emendas */}
           <div className="bg-white rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow">
             <div className="flex items-start space-x-4">
-              <div className="p-2.5 bg-orange-100 rounded-lg">
-                <Wallet className="h-6 w-6 text-orange-600" />
+              <div className="p-2.5 bg-blue-100/30 rounded-lg">
+                <Wallet className="h-6 w-6 text-blue-600/40" />
               </div>
               <div className="flex-1">
                 <h3 className="text-base font-medium text-gray-900">Gestão de Emendas</h3>
@@ -162,8 +162,8 @@ export default function ApplicationsDashboard() {
           {/* Card Obras e Demandas */}
           <div className="bg-white rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow">
             <div className="flex items-start space-x-4">
-              <div className="p-2.5 bg-teal-100 rounded-lg">
-                <CircuitBoard className="h-6 w-6 text-teal-600" />
+              <div className="p-2.5 bg-blue-100/20 rounded-lg">
+                <CircuitBoard className="h-6 w-6 text-blue-600/30" />
               </div>
               <div className="flex-1">
                 <h3 className="text-base font-medium text-gray-900">Obras e Demandas</h3>
@@ -180,8 +180,8 @@ export default function ApplicationsDashboard() {
           {/* Card Gestão de Usuários */}
           <div className="bg-white rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow">
             <div className="flex items-start space-x-4">
-              <div className="p-2.5 bg-gray-100 rounded-lg">
-                <UserCog className="h-6 w-6 text-gray-600" />
+              <div className="p-2.5 bg-blue-100/10 rounded-lg">
+                <UserCog className="h-6 w-6 text-blue-600/20" />
               </div>
               <div className="flex-1">
                 <h3 className="text-base font-medium text-gray-900">Gestão de Usuários</h3>

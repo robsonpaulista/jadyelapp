@@ -128,10 +128,12 @@ export default function RootLayout({
         <meta name="twitter:image" content="/avatar-banner.png" />
       </head>
       <body suppressHydrationWarning className={`${inter.className} antialiased bg-white`}>
-        <div className="min-h-screen">
+        <div className="min-h-screen h-screen flex flex-col overflow-hidden">
           <Providers>
             <PWAHandler />
-            {children}
+            <main className="flex-1 flex flex-col overflow-auto">
+              {children}
+            </main>
             <Toaster 
               position="top-right" 
               toastOptions={{

@@ -180,7 +180,7 @@ export default function Home() {
       {/* Floating Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
-          className="absolute top-1/4 left-1/4 w-96 h-96 bg-white rounded-full mix-blend-overlay filter blur-3xl opacity-10"
+          className="absolute top-1/4 left-1/4 w-72 h-72 md:w-80 md:h-80 lg:w-96 lg:h-96 bg-white rounded-full mix-blend-overlay filter blur-3xl opacity-10"
           animate={{
             x: [0, 100, 0],
             y: [0, -100, 0],
@@ -192,7 +192,7 @@ export default function Home() {
           }}
         />
         <motion.div
-          className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-200 rounded-full mix-blend-overlay filter blur-3xl opacity-10"
+          className="absolute bottom-1/4 right-1/4 w-72 h-72 md:w-80 md:h-80 lg:w-96 lg:h-96 bg-blue-200 rounded-full mix-blend-overlay filter blur-3xl opacity-10"
           animate={{
             x: [0, -100, 0],
             y: [0, 100, 0],
@@ -206,14 +206,14 @@ export default function Home() {
       </div>
 
       {/* Main Content */}
-      <div className="relative z-10 w-full max-w-md px-4">
-        <div className="flex flex-col items-center justify-center mb-8">
+      <div className="relative z-10 w-full max-w-md px-4 flex flex-col items-center justify-center">
+        <div className="flex flex-col items-center justify-center mb-6 max-w-full">
           {/* Logo */}
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            className="w-48 h-48 mb-6 relative"
+            className="w-32 h-32 sm:w-40 sm:h-40 md:w-44 md:h-44 lg:w-48 lg:h-48 mb-6 relative"
           >
             <Image 
               src="/avatar-banner.png" 
@@ -225,24 +225,24 @@ export default function Home() {
             />
           </motion.div>
           
-          <h1 className="text-3xl font-bold text-white text-center mb-2">Hub de aplicações</h1>
-          <h2 className="text-2xl font-semibold text-white/90 text-center mb-4">Deputado Federal Jadyel Alencar</h2>
-          <div className="w-16 h-1 bg-white/30 rounded-full mb-6"></div>
-          <p className="text-white/80 text-center text-lg mb-4">Faça login para acessar o sistema</p>
+          <h1 className="text-2xl sm:text-2xl md:text-3xl lg:text-3xl font-bold text-white text-center mb-2">Hub de aplicações</h1>
+          <h2 className="text-xl sm:text-xl md:text-2xl lg:text-2xl font-semibold text-white/90 text-center mb-3">Deputado Federal Jadyel Alencar</h2>
+          <div className="w-12 sm:w-14 md:w-16 h-1 bg-white/30 rounded-full mb-4"></div>
+          <p className="text-base sm:text-lg md:text-lg lg:text-lg text-white/80 text-center mb-4">Faça login para acessar o sistema</p>
         </div>
         
         {error && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-6 p-4 bg-white/10 backdrop-blur-sm border-l-4 border-red-500 rounded-r-lg text-white text-sm flex items-center"
+            className="mb-4 p-3 bg-white/10 backdrop-blur-sm border-l-4 border-red-500 rounded-r-lg text-white text-sm flex items-center"
           >
             <FiAlertCircle className="mr-2 flex-shrink-0 text-red-500" />
             <p className="font-medium">{error}</p>
           </motion.div>
         )}
         
-        <form onSubmit={handleLogin} className="space-y-6">
+        <form onSubmit={handleLogin} className="space-y-4 w-full">
           <div>
             <div className="relative group">
               <FiMail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 group-hover:text-white transition-colors" />
