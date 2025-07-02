@@ -2,9 +2,12 @@ import { db } from '@/lib/firebase';
 import { collection, getDocs, setDoc, doc, writeBatch, deleteDoc } from 'firebase/firestore';
 
 export interface Chapa {
+  id?: string;
   partido: string;
   nome: string;
   votos: number;
+  municipio?: string;
+  status?: string;
 }
 
 // Dados iniciais conforme o estado atual do app

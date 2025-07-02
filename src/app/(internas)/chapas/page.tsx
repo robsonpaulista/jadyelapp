@@ -101,7 +101,8 @@ export default function ChapasPage() {
   const [chapaEmEdicao, setChapaEmEdicao] = useState<Chapa | null>(null);
   const [formData, setFormData] = useState<Partial<Chapa>>({
     nome: "",
-    municipio: "",
+    partido: "",
+    votos: 0,
     status: "Em andamento"
   });
 
@@ -168,7 +169,8 @@ export default function ChapasPage() {
     setChapaEmEdicao(chapa);
     setFormData({
       nome: chapa.nome,
-      municipio: chapa.municipio,
+      partido: chapa.partido,
+      votos: chapa.votos,
       status: chapa.status
     });
     setModalAberto(true);
@@ -179,7 +181,7 @@ export default function ChapasPage() {
     
     setLoading(true);
     try {
-      await excluirChapa(chapa.id!);
+      await excluirChapa(chapa.partido, chapa.nome);
       await handleAtualizar();
     } catch (error) {
       console.error("Erro ao excluir chapa:", error);
@@ -194,18 +196,12 @@ export default function ChapasPage() {
     setLoading(true);
     try {
       if (chapaEmEdicao) {
-        await atualizarChapa(chapaEmEdicao.id!, formData as Chapa);
+        await atualizarChapa(formData.partido!, formData.nome!, formData.votos!);
       } else {
         // Implementar criação de nova chapa
       }
       await handleAtualizar();
       setModalAberto(false);
-      setChapaEmEdicao(null);
-      setFormData({
-        nome: "",
-        municipio: "",
-        status: "Em andamento"
-      });
     } catch (error) {
       console.error("Erro ao salvar chapa:", error);
     } finally {
