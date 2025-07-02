@@ -7,7 +7,6 @@ import { X, RefreshCw, Building, ArrowUpDown, CheckCircle2, Clock, AlertCircle, 
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getLimiteMacByMunicipio } from '@/utils/limitesmac';
 import { getLimitePapByMunicipio } from '@/utils/limitepap';
@@ -220,7 +219,7 @@ export default function EleicoesAnterioresPage() {
   
   // Estados para lideranças e demandas
   const [liderancasSelecionadas, setLiderancasSelecionadas] = useState<any[]>([]);
-  const [liderancaSelecionada, setLiderancaSelecionada] = useState<string>('');
+  const [liderancaSelecionada, setLiderancaSelecionada] = useState("");
   const [modalDemandasOpen, setModalDemandasOpen] = useState(false);
   const [demandas, setDemandas] = useState<ObraDemanda[]>([]);
   const [loadingDemandas, setLoadingDemandas] = useState(false);
@@ -387,11 +386,11 @@ export default function EleicoesAnterioresPage() {
 
   // Função para buscar dados do Google Sheets
   const buscarDados = async () => {
-      if (!cidade) return;
-      
-    setBuscaIniciada(true);
+    if (!cidade || cidade === "selecionar") return;
+    
     setLoading(true);
     setError(null);
+    setBuscaIniciada(true);
     setDados([]);
     
     // Limpar estados das lideranças e demandas
@@ -400,7 +399,7 @@ export default function EleicoesAnterioresPage() {
     setDemandas([]);
     setModalDemandasOpen(false);
       
-      try {
+    try {
       // Buscar dados da planilha
       const resEleicoes = await fetch(`/api/resultado-eleicoes?cidade=${encodeURIComponent(cidade)}`);
       const jsonEleicoes = await resEleicoes.json();
@@ -577,12 +576,12 @@ export default function EleicoesAnterioresPage() {
               <span className="text-sm font-medium whitespace-nowrap">Cidade:</span>
               <select
                 value={cidade}
-                onChange={e => setCidade(e.target.value)}
-                className="text-sm border border-gray-200 rounded px-2 py-1 flex-1 md:flex-none min-w-[200px]"
+                onChange={(e) => setCidade(e.target.value)}
+                className="text-sm border border-gray-200 rounded px-2 py-1.5 flex-1 md:flex-none min-w-[200px] h-9 bg-background"
               >
-                <option value="">Selecione município...</option>
-                {cidades.map(c => (
-                  <option key={c} value={c}>{c}</option>
+                <option value="">Selecione um município...</option>
+                {cidades.map((cidade) => (
+                  <option key={cidade} value={cidade}>{cidade}</option>
                 ))}
               </select>
               <button
@@ -604,21 +603,19 @@ export default function EleicoesAnterioresPage() {
               <div className="flex flex-col md:flex-row items-start md:items-center gap-2 w-full md:w-auto md:ml-4">
                 <div className="flex items-center gap-2 w-full md:w-auto">
                   <span className="text-sm font-medium whitespace-nowrap">Liderança:</span>
-                  <Select value={liderancaSelecionada} onValueChange={setLiderancaSelecionada}>
-                    <SelectTrigger className="w-full md:w-64 text-sm">
-                      <SelectValue placeholder="Selecione uma liderança..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="TODAS">
-                        <strong>📋 Todas as lideranças</strong>
-                      </SelectItem>
-                      {liderancasSelecionadas.map((lideranca, index) => (
-                        <SelectItem key={index} value={lideranca.lideranca}>
-                          {lideranca.lideranca}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <select
+                    value={liderancaSelecionada}
+                    onChange={(e) => setLiderancaSelecionada(e.target.value)}
+                    className="text-sm border border-gray-200 rounded px-2 py-1.5 flex-1 md:flex-none min-w-[200px] h-9 bg-background"
+                  >
+                    <option value="">Selecione uma liderança...</option>
+                    <option value="TODAS">📋 Todas as lideranças</option>
+                    {liderancasSelecionadas.map((lideranca, index) => (
+                      <option key={index} value={lideranca.lideranca}>
+                        {lideranca.lideranca}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 
                 <button

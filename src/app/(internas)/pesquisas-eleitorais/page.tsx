@@ -250,123 +250,106 @@ export default function PesquisasEleitoraisPage() {
   const valorMaximo = Math.max(...pesquisasFiltradas.map(p => p.votos));
   const limiteY = Math.ceil(valorMaximo * 1.2); // 20% de margem superior
 
-  const datasets = candidatosFiltrados.map((candidato, idx) => {
-    // Criar array de dados para cada candidato, mantendo a ordem das datas
-    const dadosCandidato = datasComPesquisas.map(data => {
-      const pesquisa = pesquisasFiltradas.find(p => p.candidato === candidato && p.data === data);
-      return pesquisa ? pesquisa.votos : null;
-    });
-
-    return {
-      label: candidato,
-      data: dadosCandidato,
-      fill: false,
-      borderColor: `hsl(${(idx * 80) % 360}, 70%, 55%)`,
-      backgroundColor: `hsl(${(idx * 80) % 360}, 70%, 55%)`,
-      tension: 0.1,
-      pointRadius: 6,
-      pointHoverRadius: 8,
-      pointBorderWidth: 2,
-      pointStyle: 'circle',
-      spanGaps: false, // Não conecta pontos quando há valores nulos
-      // Armazenar informações do instituto para tooltip
-      institutos: datasComPesquisas.map(data => {
-        const pesquisa = pesquisasFiltradas.find(p => p.candidato === candidato && p.data === data);
-        return pesquisa ? pesquisa.instituto : null;
-      })
-    };
-  });
-
-  const chartData = {
-    labels: datasComPesquisas.map(data => new Date(data).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })),
-    datasets
+  // Funções auxiliares
+  const formatarData = (data: string) => {
+    return new Date(data).toLocaleDateString('pt-BR');
   };
 
-  // Verificar se há dados para mostrar
-  const hasData = datasets.some(dataset => dataset.data.some(value => value !== null && value !== undefined));
-
-  const chartOptions = {
-    responsive: true,
-    plugins: {
-      legend: { display: true, position: 'top' as const },
-      title: { 
-        display: true, 
-        text: 'Evolução das Pesquisas', 
-        font: { 
-          size: 22, 
-          weight: 'bold' as const 
-        } 
-      },
-      tooltip: {
-        callbacks: {
-          label: function(context: any) {
-            const dataset = context.dataset;
-            const dataIndex = context.dataIndex;
-            const instituto = dataset.institutos?.[dataIndex] || '';
-            const value = context.parsed.y;
-            
-            if (value === null || value === undefined) return '';
-            
-            return `${context.dataset.label}: ${value.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}% (${instituto})`;
-          }
-        }
-      },
-      datalabels: {
-        display: true,
-        align: 'top' as const,
-        anchor: 'end' as const,
-        font: { weight: 'bold' as const, size: 14 },
-        color: '#111',
-        formatter: function(value: any, context: any) {
-          if (value === null || value === undefined) return '';
-          
-          // Buscar instituto correspondente
-          const dataset = context.dataset;
-          const dataIndex = context.dataIndex;
-          const instituto = dataset.institutos?.[dataIndex] || '';
-          
-          // Mostra valor% (INSTITUTO)
-          return `${value.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}% (${instituto})`;
-        }
-      }
+  // Preparar dados do gráfico
+  const chartConfig = {
+    data: {
+      labels: datasComPesquisas.map(data => {
+        const pesquisa = pesquisasFiltradas.find(p => p.data === data);
+        return `${formatarData(data)} - ${pesquisa?.instituto || ''}`;
+      }),
+      datasets: candidatosFiltrados.map((candidato, index) => ({
+        label: candidato,
+        data: datasComPesquisas.map(data => {
+          const pesquisa = pesquisasFiltradas.find(p => p.data === data && p.candidato === candidato);
+          return pesquisa ? pesquisa.votos : null;
+        }),
+        borderColor: `hsl(${index * (360 / candidatosFiltrados.length)}, 70%, 50%)`,
+        backgroundColor: `hsla(${index * (360 / candidatosFiltrados.length)}, 70%, 50%, 0.5)`,
+        tension: 0.4,
+        fill: false,
+        pointRadius: 6,
+        pointHoverRadius: 8,
+        pointBorderWidth: 2,
+        pointStyle: 'circle' as const
+      }))
     },
-    scales: {
-      y: {
-        beginAtZero: true,
-        max: pesquisasFiltradas.length > 0 ? limiteY : 100, // Usa limite calculado ou 100 como padrão
-        title: { display: true, text: 'Votos (%)' },
-        grid: { display: false },
-        ticks: {
-          stepSize: Math.max(1, Math.ceil(limiteY / 10)) // Divide o eixo Y em ~10 marcações
+    options: {
+      responsive: true,
+      maintainAspectRatio: !isFullscreen,
+      aspectRatio: 2,
+      plugins: {
+        legend: {
+          position: 'top' as const,
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context: any) {
+              const value = context.parsed.y;
+              const label = context.dataset.label;
+              const instituto = context.label.split(' - ')[1];
+              return `${label}: ${value}% (${instituto})`;
+            }
+          }
+        },
+        datalabels: {
+          backgroundColor: 'white',
+          borderRadius: 4,
+          color: 'black',
+          font: {
+            weight: 'bold' as const,
+            size: 12
+          },
+          padding: 4,
+          formatter: (value: any) => value ? `${value}%` : '',
+          align: 'top' as const,
+          anchor: 'end' as const
         }
       },
-      x: {
-        type: 'category' as const, // Mudança para category para mostrar apenas datas com dados
-        title: { display: true, text: 'Data da Pesquisa' },
-        grid: { display: false },
-        ticks: {
-          maxRotation: 45 // Rotaciona labels se necessário para melhor legibilidade
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: Math.ceil(valorMaximo / 10) * 10,
+          ticks: {
+            callback: (value: any) => `${value}%`
+          },
+          grid: {
+            display: false
+          }
+        },
+        x: {
+          grid: {
+            display: false
+          },
+          ticks: {
+            maxRotation: 45
+          }
         }
       }
     }
   };
 
+  // Função para alternar modo tela cheia
   const toggleFullscreen = () => {
-    const chartContainer = document.getElementById('chart-container');
-    if (!chartContainer) return;
-
     if (!isFullscreen) {
-      if (chartContainer.requestFullscreen) {
-        chartContainer.requestFullscreen();
+      const element = document.querySelector('.chart-container');
+      if (element) {
+        if (element.requestFullscreen) {
+          element.requestFullscreen();
+        }
       }
     } else {
       if (document.exitFullscreen) {
         document.exitFullscreen();
       }
     }
-    setIsFullscreen(!isFullscreen);
   };
 
+  // Monitorar mudanças no modo tela cheia
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
@@ -378,20 +361,9 @@ export default function PesquisasEleitoraisPage() {
     };
   }, []);
 
-  const formatarData = (data: string) => {
-    return new Date(data).toLocaleDateString('pt-BR');
-  };
-
+  // Função para atualizar dados
   const handleAtualizar = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      await fetchPesquisas();
-    } catch (err) {
-      setError('Erro ao atualizar pesquisas.');
-    } finally {
-      setLoading(false);
-    }
+    await fetchPesquisas();
   };
 
   return (
@@ -525,12 +497,37 @@ export default function PesquisasEleitoraisPage() {
         </div>
 
         {/* Gráfico */}
-        {pesquisasFiltradas.length > 0 && (
-          <div className="bg-white rounded-lg shadow p-4">
-            <Line
-              data={chartData}
-              options={chartOptions}
-            />
+        {filtrosEssenciaisPreenchidos && pesquisasFiltradas.length > 0 && (
+          <div className="relative bg-white rounded-lg shadow p-4 mt-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Evolução das Pesquisas</h3>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAtualizar}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4" />
+                  )}
+                  <span className="ml-2">Atualizar</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={toggleFullscreen}
+                >
+                  <Maximize2 className="h-4 w-4" />
+                  <span className="ml-2">Tela Cheia</span>
+                </Button>
+              </div>
+            </div>
+            <div className={`chart-container ${isFullscreen ? 'fixed inset-0 z-50 bg-white p-4' : ''}`}>
+              <Line data={chartConfig.data} options={chartConfig.options} />
+            </div>
           </div>
         )}
 

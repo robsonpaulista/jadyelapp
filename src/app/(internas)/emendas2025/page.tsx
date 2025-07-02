@@ -611,11 +611,25 @@ export default function Emendas2025() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="TODOS_MUNICIPIOS">Todos os municípios</SelectItem>
-                        {Array.from(new Set(emendas.map(e => e.municipioBeneficiario))).sort().map(municipio => (
-                          <SelectItem key={municipio} value={municipio || 'SEM_MUNICIPIO'}>
-                            {municipio || 'Sem município'}
-                          </SelectItem>
-                        ))}
+                        {Array.from(new Set(emendas
+                          .map(e => e.municipioBeneficiario?.toUpperCase().trim())
+                          .filter((municipio): municipio is string => 
+                            municipio !== null && municipio !== undefined && municipio !== ''
+                          )
+                        ))
+                        .sort()
+                        .map(municipio => {
+                          // Encontrar a primeira ocorrência do município para manter a capitalização original
+                          const municipioOriginal = emendas.find(e => 
+                            e.municipioBeneficiario?.toUpperCase().trim() === municipio
+                          )?.municipioBeneficiario || municipio;
+                          
+                          return (
+                            <SelectItem key={municipio} value={municipioOriginal}>
+                              {municipioOriginal}
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                   </div>
@@ -852,12 +866,228 @@ export default function Emendas2025() {
 
           {/* Modal de edição */}
           <Dialog open={modalAberto} onOpenChange={fecharModalEdicao}>
-            <DialogContent>
+            <DialogContent className="max-w-[900px] w-[90vw]">
               <DialogHeader>
                 <DialogTitle>Editar Emenda</DialogTitle>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
-                {/* ... existing modal content ... */}
+              <div className="grid gap-2 py-2 max-h-[80vh] overflow-y-auto px-1">
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Coluna 1 */}
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-[140px_1fr] items-center gap-1">
+                      <Label htmlFor="bloco" className="text-right text-sm">
+                        Bloco
+                      </Label>
+                      <Input
+                        id="bloco"
+                        value={dadosEdicao.bloco || ''}
+                        onChange={(e) => handleCampoEdicao('bloco', e.target.value)}
+                        className="h-8"
+                      />
+                    </div>
+                    <div className="grid grid-cols-[140px_1fr] items-center gap-1">
+                      <Label htmlFor="emenda" className="text-right text-sm">
+                        Emenda
+                      </Label>
+                      <Input
+                        id="emenda"
+                        value={dadosEdicao.emenda || ''}
+                        onChange={(e) => handleCampoEdicao('emenda', e.target.value)}
+                        className="h-8"
+                      />
+                    </div>
+                    <div className="grid grid-cols-[140px_1fr] items-center gap-1">
+                      <Label htmlFor="municipioBeneficiario" className="text-right text-sm">
+                        Município/Beneficiário
+                      </Label>
+                      <Input
+                        id="municipioBeneficiario"
+                        value={dadosEdicao.municipioBeneficiario || ''}
+                        onChange={(e) => handleCampoEdicao('municipioBeneficiario', e.target.value)}
+                        className="h-8"
+                      />
+                    </div>
+                    <div className="grid grid-cols-[140px_1fr] items-center gap-1">
+                      <Label htmlFor="funcional" className="text-right text-sm">
+                        Funcional
+                      </Label>
+                      <Input
+                        id="funcional"
+                        value={dadosEdicao.funcional || ''}
+                        onChange={(e) => handleCampoEdicao('funcional', e.target.value)}
+                        className="h-8"
+                      />
+                    </div>
+                    <div className="grid grid-cols-[140px_1fr] items-center gap-1">
+                      <Label htmlFor="gnd" className="text-right text-sm">
+                        GND
+                      </Label>
+                      <Input
+                        id="gnd"
+                        value={dadosEdicao.gnd || ''}
+                        onChange={(e) => handleCampoEdicao('gnd', e.target.value)}
+                        className="h-8"
+                      />
+                    </div>
+                    <div className="grid grid-cols-[140px_1fr] items-center gap-1">
+                      <Label htmlFor="valorIndicado" className="text-right text-sm">
+                        Valor Indicado
+                      </Label>
+                      <Input
+                        id="valorIndicado"
+                        type="number"
+                        value={dadosEdicao.valorIndicado || ''}
+                        onChange={(e) => handleCampoEdicao('valorIndicado', Number(e.target.value))}
+                        className="h-8"
+                      />
+                    </div>
+                    <div className="grid grid-cols-[140px_1fr] items-center gap-1">
+                      <Label htmlFor="valorEmpenhado" className="text-right text-sm">
+                        Valor Empenhado
+                      </Label>
+                      <Input
+                        id="valorEmpenhado"
+                        type="number"
+                        value={dadosEdicao.valorEmpenhado || ''}
+                        onChange={(e) => handleCampoEdicao('valorEmpenhado', Number(e.target.value))}
+                        className="h-8"
+                      />
+                    </div>
+                    <div className="grid grid-cols-[140px_1fr] items-center gap-1">
+                      <Label htmlFor="valorAEmpenhar" className="text-right text-sm">
+                        Valor a Empenhar
+                      </Label>
+                      <Input
+                        id="valorAEmpenhar"
+                        type="number"
+                        value={dadosEdicao.valorAEmpenhar || ''}
+                        disabled
+                        className="h-8"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Coluna 2 */}
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-[140px_1fr] items-center gap-1">
+                      <Label htmlFor="valorPago" className="text-right text-sm">
+                        Valor Pago
+                      </Label>
+                      <Input
+                        id="valorPago"
+                        type="number"
+                        value={dadosEdicao.valorPago || ''}
+                        onChange={(e) => handleCampoEdicao('valorPago', Number(e.target.value))}
+                        className="h-8"
+                      />
+                    </div>
+                    <div className="grid grid-cols-[140px_1fr] items-center gap-1">
+                      <Label htmlFor="valorASerPago" className="text-right text-sm">
+                        Valor a Ser Pago
+                      </Label>
+                      <Input
+                        id="valorASerPago"
+                        type="number"
+                        value={dadosEdicao.valorASerPago || ''}
+                        onChange={(e) => handleCampoEdicao('valorASerPago', Number(e.target.value))}
+                        className="h-8"
+                      />
+                    </div>
+                    <div className="grid grid-cols-[140px_1fr] items-center gap-1">
+                      <Label htmlFor="empenho" className="text-right text-sm">
+                        Empenho
+                      </Label>
+                      <Input
+                        id="empenho"
+                        value={dadosEdicao.empenho || ''}
+                        onChange={(e) => handleCampoEdicao('empenho', e.target.value)}
+                        className="h-8"
+                      />
+                    </div>
+                    <div className="grid grid-cols-[140px_1fr] items-center gap-1">
+                      <Label htmlFor="dataEmpenho" className="text-right text-sm">
+                        Data do Empenho
+                      </Label>
+                      <Input
+                        id="dataEmpenho"
+                        type="date"
+                        value={dadosEdicao.dataEmpenho?.split('T')[0] || ''}
+                        onChange={(e) => handleCampoEdicao('dataEmpenho', e.target.value)}
+                        className="h-8"
+                      />
+                    </div>
+                    <div className="grid grid-cols-[140px_1fr] items-center gap-1">
+                      <Label htmlFor="portariaConvenioContrato" className="text-right text-sm">
+                        Portaria/Convênio
+                      </Label>
+                      <Input
+                        id="portariaConvenioContrato"
+                        value={dadosEdicao.portariaConvenioContrato || ''}
+                        onChange={(e) => handleCampoEdicao('portariaConvenioContrato', e.target.value)}
+                        className="h-8"
+                      />
+                    </div>
+                    <div className="grid grid-cols-[140px_1fr] items-center gap-1">
+                      <Label htmlFor="numeroProposta" className="text-right text-sm">
+                        Nº da Proposta
+                      </Label>
+                      <Input
+                        id="numeroProposta"
+                        value={dadosEdicao.numeroProposta || ''}
+                        onChange={(e) => handleCampoEdicao('numeroProposta', e.target.value)}
+                        className="h-8"
+                      />
+                    </div>
+                    <div className="grid grid-cols-[140px_1fr] items-center gap-1">
+                      <Label htmlFor="pagamento" className="text-right text-sm">
+                        Pagamento
+                      </Label>
+                      <Input
+                        id="pagamento"
+                        value={dadosEdicao.pagamento || ''}
+                        onChange={(e) => handleCampoEdicao('pagamento', e.target.value)}
+                        className="h-8"
+                      />
+                    </div>
+                    <div className="grid grid-cols-[140px_1fr] items-center gap-1">
+                      <Label htmlFor="liderancas" className="text-right text-sm">
+                        Lideranças
+                      </Label>
+                      <Input
+                        id="liderancas"
+                        value={dadosEdicao.liderancas || ''}
+                        onChange={(e) => handleCampoEdicao('liderancas', e.target.value)}
+                        className="h-8"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Campos que ocupam largura total */}
+                <div className="space-y-2 pt-1">
+                  <div className="grid grid-cols-[140px_1fr] items-center gap-1">
+                    <Label htmlFor="alteracao" className="text-right text-sm">
+                      Alteração
+                    </Label>
+                    <Input
+                      id="alteracao"
+                      value={dadosEdicao.alteracao || ''}
+                      onChange={(e) => handleCampoEdicao('alteracao', e.target.value)}
+                      className="h-8"
+                    />
+                  </div>
+                  <div className="grid grid-cols-[140px_1fr] items-start gap-1">
+                    <Label htmlFor="objeto" className="text-right text-sm pt-1.5">
+                      Objeto
+                    </Label>
+                    <Textarea
+                      id="objeto"
+                      value={dadosEdicao.objeto || ''}
+                      onChange={(e) => handleCampoEdicao('objeto', e.target.value)}
+                      className="min-h-[60px]"
+                    />
+                  </div>
+                </div>
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={fecharModalEdicao}>
