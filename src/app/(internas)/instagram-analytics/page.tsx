@@ -9,6 +9,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { isUserLoggedIn, getCurrentUser } from '@/lib/storage';
 import { toast } from 'react-hot-toast';
+import { Loading } from '@/components/ui/loading';
 import { 
   Instagram, 
   RefreshCw, 
@@ -529,6 +530,14 @@ export default function InstagramAnalyticsPage() {
   
   // Tela de configuração
   const renderConfiguration = () => {
+    if (isValidating) {
+      return (
+        <div className="flex-1 flex items-center justify-center min-h-[300px]">
+          <Loading message="Validando credenciais..." />
+        </div>
+      );
+    }
+    
     return (
       <div className="max-w-3xl mx-auto">
         <Card>
@@ -1126,6 +1135,18 @@ export default function InstagramAnalyticsPage() {
       }
     );
   };
+
+  // Loading inicial da página
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center min-h-[400px]">
+          <Loading message="Carregando dados do Instagram..." />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white text-gray-800 flex flex-col">

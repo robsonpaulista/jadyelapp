@@ -1,11 +1,16 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, ChevronUp, RefreshCw, CheckCircle2, Clock, AlertCircle, XCircle, HelpCircle } from 'lucide-react';
+import { ChevronDown, ChevronUp, RefreshCw, CheckCircle2, Clock, AlertCircle, XCircle, HelpCircle, Building2, Users, DollarSign, MapPin } from 'lucide-react';
 import { Checkbox } from "@/components/ui/checkbox";
+import { Loading } from "@/components/ui/loading";
+import { toast } from 'react-hot-toast';
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 
 // Tipo para as colunas disponíveis
-type ColunaObraDemanda = 'DATA DEMANDA' | 'STATUS' | 'SOLICITAÇÃO' | 'OBS STATUS' | 'MUNICIPIO' | 'LIDERANÇA' | 'LIDERANÇA URNA' | 'PAUTA' | 'AÇÃO/OBJETO' | 'NÍVEL ESPAÇO' | 'ESFERA' | 'VALOR ' | 'ÓRGAO ' | 'PREVISÃO';
+type ColunaObraDemanda = 'DATA DEMANDA' | 'STATUS' | 'SOLICITAÇÃO' | 'OBS STATUS' | 'MUNICIPIO' | 'LIDERANÇA' | 'AÇÃO/OBJETO' | 'NÍVEL ESPAÇO' | 'ESFERA' | 'VALOR ' | 'ÓRGAO ' | 'PREVISÃO';
 
 // Interface para os dados de obras e demandas
 interface ObraDemanda {
@@ -37,9 +42,9 @@ type ColunasVisiveis = {
 export default function ObrasDemandas() {
   const [dados, setDados] = useState<ObraDemanda[]>([]);
   const [loading, setLoading] = useState(true);
-  const [municipioSelecionado, setMunicipioSelecionado] = useState<string>("");
-  const [statusSelecionado, setStatusSelecionado] = useState<string>("");
-  const [liderancaSelecionada, setLiderancaSelecionada] = useState<string>("");
+  const [municipioSelecionado, setMunicipioSelecionado] = useState<string>("TODOS_MUNICIPIOS");
+  const [statusSelecionado, setStatusSelecionado] = useState<string>("TODOS_STATUS")
+  const [liderancaSelecionada, setLiderancaSelecionada] = useState<string>("TODAS_LIDERANCAS")
   const [municipiosExpandidos, setMunicipiosExpandidos] = useState<Set<string>>(new Set());
   const [configurandoColunas, setConfigurandoColunas] = useState(false);
   const [colunasVisiveis, setColunasVisiveis] = useState<ColunasVisiveis>({
@@ -49,8 +54,6 @@ export default function ObrasDemandas() {
     'OBS STATUS': true,
     'MUNICIPIO': true,
     'LIDERANÇA': true,
-    'LIDERANÇA URNA': true,
-    'PAUTA': true,
     'AÇÃO/OBJETO': true,
     'NÍVEL ESPAÇO': true,
     'ESFERA': true,
@@ -61,15 +64,15 @@ export default function ObrasDemandas() {
 
   // Função para buscar dados
   const fetchDados = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
       const response = await fetch('/api/obras_demandas');
+      if (!response.ok) throw new Error('Erro ao carregar obras');
       const data = await response.json();
-      if (data.success) {
-        setDados(data.data);
-      }
+      setDados(data.data);
     } catch (error) {
-      console.error('Erro ao buscar dados:', error);
+      console.error('Erro:', error);
+      toast.error('Erro ao carregar obras');
     } finally {
       setLoading(false);
     }
@@ -198,9 +201,15 @@ export default function ObrasDemandas() {
 
   // Filtrar dados
   const dadosFiltrados = dados.filter(obra => {
-    const matchMunicipio = !municipioSelecionado || obra.MUNICIPIO === municipioSelecionado;
-    const matchStatus = !statusSelecionado || obra.STATUS === statusSelecionado;
-    const matchLideranca = !liderancaSelecionada || obra['LIDERANÇA'] === liderancaSelecionada;
+    const matchMunicipio = municipioSelecionado === "TODOS_MUNICIPIOS" || 
+      (municipioSelecionado === "SEM_MUNICIPIO" ? !obra.MUNICIPIO : obra.MUNICIPIO === municipioSelecionado);
+    
+    const matchStatus = statusSelecionado === "TODOS_STATUS" || 
+      (statusSelecionado === "SEM_STATUS" ? !obra.STATUS : obra.STATUS === statusSelecionado);
+    
+    const matchLideranca = liderancaSelecionada === "TODAS_LIDERANCAS" || 
+      (liderancaSelecionada === "SEM_LIDERANCA" ? !obra['LIDERANÇA'] : obra['LIDERANÇA'] === liderancaSelecionada);
+    
     return matchMunicipio && matchStatus && matchLideranca;
   });
 
@@ -214,81 +223,264 @@ export default function ObrasDemandas() {
     return acc;
   }, {});
 
+  // Renderizar loading inicial
+  if (loading && dados.length === 0) {
+    return (
+      <div className="min-h-screen bg-white">
+        <div className="flex-1 flex items-center justify-center min-h-[400px]">
+          <Loading message="Carregando obras e demandas..." />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 flex flex-col min-h-screen bg-gray-50">
-      {/* Header e Filtros */}
-      <div className="w-full bg-white border-b border-gray-200 shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full space-y-4 py-4">
         {/* Header */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex flex-col">
-            <h1 className="text-lg font-semibold text-gray-900">Obras e Demandas</h1>
-            <p className="text-sm text-gray-500">Acompanhe o status de obras e demandas por município.</p>
-          </div>
+        <div>
+          <h1 className="text-lg font-semibold text-gray-900">Obras e Demandas</h1>
+          <p className="text-sm text-gray-500">Gerencie as obras e demandas em andamento</p>
         </div>
 
         {/* Filtros */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <div className="flex flex-col">
-              <label className="text-sm font-medium text-gray-700 mb-1">Município</label>
-              <select
-                value={municipioSelecionado}
-                onChange={(e) => setMunicipioSelecionado(e.target.value)}
-                className="text-sm border border-gray-200 rounded px-2 py-1.5"
-              >
-                <option value="">Selecione os municípios</option>
-                {Array.from(new Set(dados.map(d => d.MUNICIPIO))).sort().map(municipio => (
-                  <option key={municipio} value={municipio}>{municipio}</option>
-                ))}
-              </select>
+        <Card className="p-4">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-medium">Filtros</h2>
+              {(municipioSelecionado !== "TODOS_MUNICIPIOS" || statusSelecionado !== "TODOS_STATUS" || liderancaSelecionada !== "TODAS_LIDERANCAS") && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setMunicipioSelecionado("TODOS_MUNICIPIOS");
+                    setStatusSelecionado("TODOS_STATUS");
+                    setLiderancaSelecionada("TODAS_LIDERANCAS");
+                  }}
+                  className="text-sm text-gray-500 hover:text-gray-900"
+                >
+                  Limpar filtros
+                </Button>
+              )}
             </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Select value={municipioSelecionado} onValueChange={setMunicipioSelecionado}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filtrar por município" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="TODOS_MUNICIPIOS">Todos os municípios</SelectItem>
+                  {Array.from(new Set(dados.map(obra => obra.MUNICIPIO || "SEM_MUNICIPIO"))).sort()
+                    .filter(municipio => municipio)
+                    .map(municipio => (
+                      <SelectItem key={municipio} value={municipio === "SEM_MUNICIPIO" ? municipio : municipio}>
+                        {municipio === "SEM_MUNICIPIO" ? "Sem município" : municipio}
+                      </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-            <div className="flex flex-col">
-              <label className="text-sm font-medium text-gray-700 mb-1">Status</label>
-              <select
-                value={statusSelecionado}
-                onChange={(e) => setStatusSelecionado(e.target.value)}
-                className="text-sm border border-gray-200 rounded px-2 py-1.5"
-              >
-                <option value="">Selecione os status</option>
-                {Array.from(new Set(dados.map(d => d.STATUS))).sort().map(status => (
-                  <option key={status} value={status}>{status}</option>
-                ))}
-              </select>
-            </div>
+              <Select value={statusSelecionado} onValueChange={setStatusSelecionado}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filtrar por status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="TODOS_STATUS">Todos os status</SelectItem>
+                  {Array.from(new Set(dados.map(obra => obra.STATUS || "SEM_STATUS"))).sort()
+                    .filter(status => status)
+                    .map(status => (
+                      <SelectItem key={status} value={status === "SEM_STATUS" ? status : status}>
+                        {status === "SEM_STATUS" ? "Sem status" : status}
+                      </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-            <div className="flex flex-col">
-              <label className="text-sm font-medium text-gray-700 mb-1">Liderança</label>
-              <select
-                value={liderancaSelecionada}
-                onChange={(e) => setLiderancaSelecionada(e.target.value)}
-                className="text-sm border border-gray-200 rounded px-2 py-1.5"
-              >
-                <option value="">Selecione as lideranças</option>
-                {Array.from(new Set(dados.map(d => d['LIDERANÇA']))).sort().map(lideranca => (
-                  <option key={lideranca} value={lideranca}>{lideranca}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex flex-col">
-              <label className="text-sm font-medium text-gray-700 mb-1">Configurar Colunas</label>
-              <button
-                onClick={() => setConfigurandoColunas(!configurandoColunas)}
-                className="text-sm border border-gray-200 rounded px-2 py-1.5 text-left bg-white hover:bg-gray-50"
-              >
-                Mostrar/Ocultar Colunas
-              </button>
+              <Select value={liderancaSelecionada} onValueChange={setLiderancaSelecionada}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filtrar por liderança" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="TODAS_LIDERANCAS">Todas as lideranças</SelectItem>
+                  {Array.from(new Set(dados.map(obra => obra['LIDERANÇA'] || "SEM_LIDERANCA"))).sort()
+                    .filter(lideranca => lideranca)
+                    .map(lideranca => (
+                      <SelectItem key={lideranca} value={lideranca === "SEM_LIDERANCA" ? lideranca : lideranca}>
+                        {lideranca === "SEM_LIDERANCA" ? "Sem liderança" : lideranca}
+                      </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
+        </Card>
 
-          {/* Painel de configuração de colunas */}
-          {configurandoColunas && (
-            <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+        {/* Resumo */}
+        <Card className="p-4">
+          <div className="space-y-2">
+            <h2 className="text-sm font-medium text-gray-900">Resumo Geral</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-white rounded-lg shadow-[0_1px_3px_0_rgba(0,0,0,0.1)]">
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm text-gray-600">Total de Demandas</span>
+                    <Building2 className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    {dadosFiltrados.length}
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg shadow-[0_1px_3px_0_rgba(0,0,0,0.1)]">
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm text-gray-600">Municípios</span>
+                    <MapPin className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    {Object.keys(dadosPorMunicipio).length}
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg shadow-[0_1px_3px_0_rgba(0,0,0,0.1)]">
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm text-gray-600">Valor Total</span>
+                    <DollarSign className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    {formatarValor(dadosFiltrados.reduce((acc, obra) => acc + converterValorParaNumero(obra['VALOR ']), 0))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg shadow-[0_1px_3px_0_rgba(0,0,0,0.1)]">
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm text-gray-600">Lideranças</span>
+                    <Users className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    {new Set(dadosFiltrados.map(obra => obra['LIDERANÇA'])).size}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Lista de Obras */}
+        <Card>
+          <div className="divide-y divide-gray-200">
+            {Object.entries(dadosPorMunicipio).sort(([a], [b]) => a.localeCompare(b)).map(([municipio, obras]) => {
+              const totalValor = obras.reduce((sum, obra) => sum + converterValorParaNumero(obra['VALOR ']), 0);
+              return (
+                <div key={municipio} className="p-4">
+                  <button
+                    onClick={() => toggleMunicipio(municipio)}
+                    className="w-full flex items-center justify-between text-left"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{municipio}</span>
+                      <span className="text-sm text-gray-500">({obras.length} {obras.length === 1 ? 'demanda' : 'demandas'})</span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm font-medium text-gray-900">{formatarValor(totalValor)}</span>
+                      {municipiosExpandidos.has(municipio) ? (
+                        <ChevronUp className="h-4 w-4 text-gray-500" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 text-gray-500" />
+                      )}
+                    </div>
+                  </button>
+
+                  {municipiosExpandidos.has(municipio) && (
+                    <div className="mt-4 overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead>
+                          <tr>
+                            {Object.entries(colunasVisiveis)
+                              .filter(([_, visivel]) => visivel)
+                              .map(([coluna]) => (
+                                <th
+                                  key={coluna}
+                                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50"
+                                >
+                                  {coluna}
+                                </th>
+                              ))}
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {obras.map((obra, index) => (
+                            <tr key={obra.ID || index} className="hover:bg-gray-50">
+                              {Object.entries(colunasVisiveis)
+                                .filter(([_, visivel]) => visivel)
+                                .map(([coluna]) => {
+                                  if (coluna === 'STATUS') {
+                                    const statusConfig = getStatusConfig(obra[coluna] || '');
+                                    return (
+                                      <td key={coluna} className="px-3 py-2 whitespace-nowrap">
+                                        <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${statusConfig.color}`}>
+                                          {statusConfig.icon}
+                                          {obra[coluna] || '-'}
+                                        </div>
+                                      </td>
+                                    );
+                                  }
+
+                                  if (coluna === 'VALOR ') {
+                                    return (
+                                      <td key={coluna} className="px-3 py-2 whitespace-nowrap text-sm font-medium">
+                                        {formatarValor(obra[coluna])}
+                                      </td>
+                                    );
+                                  }
+
+                                  return (
+                                    <td key={coluna} className="px-3 py-2 text-sm text-gray-900">
+                                      {obra[coluna] || '-'}
+                                    </td>
+                                  );
+                                })}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+
+        {/* Modal de Configuração de Colunas */}
+        {configurandoColunas && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <Card className="w-full max-w-lg p-6 space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium">Configurar Colunas Visíveis</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setConfigurandoColunas(false)}
+                  className="h-8 w-8 p-0"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                  </svg>
+                  <span className="sr-only">Fechar</span>
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 {Object.entries(colunasVisiveis).map(([coluna, visivel]) => (
-                  <label key={coluna} className="flex items-center space-x-2">
+                  <div key={coluna} className="flex items-center space-x-2">
                     <Checkbox
+                      id={coluna}
                       checked={visivel}
                       onCheckedChange={(checked) => {
                         setColunasVisiveis(prev => ({
@@ -297,185 +489,41 @@ export default function ObrasDemandas() {
                         }));
                       }}
                     />
-                    <span className="text-sm">{coluna.replace(/_/g, ' ')}</span>
-                  </label>
+                    <label htmlFor={coluna} className="text-sm cursor-pointer select-none">{coluna}</label>
+                  </div>
                 ))}
               </div>
-            </div>
-          )}
-        </div>
-      </div>
 
-      {/* Lista de Municípios */}
-      <div className="flex-1 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Cabeçalho da lista */}
-          <div className="border-b border-gray-200">
-            <div className="py-3">
-              <div className="flex justify-between items-center">
-                <div className="text-sm font-medium text-gray-900">Município</div>
-                <div className="text-sm font-medium text-gray-900">Valor Total</div>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setColunasVisiveis({
+                      'DATA DEMANDA': true,
+                      'STATUS': true,
+                      'SOLICITAÇÃO': true,
+                      'OBS STATUS': true,
+                      'MUNICIPIO': true,
+                      'LIDERANÇA': true,
+                      'AÇÃO/OBJETO': true,
+                      'NÍVEL ESPAÇO': true,
+                      'ESFERA': true,
+                      'VALOR ': true,
+                      'ÓRGAO ': true,
+                      'PREVISÃO': true
+                    });
+                  }}
+                >
+                  Restaurar Padrão
+                </Button>
+                <Button onClick={() => setConfigurandoColunas(false)}>
+                  Concluído
+                </Button>
               </div>
-            </div>
+            </Card>
           </div>
-
-          {/* Lista de municípios com acordeão */}
-          <div className="divide-y divide-gray-200">
-            {Object.entries(dadosPorMunicipio).sort().map(([municipio, obras]) => {
-              const totalValor = obras.reduce((sum, obra) => sum + converterValorParaNumero(obra['VALOR ']), 0);
-              const isExpanded = municipiosExpandidos.has(municipio);
-              
-              return (
-                <div key={municipio}>
-                  <button 
-                    onClick={() => toggleMunicipio(municipio)}
-                    className="w-full py-3 flex justify-between items-center text-left hover:bg-gray-50"
-                  >
-                    <div className="flex items-center gap-2">
-                      {isExpanded ? (
-                        <ChevronUp className="h-4 w-4 text-gray-500" />
-                      ) : (
-                        <ChevronDown className="h-4 w-4 text-gray-500" />
-                      )}
-                      <span className="text-sm font-medium text-gray-900">{municipio}</span>
-                      <span className="text-xs text-gray-500">({obras.length} obras)</span>
-                    </div>
-                    <span className="text-sm font-medium text-green-600">
-                      {formatarValor(totalValor)}
-                    </span>
-                  </button>
-
-                  {/* Detalhes expandidos */}
-                  {isExpanded && (
-                    <div className="border-t border-gray-200">
-                      <div className="overflow-x-auto">
-                        {/* Tabela para desktop */}
-                        <div className="hidden md:block">
-                          <table className="min-w-full">
-                            <thead>
-                              <tr className="bg-gray-50">
-                                {Object.entries(colunasVisiveis)
-                                  .filter(([_, visivel]) => visivel)
-                                  .map(([coluna]) => (
-                                    <th
-                                      key={coluna}
-                                      className="py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                    >
-                                      {coluna.replace(/_/g, ' ')}
-                                    </th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody className="bg-white">
-                              {obras.map((obra, idx) => (
-                                <tr key={idx} className="hover:bg-gray-50">
-                                  {Object.entries(colunasVisiveis)
-                                    .filter(([_, visivel]) => visivel)
-                                    .map(([coluna]) => {
-                                      const col = coluna as ColunaObraDemanda;
-                                      // Renderização especial para STATUS
-                                      if (col === 'STATUS') {
-                                        const config = getStatusConfig(obra[col]);
-                                        return (
-                                          <td key={col} className="py-3 whitespace-nowrap">
-                                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>
-                                              {config.icon}
-                                              {obra[col]}
-                                            </span>
-                                          </td>
-                                        );
-                                      }
-                                      
-                                      // Renderização especial para VALOR
-                                      if (col === 'VALOR ') {
-                                        return (
-                                          <td key={col} className="py-3 whitespace-nowrap text-sm text-green-600 font-medium">
-                                            {formatarValor(obra[col])}
-                                          </td>
-                                        );
-                                      }
-                                      
-                                      // Renderização padrão para outras colunas
-                                      return (
-                                        <td key={col} className="py-3 text-sm text-gray-900">
-                                          {obra[col]}
-                                        </td>
-                                      );
-                                    })}
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-
-                        {/* Cards para mobile */}
-                        <div className="md:hidden divide-y divide-gray-200">
-                          {obras.map((obra, idx) => (
-                            <div key={idx} className="bg-white hover:bg-gray-50">
-                              <div className="py-3 space-y-2">
-                                {/* Data e Status sempre visíveis */}
-                                <div className="flex justify-between items-start">
-                                  <span className="text-xs text-gray-500">{obra['DATA DEMANDA']}</span>
-                                  <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusConfig(obra.STATUS).color}`}>
-                                    {getStatusConfig(obra.STATUS).icon}
-                                    {obra.STATUS}
-                                  </div>
-                                </div>
-
-                                {/* Solicitação em destaque */}
-                                <div className="text-sm text-gray-900 font-medium">
-                                  {obra['SOLICITAÇÃO']}
-                                </div>
-
-                                {/* Grid de informações adicionais */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-                                  {obra['LIDERANÇA'] && (
-                                    <div>
-                                      <span className="text-gray-500">Liderança:</span>{' '}
-                                      <span className="font-medium">{obra['LIDERANÇA']}</span>
-                                    </div>
-                                  )}
-                                  
-                                  {obra['AÇÃO/OBJETO'] && (
-                                    <div>
-                                      <span className="text-gray-500">Ação/Objeto:</span>{' '}
-                                      <span className="font-medium">{obra['AÇÃO/OBJETO']}</span>
-                                    </div>
-                                  )}
-                                  
-                                  {obra['ÓRGAO '] && (
-                                    <div>
-                                      <span className="text-gray-500">Órgão:</span>{' '}
-                                      <span className="font-medium">{obra['ÓRGAO ']}</span>
-                                    </div>
-                                  )}
-                                  
-                                  {obra['VALOR '] && (
-                                    <div>
-                                      <span className="text-gray-500">Valor:</span>{' '}
-                                      <span className="font-medium text-green-600">{formatarValor(obra['VALOR '])}</span>
-                                    </div>
-                                  )}
-                                </div>
-
-                                {/* Observações e informações adicionais */}
-                                {obra['OBS STATUS'] && (
-                                  <div className="text-sm text-gray-500 bg-gray-50 rounded p-2 mt-2">
-                                    {obra['OBS STATUS']}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

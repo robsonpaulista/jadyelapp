@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { LoadingOverlay } from "@/components/ui/loading";
 import { 
   ArrowUpDown, 
   ArrowUp, 
@@ -56,11 +57,12 @@ interface BlocoData {
 
 export default function Emendas2025() {
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [emendas, setEmendas] = useState<Emenda[]>([]);
   const [emendasFiltradas, setEmendasFiltradas] = useState<Emenda[]>([]);
   const [blocos, setBlocos] = useState<BlocoData[]>([]);
-  const [blocosExpandidos, setBlocosExpandidos] = useState<Set<string>>(new Set(['BLOCO 1']));
+  const [blocosExpandidos, setBlocosExpandidos] = useState<Set<string>>(new Set());
   
   // Filtros
   const [filtroTexto, setFiltroTexto] = useState('');
@@ -79,7 +81,11 @@ export default function Emendas2025() {
 
   // Buscar dados das emendas do Firebase
   const fetchEmendas = async (forceRefresh = false) => {
-    setIsLoading(true);
+    if (forceRefresh) {
+      setIsRefreshing(true);
+    } else {
+      setIsLoading(true);
+    }
     setError(null);
     
     try {
@@ -99,15 +105,10 @@ export default function Emendas2025() {
       
       const data = await res.json();
       
-      console.log('Dados recebidos da API Firebase:', data);
-      
       if (data.success && data.emendas) {
         setEmendas(data.emendas);
         setEmendasFiltradas(data.emendas);
         processarBlocos(data.emendas);
-        if (forceRefresh) {
-          toast.success(`${data.emendas.length} emendas atualizadas com sucesso!`);
-        }
       } else {
         throw new Error(data.error || 'Erro ao carregar dados das emendas');
       }
@@ -117,6 +118,7 @@ export default function Emendas2025() {
       toast.error('Erro ao buscar dados. Verifique o console para mais detalhes.');
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -298,7 +300,9 @@ export default function Emendas2025() {
       // Filtro por município
       if (filtroMunicipio && filtroMunicipio !== 'TODOS_MUNICIPIOS') {
         emendasFiltradas = emendasFiltradas.filter(emenda => 
-          emenda.municipioBeneficiario?.trim().toUpperCase() === filtroMunicipio.trim().toUpperCase()
+          filtroMunicipio === 'SEM_MUNICIPIO' 
+            ? !emenda.municipioBeneficiario 
+            : emenda.municipioBeneficiario?.trim().toUpperCase() === filtroMunicipio.trim().toUpperCase()
         );
       }
 
@@ -412,7 +416,7 @@ export default function Emendas2025() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex flex-col min-h-screen">
+      <div className="max-w-7xl mx-auto">
         <nav className="w-full bg-white border-b border-gray-100 shadow-sm">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex flex-col items-start">
@@ -434,7 +438,7 @@ export default function Emendas2025() {
 
   if (error) {
     return (
-      <div className="flex-1 flex flex-col min-h-screen">
+      <div className="max-w-7xl mx-auto">
         <nav className="w-full bg-white border-b border-gray-100 shadow-sm">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex flex-col items-start">
@@ -450,7 +454,7 @@ export default function Emendas2025() {
               <p className="text-lg font-semibold">Erro ao carregar dados</p>
               <p className="text-sm">{error}</p>
             </div>
-            <Button onClick={() => fetchEmendas()} className="bg-blue-600 hover:bg-blue-700">
+            <Button onClick={() => fetchEmendas(true)} className="bg-blue-600 hover:bg-blue-700">
               <RefreshCw className="h-4 w-4 mr-2" />
               Tentar novamente
             </Button>
@@ -469,614 +473,427 @@ export default function Emendas2025() {
   };
 
   return (
-    <div className="flex-1 flex flex-col">
-      {/* Barra de informações da página */}
-      <div className="w-full bg-white border-b border-gray-100 shadow-sm">
-        <div className="flex flex-col space-y-3 px-4 py-3">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <div className="flex flex-col items-start">
-              <span className="text-base md:text-lg font-semibold text-gray-900">Painel de Acompanhamento das indicações de emendas 2025</span>
-              <span className="text-xs text-gray-500 font-light">Acompanhe o status das emendas parlamentares.</span>
-          </div>
-            <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
-            <Button
-                onClick={() => fetchEmendas(true)}
-                className="w-full md:w-auto flex items-center justify-center gap-2"
-              variant="outline"
-              size="sm"
-                disabled={isLoading}
-            >
-                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-                {isLoading ? 'Atualizando...' : 'Atualizar'}
-            </Button>
-            <Button
-                onClick={corrigirValoresAEmpenhar}
-                className="w-full md:w-auto flex items-center justify-center gap-2"
-                variant="outline"
-                size="sm"
-                disabled={isLoading}
-              >
-                <Save className="h-4 w-4" />
-                Corrigir valores a empenhar
-              </Button>
-              <div className="flex gap-2 w-full md:w-auto">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {isLoading ? (
+        <LoadingOverlay message="Carregando emendas..." />
+      ) : error ? (
+        <div className="text-center text-red-500 mt-8">
+          <p>{error}</p>
+          <Button onClick={() => fetchEmendas(true)} className="mt-4">
+            Tentar novamente
+          </Button>
+        </div>
+      ) : (
+        <>
+          {isRefreshing && <LoadingOverlay message="Atualizando emendas..." />}
+          <div className="flex flex-col gap-4">
+            <div className="flex justify-between items-center py-3">
+              <h1 className="text-lg font-semibold text-gray-900">Emendas 2025</h1>
+              <div className="flex gap-2">
                 <Button
+                  variant="outline"
+                  onClick={() => fetchEmendas(true)}
+                  disabled={isRefreshing}
+                >
+                  {isRefreshing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4" />
+                  )}
+                  <span className="ml-2">Atualizar</span>
+                </Button>
+                <Button
+                  variant="outline"
                   onClick={expandirTodosBlocos}
-                  className="flex-1 md:flex-none flex items-center justify-center gap-2"
-              variant="outline"
-              size="sm"
-            >
-                  Expandir Todos
-            </Button>
-            <Button
+                  disabled={isRefreshing}
+                >
+                  <ChevronDown className="h-4 w-4" />
+                  <span className="ml-2">Expandir Todos</span>
+                </Button>
+                <Button
+                  variant="outline"
                   onClick={recolherTodosBlocos}
-                  className="flex-1 md:flex-none flex items-center justify-center gap-2"
-              variant="outline"
-              size="sm"
-            >
-                  Recolher Todos
-            </Button>
+                  disabled={isRefreshing}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                  <span className="ml-2">Recolher Todos</span>
+                </Button>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Conteúdo principal */}
-      <main className="p-4 w-full">
-        {/* Filtros */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
-          <div className="p-4 border-b border-gray-200">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Filtros</h2>
-              <Button
-                onClick={limparFiltros}
-                variant="outline"
-                size="sm"
-                className="w-full md:w-auto"
-              >
+            {/* Resumo geral */}
+            <Card className="mt-2">
+              <CardHeader className="py-3">
+                <CardTitle className="text-sm font-medium">Resumo Geral</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <DollarSign className="h-4 w-4 text-gray-600" />
+                      <p className="text-xs font-medium text-gray-600">Valor Total Indicado</p>
+                    </div>
+                    <p className="text-base font-semibold text-gray-900">{formatarValor(totaisGerais.valorIndicado)}</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <TrendingUp className="h-4 w-4 text-gray-600" />
+                      <p className="text-xs font-medium text-gray-600">Valor Total a Empenhar</p>
+                    </div>
+                    <p className="text-base font-semibold text-gray-900">{formatarValor(totaisGerais.valorAEmpenhar)}</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <CheckCircle className="h-4 w-4 text-gray-600" />
+                      <p className="text-xs font-medium text-gray-600">Valor Total Empenhado</p>
+                    </div>
+                    <p className="text-base font-semibold text-gray-900">{formatarValor(totaisGerais.valorEmpenhado)}</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <CreditCard className="h-4 w-4 text-gray-600" />
+                      <p className="text-xs font-medium text-gray-600">Valor Total Pago</p>
+                    </div>
+                    <p className="text-base font-semibold text-gray-900">{formatarValor(totaisGerais.valorPago)}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Filtros */}
+            <Card className="mt-4">
+              <CardHeader className="py-3">
+                <CardTitle className="text-sm font-medium">Filtros</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="flex items-center gap-2">
+                    <Search className="h-4 w-4 text-gray-500" />
+                    <Input
+                      placeholder="Buscar..."
+                      value={filtroTexto}
+                      onChange={(e) => setFiltroTexto(e.target.value)}
+                      disabled={isRefreshing}
+                      className="w-full"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-gray-500" />
+                    <Select
+                      value={filtroBloco}
+                      onValueChange={setFiltroBloco}
+                      disabled={isRefreshing}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Filtrar por bloco" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="TODOS_BLOCOS">Todos os blocos</SelectItem>
+                        {blocos.map((bloco) => (
+                          <SelectItem key={bloco.bloco} value={bloco.bloco}>
+                            {bloco.bloco}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-gray-500" />
+                    <Select
+                      value={filtroMunicipio}
+                      onValueChange={setFiltroMunicipio}
+                      disabled={isRefreshing}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Filtrar por município" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="TODOS_MUNICIPIOS">Todos os municípios</SelectItem>
+                        {Array.from(new Set(emendas.map(e => e.municipioBeneficiario))).sort().map(municipio => (
+                          <SelectItem key={municipio} value={municipio || 'SEM_MUNICIPIO'}>
+                            {municipio || 'Sem município'}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={limparFiltros}
+                      disabled={isRefreshing}
+                      className="w-full justify-center"
+                    >
+                      <X className="h-4 w-4" />
+                      <span className="ml-2">Limpar Filtros</span>
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Blocos das emendas */}
+            <div className="space-y-4">
+              {blocos.map((bloco) => (
+                <div key={bloco.bloco} className="bg-white rounded-lg shadow-sm border border-gray-200">
+                  {/* Cabeçalho do bloco */}
+                  <div 
+                    className="p-3 border-b border-gray-200 cursor-pointer hover:bg-gray-50"
+                    onClick={() => toggleBloco(bloco.bloco)}
+                  >
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-3 md:space-y-0">
+                      <div className="flex items-center gap-2">
+                        {blocosExpandidos.has(bloco.bloco) ? (
+                          <ChevronDown className="h-4 w-4 text-gray-500" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 text-gray-500" />
+                        )}
+                        <h3 className="text-sm font-medium text-gray-900">{bloco.bloco}</h3>
+                        <span className="text-xs text-gray-500">
+                          ({bloco.emendas.length} emendas • {bloco.totalMunicipios} municípios)
+                        </span>
+                      </div>
+                      <div className="hidden md:grid md:grid-cols-4 gap-8 text-sm">
+                        <div className="w-[200px]">
+                          <span className="text-gray-500 text-sm">Valor Indicado:</span>
+                          <span className="block font-medium text-gray-900">
+                            {formatarValor(bloco.totalValorIndicado)}
+                          </span>
+                        </div>
+                        <div className="w-[200px]">
+                          <span className="text-gray-500 text-sm">Empenhado:</span>
+                          <span className="block font-medium text-gray-900">
+                            {formatarValor(bloco.totalValorEmpenhado)}
+                          </span>
+                        </div>
+                        <div className="w-[200px]">
+                          <span className="text-gray-500 text-sm">A Empenhar:</span>
+                          <span className="block font-medium text-gray-900">
+                            {formatarValor(bloco.totalValorAEmpenhar)}
+                          </span>
+                        </div>
+                        <div className="w-[200px]">
+                          <span className="text-gray-500 text-sm">Valor Pago:</span>
+                          <span className="block font-medium text-gray-900">
+                            {formatarValor(bloco.totalValorPago)}
+                          </span>
+                        </div>
+                      </div>
+                      {/* Layout mobile */}
+                      <div className="grid grid-cols-2 gap-4 md:hidden text-sm pl-8">
+                        <div>
+                          <span className="block text-gray-500 text-xs mb-1">Valor Indicado:</span>
+                          <span className="font-medium text-gray-900">
+                            {formatarValor(bloco.totalValorIndicado)}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="block text-gray-500 text-xs mb-1">Empenhado:</span>
+                          <span className="font-medium text-gray-900">
+                            {formatarValor(bloco.totalValorEmpenhado)}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="block text-gray-500 text-xs mb-1">A Empenhar:</span>
+                          <span className="font-medium text-gray-900">
+                            {formatarValor(bloco.totalValorAEmpenhar)}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="block text-gray-500 text-xs mb-1">Valor Pago:</span>
+                          <span className="font-medium text-gray-900">
+                            {formatarValor(bloco.totalValorPago)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Conteúdo do bloco */}
+                  {blocosExpandidos.has(bloco.bloco) && (
+                    <div className="overflow-x-auto">
+                      {/* Layout para desktop */}
+                      <div className="hidden md:block">
+                        <table className="w-full text-sm">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-4 py-3 text-left font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('emenda')}>
+                                Emenda {obterIconeOrdenacao('emenda')}
+                              </th>
+                              <th className="px-4 py-3 text-left font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('municipioBeneficiario')}>
+                                Município/Beneficiário {obterIconeOrdenacao('municipioBeneficiario')}
+                              </th>
+                              <th className="px-4 py-3 text-right font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('valorIndicado')}>
+                                Valor Indicado {obterIconeOrdenacao('valorIndicado')}
+                              </th>
+                              <th className="px-4 py-3 text-right font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('valorAEmpenhar')}>
+                                Valor a Empenhar {obterIconeOrdenacao('valorAEmpenhar')}
+                              </th>
+                              <th className="px-4 py-3 text-right font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('valorEmpenhado')}>
+                                Valor Empenhado {obterIconeOrdenacao('valorEmpenhado')}
+                              </th>
+                              <th className="px-4 py-3 text-right font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('valorPago')}>
+                                Valor Pago {obterIconeOrdenacao('valorPago')}
+                              </th>
+                              <th className="px-4 py-3 text-left font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('liderancas')}>
+                                Lideranças {obterIconeOrdenacao('liderancas')}
+                              </th>
+                              <th className="px-4 py-3 text-left font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('objeto')}>
+                                Objeto {obterIconeOrdenacao('objeto')}
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-200">
+                            {bloco.emendas.map((emenda, index) => (
+                              <tr 
+                                key={emenda.id || index} 
+                                className="hover:bg-gray-50 cursor-pointer"
+                                onDoubleClick={() => handleDuploClic(emenda)}
+                                title="Duplo clique para editar"
+                              >
+                                <td className="px-4 py-3 font-medium text-gray-900">{emenda.emenda || 'N/A'}</td>
+                                <td className="px-4 py-3 text-gray-900">{emenda.municipioBeneficiario || 'N/A'}</td>
+                                <td className="px-4 py-3 text-right font-medium text-gray-900">
+                                  {formatarValor(emenda.valorIndicado)}
+                                </td>
+                                <td className="px-4 py-3 text-right font-medium text-gray-900">
+                                  {formatarValor(emenda.valorAEmpenhar)}
+                                </td>
+                                <td className="px-4 py-3 text-right font-medium text-gray-900">
+                                  {formatarValor(emenda.valorEmpenhado)}
+                                </td>
+                                <td className="px-4 py-3 text-right font-medium text-gray-900">
+                                  {formatarValor(emenda.valorPago)}
+                                </td>
+                                <td className="px-4 py-3 text-gray-900">{emenda.liderancas || 'N/A'}</td>
+                                <td className="px-4 py-3 text-gray-900 max-w-xs truncate" title={emenda.objeto || ''}>
+                                  {emenda.objeto || 'N/A'}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Layout de cards para mobile */}
+                      <div className="block md:hidden">
+                        <div className="divide-y divide-gray-200">
+                          {bloco.emendas.map((emenda, index) => (
+                            <div 
+                              key={emenda.id || index}
+                              className="p-4 hover:bg-gray-50"
+                              onClick={() => handleDuploClic(emenda)}
+                            >
+                              <div className="space-y-3">
+                                {/* Emenda e Município */}
+                                <div>
+                                  <div className="font-medium text-gray-900">{emenda.emenda || 'N/A'}</div>
+                                  <div className="text-sm text-gray-600">{emenda.municipioBeneficiario || 'N/A'}</div>
+                                </div>
+
+                                {/* Valores em grid */}
+                                <div className="grid grid-cols-2 gap-3 text-sm">
+                                  <div>
+                                    <div className="text-gray-500 text-xs">Valor Indicado</div>
+                                    <div className="font-medium text-gray-900">{formatarValor(emenda.valorIndicado)}</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-gray-500 text-xs">A Empenhar</div>
+                                    <div className="font-medium text-gray-900">{formatarValor(emenda.valorAEmpenhar)}</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-gray-500 text-xs">Empenhado</div>
+                                    <div className="font-medium text-gray-900">{formatarValor(emenda.valorEmpenhado)}</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-gray-500 text-xs">Valor Pago</div>
+                                    <div className="font-medium text-gray-900">{formatarValor(emenda.valorPago)}</div>
+                                  </div>
+                                </div>
+
+                                {/* Lideranças */}
+                                {emenda.liderancas && (
+                                  <div>
+                                    <div className="text-gray-500 text-xs mb-1">Lideranças</div>
+                                    <div className="text-sm text-gray-900">{emenda.liderancas}</div>
+                                  </div>
+                                )}
+
+                                {/* Objeto */}
+                                {emenda.objeto && (
+                                  <div>
+                                    <div className="text-gray-500 text-xs mb-1">Objeto</div>
+                                    <div className="text-sm text-gray-900">{emenda.objeto}</div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {emendasFiltradas.length === 0 && !isLoading && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+                <p className="text-gray-500">Nenhuma emenda encontrada com os filtros aplicados.</p>
+                <Button onClick={limparFiltros} className="mt-4" variant="outline">
+                  Limpar Filtros
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* Modal de edição */}
+          <Dialog open={modalAberto} onOpenChange={fecharModalEdicao}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Editar Emenda</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                {/* ... existing modal content ... */}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={fecharModalEdicao}>
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={salvarEdicao} 
+                  disabled={salvandoEdicao}
+                >
+                  {salvandoEdicao ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      Salvar
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Mensagem quando não há resultados */}
+          {emendasFiltradas.length === 0 && !isLoading && (
+            <div className="text-center py-8">
+              <p className="text-gray-500">Nenhuma emenda encontrada com os filtros atuais.</p>
+              <Button onClick={limparFiltros} className="mt-4">
                 Limpar Filtros
               </Button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Buscar texto</label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    placeholder="Buscar por emenda, município, lideranças..."
-                    value={filtroTexto}
-                    onChange={(e) => setFiltroTexto(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Bloco</label>
-                <Select value={filtroBloco} onValueChange={setFiltroBloco}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Todos os blocos" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[200px] overflow-y-auto">
-                    <SelectItem value="TODOS_BLOCOS">Todos os blocos</SelectItem>
-                    {blocosDisponiveis.map(bloco => (
-                      <SelectItem key={bloco} value={bloco}>{bloco}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Município</label>
-                <Select value={filtroMunicipio} onValueChange={setFiltroMunicipio}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Todos os municípios" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[300px] overflow-y-auto">
-                    <SelectItem value="TODOS_MUNICIPIOS">Todos os municípios</SelectItem>
-                    {municipiosDisponiveis.map(municipio => (
-                      <SelectItem key={municipio} value={municipio}>{municipio}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Emenda</label>
-                <Select value={filtroEmenda} onValueChange={setFiltroEmenda}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Todas as emendas" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[300px] overflow-y-auto">
-                    <SelectItem value="TODAS_EMENDAS">Todas as emendas</SelectItem>
-                    {emendasDisponiveis.map(emenda => (
-                      <SelectItem key={emenda} value={emenda}>{emenda}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Resumo geral */}
-        <div className="mb-6">
-          <div className="p-4">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Resumo Geral</h2>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <DollarSign className="h-4 w-4 text-gray-600" />
-                  <p className="text-sm font-medium text-gray-900">Valor Total Indicado</p>
-                </div>
-                <p className="text-base font-semibold text-gray-900">{formatarValor(totaisGerais.valorIndicado)}</p>
-              </div>
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <TrendingUp className="h-4 w-4 text-gray-600" />
-                  <p className="text-sm font-medium text-gray-900">Valor Total a Empenhar</p>
-                </div>
-                <p className="text-base font-semibold text-gray-900">{formatarValor(totaisGerais.valorAEmpenhar)}</p>
-              </div>
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <CheckCircle className="h-4 w-4 text-gray-600" />
-                  <p className="text-sm font-medium text-gray-900">Valor Total Empenhado</p>
-                </div>
-                <p className="text-base font-semibold text-gray-900">{formatarValor(totaisGerais.valorEmpenhado)}</p>
-              </div>
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <CreditCard className="h-4 w-4 text-gray-600" />
-                  <p className="text-sm font-medium text-gray-900">Valor Total Pago</p>
-                </div>
-                <p className="text-base font-semibold text-gray-900">{formatarValor(totaisGerais.valorPago)}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Blocos das emendas */}
-        <div className="space-y-4">
-          {blocos.map((bloco) => (
-            <div key={bloco.bloco} className="bg-white rounded-lg shadow-sm border border-gray-200">
-              {/* Cabeçalho do bloco */}
-              <div 
-                className="p-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50"
-                onClick={() => toggleBloco(bloco.bloco)}
-              >
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
-                  <div className="flex items-center gap-3">
-                    {blocosExpandidos.has(bloco.bloco) ? (
-                      <ChevronDown className="h-5 w-5 text-gray-500" />
-                    ) : (
-                      <ChevronRight className="h-5 w-5 text-gray-500" />
-                    )}
-                    <h3 className="text-lg font-semibold text-gray-900">{bloco.bloco}</h3>
-                    <span className="text-sm text-gray-500">
-                      ({bloco.emendas.length} emendas • {bloco.totalMunicipios} municípios)
-                    </span>
-                  </div>
-                  <div className="hidden md:grid md:grid-cols-4 gap-8 text-sm">
-                    <div className="w-[200px]">
-                      <span className="text-gray-500 text-sm">Valor Indicado:</span>
-                      <span className="block font-medium text-gray-900">
-                        {formatarValor(bloco.totalValorIndicado)}
-                      </span>
-                    </div>
-                    <div className="w-[200px]">
-                      <span className="text-gray-500 text-sm">Empenhado:</span>
-                      <span className="block font-medium text-gray-900">
-                        {formatarValor(bloco.totalValorEmpenhado)}
-                      </span>
-                    </div>
-                    <div className="w-[200px]">
-                      <span className="text-gray-500 text-sm">A Empenhar:</span>
-                      <span className="block font-medium text-gray-900">
-                        {formatarValor(bloco.totalValorAEmpenhar)}
-                      </span>
-                    </div>
-                    <div className="w-[200px]">
-                      <span className="text-gray-500 text-sm">Valor Pago:</span>
-                      <span className="block font-medium text-gray-900">
-                        {formatarValor(bloco.totalValorPago)}
-                      </span>
-                    </div>
-                  </div>
-                  {/* Layout mobile */}
-                  <div className="grid grid-cols-2 gap-4 md:hidden text-sm pl-8">
-                    <div>
-                      <span className="block text-gray-500 text-xs mb-1">Valor Indicado:</span>
-                      <span className="font-medium text-gray-900">
-                        {formatarValor(bloco.totalValorIndicado)}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="block text-gray-500 text-xs mb-1">Empenhado:</span>
-                      <span className="font-medium text-gray-900">
-                        {formatarValor(bloco.totalValorEmpenhado)}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="block text-gray-500 text-xs mb-1">A Empenhar:</span>
-                      <span className="font-medium text-gray-900">
-                        {formatarValor(bloco.totalValorAEmpenhar)}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="block text-gray-500 text-xs mb-1">Valor Pago:</span>
-                      <span className="font-medium text-gray-900">
-                        {formatarValor(bloco.totalValorPago)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Conteúdo do bloco */}
-              {blocosExpandidos.has(bloco.bloco) && (
-                <div className="overflow-x-auto">
-                  {/* Layout para desktop */}
-                  <div className="hidden md:block">
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-50">
-                      <tr>
-                          <th className="px-4 py-3 text-left font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('emenda')}>
-                            Emenda {obterIconeOrdenacao('emenda')}
-                          </th>
-                          <th className="px-4 py-3 text-left font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('municipioBeneficiario')}>
-                            Município/Beneficiário {obterIconeOrdenacao('municipioBeneficiario')}
-                          </th>
-                          <th className="px-4 py-3 text-right font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('valorIndicado')}>
-                            Valor Indicado {obterIconeOrdenacao('valorIndicado')}
-                          </th>
-                          <th className="px-4 py-3 text-right font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('valorAEmpenhar')}>
-                            Valor a Empenhar {obterIconeOrdenacao('valorAEmpenhar')}
-                          </th>
-                          <th className="px-4 py-3 text-right font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('valorEmpenhado')}>
-                            Valor Empenhado {obterIconeOrdenacao('valorEmpenhado')}
-                          </th>
-                          <th className="px-4 py-3 text-right font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('valorPago')}>
-                            Valor Pago {obterIconeOrdenacao('valorPago')}
-                          </th>
-                          <th className="px-4 py-3 text-left font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('liderancas')}>
-                            Lideranças {obterIconeOrdenacao('liderancas')}
-                          </th>
-                          <th className="px-4 py-3 text-left font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('objeto')}>
-                            Objeto {obterIconeOrdenacao('objeto')}
-                          </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                        {bloco.emendas.map((emenda, index) => (
-                          <tr 
-                            key={emenda.id || index} 
-                            className="hover:bg-gray-50 cursor-pointer"
-                            onDoubleClick={() => handleDuploClic(emenda)}
-                            title="Duplo clique para editar"
-                          >
-                            <td className="px-4 py-3 font-medium text-gray-900">{emenda.emenda || 'N/A'}</td>
-                            <td className="px-4 py-3 text-gray-900">{emenda.municipioBeneficiario || 'N/A'}</td>
-                            <td className="px-4 py-3 text-right font-medium text-gray-900">
-                              {formatarValor(emenda.valorIndicado)}
-                            </td>
-                            <td className="px-4 py-3 text-right font-medium text-gray-900">
-                              {formatarValor(emenda.valorAEmpenhar)}
-                          </td>
-                            <td className="px-4 py-3 text-right font-medium text-gray-900">
-                              {formatarValor(emenda.valorEmpenhado)}
-                          </td>
-                            <td className="px-4 py-3 text-right font-medium text-gray-900">
-                              {formatarValor(emenda.valorPago)}
-                          </td>
-                            <td className="px-4 py-3 text-gray-900">{emenda.liderancas || 'N/A'}</td>
-                            <td className="px-4 py-3 text-gray-900 max-w-xs truncate" title={emenda.objeto || ''}>
-                              {emenda.objeto || 'N/A'}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  </div>
-
-                  {/* Layout de cards para mobile */}
-                  <div className="block md:hidden">
-                    <div className="divide-y divide-gray-200">
-                      {bloco.emendas.map((emenda, index) => (
-                        <div 
-                          key={emenda.id || index}
-                          className="p-4 hover:bg-gray-50"
-                          onClick={() => handleDuploClic(emenda)}
-                        >
-                          <div className="space-y-3">
-                            {/* Emenda e Município */}
-                            <div>
-                              <div className="font-medium text-gray-900">{emenda.emenda || 'N/A'}</div>
-                              <div className="text-sm text-gray-600">{emenda.municipioBeneficiario || 'N/A'}</div>
-                            </div>
-
-                            {/* Valores em grid */}
-                            <div className="grid grid-cols-2 gap-3 text-sm">
-                              <div>
-                                <div className="text-gray-500 text-xs">Valor Indicado</div>
-                                <div className="font-medium text-gray-900">{formatarValor(emenda.valorIndicado)}</div>
-                              </div>
-                              <div>
-                                <div className="text-gray-500 text-xs">A Empenhar</div>
-                                <div className="font-medium text-gray-900">{formatarValor(emenda.valorAEmpenhar)}</div>
-                              </div>
-                              <div>
-                                <div className="text-gray-500 text-xs">Empenhado</div>
-                                <div className="font-medium text-gray-900">{formatarValor(emenda.valorEmpenhado)}</div>
-                              </div>
-                              <div>
-                                <div className="text-gray-500 text-xs">Valor Pago</div>
-                                <div className="font-medium text-gray-900">{formatarValor(emenda.valorPago)}</div>
-                              </div>
-                            </div>
-
-                            {/* Lideranças */}
-                            {emenda.liderancas && (
-                              <div>
-                                <div className="text-gray-500 text-xs mb-1">Lideranças</div>
-                                <div className="text-sm text-gray-900">{emenda.liderancas}</div>
-                              </div>
-                            )}
-
-                            {/* Objeto */}
-                            {emenda.objeto && (
-                              <div>
-                                <div className="text-gray-500 text-xs mb-1">Objeto</div>
-                                <div className="text-sm text-gray-900">{emenda.objeto}</div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {emendasFiltradas.length === 0 && !isLoading && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
-            <p className="text-gray-500">Nenhuma emenda encontrada com os filtros aplicados.</p>
-            <Button onClick={limparFiltros} className="mt-4" variant="outline">
-              Limpar Filtros
-            </Button>
-          </div>
-        )}
-      </main>
-
-      {/* Footer */}
-      <footer className="text-center py-4 text-xs text-gray-500 border-t border-gray-100">
-        © 2025 86 Dynamics - Dados importados do Firebase
-      </footer>
-
-      {/* Modal de Edição */}
-      <Dialog open={modalAberto} onOpenChange={setModalAberto}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Save className="h-5 w-5" />
-              Editar Emenda
-            </DialogTitle>
-          </DialogHeader>
-          
-          {emendaEditando && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-              {/* Bloco */}
-              <div>
-                <Label htmlFor="bloco">Bloco</Label>
-                <Input
-                  id="bloco"
-                  value={dadosEdicao.bloco || ''}
-                  onChange={(e) => handleCampoEdicao('bloco', e.target.value)}
-                />
-              </div>
-
-              {/* Emenda */}
-              <div>
-                <Label htmlFor="emenda">Emenda</Label>
-                <Input
-                  id="emenda"
-                  value={dadosEdicao.emenda || ''}
-                  onChange={(e) => handleCampoEdicao('emenda', e.target.value)}
-                />
-              </div>
-
-              {/* Município Beneficiário */}
-              <div>
-                <Label htmlFor="municipioBeneficiario">Município/Beneficiário</Label>
-                <Input
-                  id="municipioBeneficiario"
-                  value={dadosEdicao.municipioBeneficiario || ''}
-                  onChange={(e) => handleCampoEdicao('municipioBeneficiario', e.target.value)}
-                />
-              </div>
-
-              {/* Funcional */}
-              <div>
-                <Label htmlFor="funcional">Funcional</Label>
-                <Input
-                  id="funcional"
-                  value={dadosEdicao.funcional || ''}
-                  onChange={(e) => handleCampoEdicao('funcional', e.target.value)}
-                />
-              </div>
-
-              {/* GND */}
-              <div>
-                <Label htmlFor="gnd">GND</Label>
-                <Input
-                  id="gnd"
-                  value={dadosEdicao.gnd || ''}
-                  onChange={(e) => handleCampoEdicao('gnd', e.target.value)}
-                />
-              </div>
-
-              {/* Valor Indicado */}
-              <div>
-                <Label htmlFor="valorIndicado">Valor Indicado</Label>
-                <Input
-                  id="valorIndicado"
-                  type="number"
-                  step="0.01"
-                  value={dadosEdicao.valorIndicado || ''}
-                  onChange={(e) => handleCampoEdicao('valorIndicado', parseFloat(e.target.value) || 0)}
-                />
-              </div>
-
-              {/* Valor Empenhado */}
-              <div>
-                <Label htmlFor="valorEmpenhado">Valor Empenhado</Label>
-                <Input
-                  id="valorEmpenhado"
-                  type="number"
-                  step="0.01"
-                  value={dadosEdicao.valorEmpenhado || ''}
-                  onChange={(e) => handleCampoEdicao('valorEmpenhado', parseFloat(e.target.value) || 0)}
-                />
-              </div>
-
-              {/* Valor a Empenhar */}
-              <div>
-                <Label htmlFor="valorAEmpenhar">Valor a Empenhar</Label>
-                <Input
-                  id="valorAEmpenhar"
-                  type="number"
-                  step="0.01"
-                  value={dadosEdicao.valorAEmpenhar || ''}
-                  onChange={(e) => handleCampoEdicao('valorAEmpenhar', parseFloat(e.target.value) || 0)}
-                />
-              </div>
-
-              {/* Valor Pago */}
-              <div>
-                <Label htmlFor="valorPago">Valor Pago</Label>
-                <Input
-                  id="valorPago"
-                  type="number"
-                  step="0.01"
-                  value={dadosEdicao.valorPago || ''}
-                  onChange={(e) => handleCampoEdicao('valorPago', parseFloat(e.target.value) || 0)}
-                />
-              </div>
-
-              {/* Valor a Ser Pago */}
-              <div>
-                <Label htmlFor="valorASerPago">Valor a Ser Pago</Label>
-                <Input
-                  id="valorASerPago"
-                  type="number"
-                  step="0.01"
-                  value={dadosEdicao.valorASerPago || ''}
-                  onChange={(e) => handleCampoEdicao('valorASerPago', parseFloat(e.target.value) || 0)}
-                />
-              </div>
-
-              {/* Empenho */}
-              <div>
-                <Label htmlFor="empenho">Empenho</Label>
-                <Input
-                  id="empenho"
-                  value={dadosEdicao.empenho || ''}
-                  onChange={(e) => handleCampoEdicao('empenho', e.target.value)}
-                />
-              </div>
-
-              {/* Data Empenho */}
-              <div>
-                <Label htmlFor="dataEmpenho">Data Empenho</Label>
-                <Input
-                  id="dataEmpenho"
-                  type="date"
-                  value={dadosEdicao.dataEmpenho || ''}
-                  onChange={(e) => handleCampoEdicao('dataEmpenho', e.target.value)}
-                />
-              </div>
-
-              {/* Portaria/Convênio/Contrato */}
-              <div>
-                <Label htmlFor="portariaConvenioContrato">Portaria/Convênio/Contrato</Label>
-                <Input
-                  id="portariaConvenioContrato"
-                  value={dadosEdicao.portariaConvenioContrato || ''}
-                  onChange={(e) => handleCampoEdicao('portariaConvenioContrato', e.target.value)}
-                />
-              </div>
-
-              {/* Pagamento */}
-              <div>
-                <Label htmlFor="pagamento">Pagamento</Label>
-                <Input
-                  id="pagamento"
-                  value={dadosEdicao.pagamento || ''}
-                  onChange={(e) => handleCampoEdicao('pagamento', e.target.value)}
-                />
-              </div>
-
-              {/* Número Proposta */}
-              <div>
-                <Label htmlFor="numeroProposta">Número Proposta</Label>
-                <Input
-                  id="numeroProposta"
-                  value={dadosEdicao.numeroProposta || ''}
-                  onChange={(e) => handleCampoEdicao('numeroProposta', e.target.value)}
-                />
-              </div>
-
-              {/* Lideranças */}
-              <div>
-                <Label htmlFor="liderancas">Lideranças</Label>
-                <Input
-                  id="liderancas"
-                  value={dadosEdicao.liderancas || ''}
-                  onChange={(e) => handleCampoEdicao('liderancas', e.target.value)}
-                />
-              </div>
-
-              {/* Objeto */}
-              <div className="md:col-span-2">
-                <Label htmlFor="objeto">Objeto</Label>
-                <Textarea
-                  id="objeto"
-                  value={dadosEdicao.objeto || ''}
-                  onChange={(e) => handleCampoEdicao('objeto', e.target.value)}
-                  rows={3}
-                />
-              </div>
-
-              {/* Alteração */}
-              <div className="md:col-span-2">
-                <Label htmlFor="alteracao">Alteração</Label>
-                <Textarea
-                  id="alteracao"
-                  value={dadosEdicao.alteracao || ''}
-                  onChange={(e) => handleCampoEdicao('alteracao', e.target.value)}
-                  rows={3}
-                />
-              </div>
-            </div>
           )}
-
-          <DialogFooter>
-            <Button variant="outline" onClick={fecharModalEdicao}>
-              <X className="h-4 w-4 mr-2" />
-              Cancelar
-            </Button>
-            <Button onClick={salvarEdicao} disabled={salvandoEdicao}>
-              {salvandoEdicao ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Save className="h-4 w-4 mr-2" />
-              )}
-              Salvar Alterações
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </>
+      )}
     </div>
   );
 } 

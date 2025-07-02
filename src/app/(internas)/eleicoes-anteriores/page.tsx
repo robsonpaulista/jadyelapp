@@ -662,7 +662,7 @@ export default function EleicoesAnterioresPage() {
           <>
               <div className="w-full mb-6 overflow-x-auto">
                 <div className="bg-white rounded shadow p-1 min-w-[800px]">
-                  <h2 className="text-sm font-semibold mb-2 text-center">Lideranças e Projeção de Votos</h2>
+                  
                     <div className="w-full">
                       <table className="w-full text-sm">
                         <thead>

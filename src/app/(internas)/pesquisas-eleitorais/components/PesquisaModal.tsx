@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Dispatch, SetStateAction, FormEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 
@@ -18,9 +18,10 @@ interface PesquisaEleitoral {
 interface PesquisaModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (e: React.FormEvent) => Promise<void>;
+  pesquisa: PesquisaEleitoral | null;
   form: PesquisaEleitoral;
-  setForm: React.Dispatch<React.SetStateAction<PesquisaEleitoral>>;
+  setForm: Dispatch<SetStateAction<PesquisaEleitoral>>;
+  onSave: (e: FormEvent<HTMLFormElement>) => Promise<void>;
   loading: boolean;
   error: string | null;
   MUNICIPIOS_PIAUI: string[];
@@ -29,9 +30,10 @@ interface PesquisaModalProps {
 export function PesquisaModal({
   isOpen,
   onClose,
-  onSubmit,
+  pesquisa,
   form,
   setForm,
+  onSave,
   loading,
   error,
   MUNICIPIOS_PIAUI
@@ -72,7 +74,7 @@ export function PesquisaModal({
                 </div>
               )}
 
-              <form onSubmit={onSubmit} className="space-y-4">
+              <form onSubmit={onSave} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">

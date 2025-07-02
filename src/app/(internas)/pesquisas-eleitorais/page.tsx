@@ -30,6 +30,11 @@ import { PesquisaModal } from './components/PesquisaModal';
 import { PesquisasTable } from './components/PesquisasTable';
 import { motion } from 'framer-motion';
 import 'chartjs-adapter-date-fns';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Eye, Pencil, Trash2 } from 'lucide-react';
 
 // Registrar todos os componentes necessários do Chart.js
 ChartJS.register(
@@ -373,50 +378,61 @@ export default function PesquisasEleitoraisPage() {
     };
   }, []);
 
-  return (
-    <div className="flex-1 flex flex-col min-h-screen">
-      {/* Navbar interna do conteúdo */}
-      <nav className="w-full bg-white border-b border-gray-100 shadow-sm">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex flex-col items-start">
-            <span className="text-base md:text-lg font-semibold text-gray-900">Pesquisas Eleitorais</span>
-            <span className="text-xs text-gray-500 font-light">Gerencie e acompanhe a evolução das pesquisas eleitorais por município e candidato</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => {
-                setEditingPesquisa(null);
-                setForm({
-                  apoio: '',
-                  candidato: '',
-                  cargo: '',
-                  criadoEm: new Date().toISOString(),
-                  data: '',
-                  instituto: '',
-                  municipio: '',
-                  municipioMonitorado: false,
-                  tipo: '',
-                  votos: 0
-                });
-                setIsModalOpen(true);
-              }}
-              className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-white hover:bg-blue-50 text-blue-700 cursor-pointer border-gray-200"
-            >
-              <Plus className="h-4 w-4" />
-              Nova Pesquisa
-            </motion.button>
-          </div>
-        </div>
-      </nav>
+  const formatarData = (data: string) => {
+    return new Date(data).toLocaleDateString('pt-BR');
+  };
 
-      {/* Conteúdo principal */}
-      <main className="p-0 w-full flex-1">
-        <div className="px-4 py-8">
+  const handleAtualizar = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await fetchPesquisas();
+    } catch (err) {
+      setError('Erro ao atualizar pesquisas.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex-1 flex flex-col min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full space-y-4 py-4">
+        {/* Header */}
+        <div>
+          <h1 className="text-lg font-semibold text-gray-900">Pesquisas Eleitorais</h1>
+          <p className="text-sm text-gray-500">Gerencie e acompanhe a evolução das pesquisas eleitorais por município e candidato</p>
+        </div>
+
+        {/* Botão Nova Pesquisa */}
+        <div className="flex justify-end">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => {
+              setEditingPesquisa(null);
+              setForm({
+                apoio: '',
+                candidato: '',
+                cargo: '',
+                criadoEm: new Date().toISOString(),
+                data: '',
+                instituto: '',
+                municipio: '',
+                municipioMonitorado: false,
+                tipo: '',
+                votos: 0
+              });
+              setIsModalOpen(true);
+            }}
+            className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-white hover:bg-blue-50 text-blue-700 cursor-pointer border-gray-200"
+          >
+            <Plus className="h-4 w-4" />
+            Nova Pesquisa
+          </motion.button>
+        </div>
 
         {/* Filtros */}
-        <div className="bg-white rounded-lg shadow p-4 mb-8">
+        <div className="bg-white rounded-lg shadow p-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Município</label>
@@ -503,44 +519,18 @@ export default function PesquisasEleitoraisPage() {
           </div>
         </div>
 
+        {/* Total */}
+        <div className="text-sm text-gray-500">
+          Total: {pesquisasFiltradas.length} pesquisa(s)
+        </div>
+
         {/* Gráfico */}
-        {filtrosEssenciaisPreenchidos ? (
-          <div className="bg-white rounded-lg shadow p-4 mb-8">
-            <div id="chart-container" className="relative">
-              {isFullscreen && filtroMunicipio !== 'todos' && (
-                <div style={{
-                  position: 'absolute',
-                  top: 16,
-                  left: 16,
-                  zIndex: 10,
-                  background: 'rgba(255,255,255,0.9)',
-                  padding: '8px 20px',
-                  borderRadius: '8px',
-                  fontWeight: 'bold',
-                  fontSize: '1.2rem',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
-                }}>
-                  Município: {filtroMunicipio}
-                </div>
-              )}
-              <Line
-                key={JSON.stringify(chartData.labels) + JSON.stringify(chartData.datasets.map(ds => ds.label))}
-                data={chartData}
-                options={chartOptions}
-              />
-              <button
-                onClick={toggleFullscreen}
-                className="absolute top-2 right-2 p-2 text-gray-500 hover:text-gray-700"
-              >
-                <Maximize2 size={20} />
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="bg-white rounded-lg shadow p-8 mb-8 text-center">
-            <p className="text-gray-500">
-              Selecione um município e um cargo para visualizar o gráfico de evolução das pesquisas.
-            </p>
+        {pesquisasFiltradas.length > 0 && (
+          <div className="bg-white rounded-lg shadow p-4">
+            <Line
+              data={chartData}
+              options={chartOptions}
+            />
           </div>
         )}
 
@@ -553,38 +543,22 @@ export default function PesquisasEleitoraisPage() {
           />
         </div>
 
-          {/* Footer */}
-          <div className="mt-8 text-center text-sm text-gray-500">
-            © 2025 86 Dynamics - Todos os direitos reservados
-          </div>
+        {/* Footer */}
+        <div className="mt-8 text-center text-sm text-gray-500">
+          © 2025 86 Dynamics - Todos os direitos reservados
         </div>
-      </main>
+      </div>
 
       {/* Modal */}
       <PesquisaModal
         isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setEditingPesquisa(null);
-          setForm({
-            apoio: '',
-            candidato: '',
-            cargo: '',
-            criadoEm: new Date().toISOString(),
-            data: '',
-            instituto: '',
-            municipio: '',
-            municipioMonitorado: false,
-            tipo: '',
-            votos: 0
-          });
-        }}
-        onSubmit={handleSubmit}
+        onClose={() => setIsModalOpen(false)}
+        pesquisa={editingPesquisa}
         form={form}
         setForm={setForm}
+        onSave={handleSubmit}
         loading={loading}
         error={error}
-        MUNICIPIOS_PIAUI={MUNICIPIOS_PIAUI}
       />
     </div>
   );

@@ -5,6 +5,10 @@ import { getLimiteMacByMunicipio } from '@/utils/limitesmac';
 import { getLimitePapByMunicipio } from '@/utils/limitepap';
 import { disableConsoleLogging } from '@/lib/logger';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { Table, TableHeader, TableBody, TableCell, TableHead, TableRow } from '@/components/ui/table';
+import { FileText } from 'lucide-react';
 
 interface Proposta {
   nuProposta: string;
@@ -528,18 +532,43 @@ export default function ConsultarTetosPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-gray-800 flex flex-col md:flex-row">
-      {/* Conteúdo principal */}
-      <div className="flex-1 flex flex-col min-h-screen">
-        {/* Navbar interna do conteúdo */}
-        <nav className="w-full bg-white border-b border-gray-100 shadow-sm">
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex flex-col items-start">
-              <span className="text-base md:text-lg font-semibold text-gray-900">Consultar Tetos</span>
-              <span className="text-xs text-gray-500 font-light">Consulta de Propostas do Fundo Nacional de Saúde</span>
+    <div className="flex-1 flex flex-col min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full space-y-4 py-4">
+        {/* Header */}
+        <div>
+          <h1 className="text-lg font-semibold text-gray-900">Consultar Tetos</h1>
+          <p className="text-sm text-gray-500">Consulta de Propostas do Fundo Nacional de Saúde</p>
             </div>
+
+        {/* Filtros */}
+        <Card className="p-4">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-medium">Filtros</h2>
             <div className="flex items-center gap-2">
-              <button
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setFilter('todos');
+                    setTipoPropostaFilter('todos');
+                    setTipoRecursoFilter('todos');
+                    loadPropostas();
+                  }}
+                  className="text-sm text-gray-500 hover:text-gray-900"
+                >
+                  Limpar filtros
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={downloadCSV}
+                  className="flex items-center gap-2"
+                >
+                  <FileDown className="h-4 w-4" />
+                  Exportar CSV
+                </Button>
+                <Button
                 onClick={() => {
                   // Forçar atualização respeitando município selecionado
                   const timestamp = new Date().getTime();
@@ -551,201 +580,125 @@ export default function ConsultarTetosPage() {
                     loadPropostas(`force_update=${timestamp}`);
                   }
                 }}
-                className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-white hover:bg-gray-50 text-gray-700 cursor-pointer border-gray-200"
-                title="Atualizar dados (força nova busca)"
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
                 disabled={loading}
               >
                 <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                Atualizar
-              </button>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => downloadCSV()}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-white hover:bg-green-50 text-green-700 cursor-pointer border-gray-200"
-                >
-                  <FileDown className="h-4 w-4" />
-                  Exportar CSV
-                </button>
-                {filter !== 'todos' && (
-                  <button
-                    onClick={() => setShowEmendasSUASModal(true)}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-white hover:bg-orange-50 text-orange-700 cursor-pointer border-gray-200"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Adicionar Emenda SUAS
-                  </button>
-                )}
+                  {loading ? 'Atualizando...' : 'Atualizar'}
+                </Button>
               </div>
             </div>
-          </div>
-        </nav>
-        
-        {/* Conteúdo principal */}
-        <main className="p-0 w-full">
-          {/* Seção de filtros */}
-          <div className="px-4 py-3 mb-2 space-y-4">
-            <div className="flex flex-col space-y-3">
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-gray-500" />
-                <span className="text-sm font-medium text-gray-700">Filtros:</span>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <select 
-                  className="w-full text-sm border border-gray-200 rounded px-2 py-1.5"
-                  value={filter}
-                  onChange={(e) => {
-                    const municipio = e.target.value;
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Select value={filter} onValueChange={(municipio) => {
                     setFilter(municipio);
                     if (municipio !== 'todos') {
                       loadPropostas(municipio);
                     }
-                  }}
-                  disabled={loading}
-                >
-                  {municipios.map((municipio, index) => (
-                    <option key={index} value={municipio}>
-                      {municipio === 'todos' ? 'Todos os municípios' : municipio}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  className="w-full text-sm border border-gray-200 rounded px-2 py-1.5"
-                  value={tipoPropostaFilter}
-                  onChange={e => setTipoPropostaFilter(e.target.value)}
-                  disabled={loading}
-                >
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos os municípios" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="TODOS_MUNICIPIOS">Todos os municípios</SelectItem>
+                  {Array.from(new Set(todosOsMunicipios)).sort()
+                    .filter(municipio => municipio)
+                    .map(municipio => (
+                      <SelectItem key={municipio} value={municipio === "SEM_MUNICIPIO" ? municipio : municipio}>
+                        {municipio === "SEM_MUNICIPIO" ? "Sem município" : municipio}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={tipoPropostaFilter} onValueChange={(tipo) => {
+                setTipoPropostaFilter(tipo);
+                if (tipo !== 'todos') {
+                  loadPropostas();
+                }
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos os tipos de proposta" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="TODOS_TIPOS_PROPOSTA">Todos os tipos de proposta</SelectItem>
                   {tiposProposta.map((tipo, idx) => (
-                    <option key={idx} value={tipo}>
-                      {tipo === 'todos' ? 'Todos os tipos de proposta' : tipo}
-                    </option>
+                    <SelectItem key={idx} value={tipo}>
+                      {tipo}
+                    </SelectItem>
                   ))}
-                </select>
-                <select
-                  className="w-full text-sm border border-gray-200 rounded px-2 py-1.5"
-                  value={tipoRecursoFilter}
-                  onChange={e => setTipoRecursoFilter(e.target.value)}
-                  disabled={loading}
-                >
+                </SelectContent>
+              </Select>
+
+              <Select value={tipoRecursoFilter} onValueChange={(tipo) => {
+                setTipoRecursoFilter(tipo);
+                if (tipo !== 'todos') {
+                  loadPropostas();
+                }
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos os tipos de recurso" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="TODOS_TIPOS_RECURSO">Todos os tipos de recurso</SelectItem>
                   {tiposRecurso.map((tipo, idx) => (
-                    <option key={idx} value={tipo}>
-                      {tipo === 'todos' ? 'Todos os tipos de recurso' : tipo}
-                    </option>
+                    <SelectItem key={idx} value={tipo}>
+                      {tipo}
+                    </SelectItem>
                   ))}
-                </select>
+                </SelectContent>
+              </Select>
               </div>
             </div>
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
-              <div className="text-xs text-gray-500">
+        </Card>
+
+        {/* Total */}
+        <div className="text-sm text-gray-500">
                 Total: {filteredPropostas.length} proposta(s)
-                {filter !== 'todos' && ` em ${filter}`}
-              </div>
-              <button
-                onClick={downloadCSV}
-                className="w-full md:w-auto flex items-center justify-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-white hover:bg-green-50 text-green-700 cursor-pointer border-gray-200"
-                title="Exportar dados para CSV"
-                disabled={loading || filteredPropostas.length === 0}
-              >
-                <FileDown className="h-4 w-4" />
-                Exportar CSV
-              </button>
-            </div>
           </div>
 
-          {/* Estados de loading e erro */}
-          {loading && (
-            <div className="px-4 text-center text-gray-500 py-6">
-              <div className="inline-block animate-spin mr-2">⟳</div>
-              Carregando propostas...
-            </div>
-          )}
-          
-          {error && (
-            <div className="mx-4 bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg mb-4">
-              Erro ao carregar propostas: {error}
-            </div>
-          )}
-          
-          {/* Tabela de propostas */}
-          {!loading && !error && filteredPropostas.length === 0 ? (
-            <div className="px-4 text-center text-gray-500 py-16">
-              {filter !== 'todos' 
-                ? `Nenhuma proposta encontrada para ${filter}.` 
-                : 'Nenhuma proposta encontrada. Tente atualizar os dados.'}
-            </div>
-          ) : !loading && (
-            <>
-              {/* Tabela para desktop */}
-              <div className="hidden md:block overflow-hidden overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Município</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo Proposta</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo Recurso</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Valor Proposta</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Valor a Pagar</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {todasPropostas.map((proposta, idx) => (
-                      <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                        <td className="py-3 px-4 text-sm text-gray-700 whitespace-nowrap">{proposta.municipio}</td>
-                        <td className="py-3 px-4 text-sm text-gray-800">{proposta.coTipoProposta}</td>
-                        <td className="py-3 px-4 text-sm text-gray-800">{proposta.dsTipoRecurso || "N/A"}</td>
-                        <td className="py-3 px-4 text-sm text-gray-800 text-right whitespace-nowrap">{formatCurrency(proposta.vlProposta)}</td>
-                        <td className="py-3 px-4 text-sm text-gray-800 text-right whitespace-nowrap">{formatCurrency(proposta.vlPagar || 0)}</td>
-                        <td className="py-3 px-4 text-sm text-gray-800 text-right whitespace-nowrap">
+        {/* Tabela */}
+        <Card>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>MUNICÍPIO</TableHead>
+                <TableHead>TIPO PROPOSTA</TableHead>
+                <TableHead>TIPO RECURSO</TableHead>
+                <TableHead className="text-right">VALOR PROPOSTA</TableHead>
+                <TableHead className="text-right">VALOR A PAGAR</TableHead>
+                <TableHead>AÇÕES</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {todasPropostas.map((proposta, index) => (
+                <TableRow key={index}>
+                  <TableCell>{proposta.municipio}</TableCell>
+                  <TableCell>{proposta.coTipoProposta}</TableCell>
+                  <TableCell>{proposta.dsTipoRecurso || "N/A"}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(proposta.vlProposta)}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(proposta.vlPagar || 0)}</TableCell>
+                  <TableCell>
                           {proposta.tipo === 'SUAS' && (
-                            <button
-                              onClick={() => handleEditEmendaSUAS({
+                      <Button variant="ghost" size="sm" onClick={() => handleEditEmendaSUAS({
                                 id: proposta.emendaSUASId,
                                 municipio: proposta.municipio,
                                 tipo_proposta: proposta.coTipoProposta,
                                 tipo_recurso: proposta.dsTipoRecurso,
                                 valor_proposta: proposta.vlProposta,
                                 valor_pagar: proposta.vlPagar
-                              })}
-                              className="text-blue-600 hover:text-blue-800"
-                            >
+                      })}>
                               <Pencil className="h-4 w-4" />
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Cards para mobile */}
-              <div className="block md:hidden">
-                <div className="divide-y divide-gray-200">
-                  {filteredPropostas.map((proposta, idx) => (
-                    <div key={idx} className="p-4 bg-white">
-                      <div className="space-y-2">
-                        <div>
-                          <div className="font-medium text-gray-900">{proposta.municipio}</div>
-                          <div className="text-sm text-gray-600">{proposta.coTipoProposta}</div>
-                        </div>
-                        <div className="text-sm text-gray-600">{proposta.dsTipoRecurso || "N/A"}</div>
-                        <div className="grid grid-cols-2 gap-4 pt-2">
-                          <div>
-                            <div className="text-xs text-gray-500">Valor Proposta</div>
-                            <div className="font-medium text-gray-900">{formatCurrency(proposta.vlProposta)}</div>
-                          </div>
-                          <div>
-                            <div className="text-xs text-gray-500">Valor a Pagar</div>
-                            <div className="font-medium text-gray-900">{formatCurrency(proposta.vlPagar || 0)}</div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
 
           {/* Cards de Limite MAC, PAP e SUAS */}
           <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-4 p-4">
@@ -904,12 +857,6 @@ export default function ConsultarTetosPage() {
               </div>
             </div>
           )}
-        </main>
-        
-        {/* Footer */}
-        <footer className="mt-auto text-center py-3 text-xs text-gray-500 border-t border-gray-100">
-          © 2025 86 Dynamics - Todos os direitos reservados
-        </footer>
       </div>
     </div>
   );

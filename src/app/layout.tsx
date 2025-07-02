@@ -132,7 +132,20 @@ export default function RootLayout({
           <Providers>
             <PWAHandler />
             {children}
-            <Toaster position="top-right" />
+            <Toaster 
+              position="top-right" 
+              toastOptions={{
+                loading: {
+                  duration: Infinity,
+                },
+                success: {
+                  duration: 2000,
+                },
+                error: {
+                  duration: 3000,
+                },
+              }}
+            />
           </Providers>
         </div>
       </body>

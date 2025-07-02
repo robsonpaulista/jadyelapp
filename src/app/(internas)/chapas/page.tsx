@@ -1,12 +1,17 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, Pencil, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { carregarChapas, atualizarChapa, excluirChapa, Chapa } from "@/services/chapasService";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Card } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { DialogFooter } from "@/components/ui/dialog";
 
 const initialPartidos = [
   {
@@ -87,17 +92,126 @@ const initialPartidos = [
 const initialQuociente = 190000;
 
 export default function ChapasPage() {
+  const [loading, setLoading] = useState(false);
+  const [chapas, setChapas] = useState<Chapa[]>([]);
+  const [chapasFiltradas, setChapasFiltradas] = useState<Chapa[]>([]);
+  const [municipioSelecionado, setMunicipioSelecionado] = useState("TODOS_MUNICIPIOS");
+  const [statusSelecionado, setStatusSelecionado] = useState("TODOS_STATUS");
+  const [modalAberto, setModalAberto] = useState(false);
+  const [chapaEmEdicao, setChapaEmEdicao] = useState<Chapa | null>(null);
+  const [formData, setFormData] = useState<Partial<Chapa>>({
+    nome: "",
+    municipio: "",
+    status: "Em andamento"
+  });
 
   const [partidos, setPartidos] = useState(initialPartidos);
   const [quociente, setQuociente] = useState(initialQuociente);
   const [editVoto, setEditVoto] = useState<{ partidoIdx: number; candidatoNome: string } | null>(null);
   const [hoveredRow, setHoveredRow] = useState<{ partidoIdx: number; candidatoNome: string } | null>(null);
-  const [editingName, setEditingName] = useState<{ partidoIdx: number; candidatoNome: string; originalName: string } | null>(null);
+  const [editingName, setEditingName] = useState<{ partidoIdx: number; candidatoNome: string; tempValue: string } | null>(null);
 
   // Estados para adicionar novo candidato
   const [dialogAberto, setDialogAberto] = useState<number | null>(null);
   const [novoCandidato, setNovoCandidato] = useState({ nome: '', votos: 0 });
   const [salvandoCandidato, setSalvandoCandidato] = useState(false);
+
+  const handleAtualizar = async () => {
+    setLoading(true);
+    try {
+      const novasChapas = await carregarChapas();
+      setChapas(novasChapas);
+      filtrarChapas(novasChapas);
+    } catch (error) {
+      console.error("Erro ao carregar chapas:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filtrarChapas = (chapasParaFiltrar: Chapa[] = chapas) => {
+    let filtradas = [...chapasParaFiltrar];
+    
+    if (municipioSelecionado !== "TODOS_MUNICIPIOS") {
+      filtradas = filtradas.filter(chapa => chapa.municipio === municipioSelecionado);
+    }
+    
+    if (statusSelecionado !== "TODOS_STATUS") {
+      filtradas = filtradas.filter(chapa => chapa.status === statusSelecionado);
+    }
+    
+    setChapasFiltradas(filtradas);
+  };
+
+  useEffect(() => {
+    handleAtualizar();
+  }, []);
+
+  useEffect(() => {
+    filtrarChapas();
+  }, [municipioSelecionado, statusSelecionado, chapas]);
+
+  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" => {
+    switch (status) {
+      case "Concluída":
+        return "default";
+      case "Em andamento":
+        return "secondary";
+      case "Cancelada":
+        return "destructive";
+      default:
+        return "default";
+    }
+  };
+
+  const handleEditarChapa = (chapa: Chapa) => {
+    setChapaEmEdicao(chapa);
+    setFormData({
+      nome: chapa.nome,
+      municipio: chapa.municipio,
+      status: chapa.status
+    });
+    setModalAberto(true);
+  };
+
+  const handleDeletarChapa = async (chapa: Chapa) => {
+    if (!confirm("Tem certeza que deseja excluir esta chapa?")) return;
+    
+    setLoading(true);
+    try {
+      await excluirChapa(chapa.id!);
+      await handleAtualizar();
+    } catch (error) {
+      console.error("Erro ao excluir chapa:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    setLoading(true);
+    try {
+      if (chapaEmEdicao) {
+        await atualizarChapa(chapaEmEdicao.id!, formData as Chapa);
+      } else {
+        // Implementar criação de nova chapa
+      }
+      await handleAtualizar();
+      setModalAberto(false);
+      setChapaEmEdicao(null);
+      setFormData({
+        nome: "",
+        municipio: "",
+        status: "Em andamento"
+      });
+    } catch (error) {
+      console.error("Erro ao salvar chapa:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Carregar dados do Firestore ao abrir a página
   useEffect(() => {
@@ -170,34 +284,41 @@ export default function ChapasPage() {
 
   // Função para iniciar edição de nome
   const startEditingName = (partidoIdx: number, candidatoNome: string) => {
-    setEditingName({ partidoIdx, candidatoNome, originalName: candidatoNome });
+    setEditingName({ partidoIdx, candidatoNome, tempValue: candidatoNome });
   };
 
   // Função para salvar nome no Firestore
-  const saveNameChange = async (partidoIdx: number, candidatoNome: string) => {
+  const saveNameChange = async (partidoIdx: number, oldNome: string) => {
     if (!editingName) return;
     
-    const partido = partidos[partidoIdx];
-    const candidato = partido.candidatos.find(c => c.nome === candidatoNome);
-    if (!candidato) return;
-    
-    const originalName = editingName.originalName;
-    const newName = candidato.nome;
+    const newNome = editingName.tempValue.trim();
+    if (!newNome || newNome === oldNome) {
+      setEditingName(null);
+      return;
+    }
 
+    setSalvandoCandidato(true);
     try {
-      // Se o nome mudou, precisamos excluir o registro antigo e criar um novo
-      if (originalName !== newName) {
-        // Excluir o registro antigo
-        await excluirChapa(partido.nome, originalName);
-        // Criar o novo registro
-        await atualizarChapa(partido.nome, newName, candidato.votos);
-      }
-      // Se o nome não mudou, não faz nada
+      const partidoAtual = partidos[partidoIdx];
+      const candidatoIndex = partidoAtual.candidatos.findIndex(c => c.nome === oldNome);
+      if (candidatoIndex === -1) return;
+
+      const novoPartidos = [...partidos];
+      novoPartidos[partidoIdx] = {
+        ...partidoAtual,
+        candidatos: [
+          ...partidoAtual.candidatos.slice(0, candidatoIndex),
+          { ...partidoAtual.candidatos[candidatoIndex], nome: newNome },
+          ...partidoAtual.candidatos.slice(candidatoIndex + 1)
+        ]
+      };
+
+      setPartidos(novoPartidos);
+      await salvarPartidos(novoPartidos);
     } catch (error) {
-      console.error('Erro ao salvar nome:', error);
-      // Reverter para o nome original em caso de erro
-      updateLocalState(partidoIdx, candidatoNome, 'nome', originalName);
+      console.error('Erro ao salvar nome do candidato:', error);
     } finally {
+      setSalvandoCandidato(false);
       setEditingName(null);
     }
   };
@@ -275,231 +396,224 @@ export default function ChapasPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-gray-800 flex flex-col md:flex-row">
-      {/* Conteúdo principal */}
-      <div className="flex-1 flex flex-col min-h-screen">
-        {/* Navbar interna do conteúdo */}
-        <nav className="w-full bg-white border-b border-gray-100 shadow-sm">
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex flex-col items-start">
-              <span className="text-base md:text-lg font-semibold text-gray-900">Eleições 2026</span>
-              <span className="text-xs text-gray-500 font-light">Projeção de votos por chapa de partidos</span>
-            </div>
-            <div className="flex items-center gap-2">
-              {/* Espaço reservado para futuras ações */}
-            </div>
+    <div className="flex-1 flex flex-col min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full space-y-4 py-4">
+        {/* Header */}
+        <div>
+          <h1 className="text-lg font-semibold text-gray-900">Eleições 2026</h1>
+          <p className="text-sm text-gray-500">Projeção de votos por chapa de partidos</p>
+        </div>
+
+        {/* Quociente eleitoral alinhado à direita */}
+        <div className="flex justify-end mb-2">
+          <div className="flex items-center gap-3 bg-white rounded-lg shadow-sm border border-gray-100 p-2">
+            <span className="text-sm font-bold whitespace-nowrap">QUOCIENTE ELEITORAL 2026</span>
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9.]*"
+              value={quociente.toLocaleString('pt-BR')}
+              onChange={e => {
+                const raw = e.target.value.replace(/\./g, '');
+                const num = Number(raw);
+                setQuociente(num || 0);
+              }}
+              className="text-xl font-extrabold text-gray-900 bg-transparent border-b border-gray-200 focus:border-blue-400 outline-none w-28 text-center px-1"
+              style={{ maxWidth: 120 }}
+            />
           </div>
-        </nav>
-        <main className="flex-1 flex flex-col px-0">
-          <div className="w-full max-w-7xl px-4">
-            {/* Quociente eleitoral alinhado à direita */}
-            <div className="flex justify-end mb-2">
-              <div className="flex items-center gap-3 bg-white rounded-lg shadow-sm border border-gray-100 p-2">
-                <span className="text-sm font-bold whitespace-nowrap">QUOCIENTE ELEITORAL 2026</span>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9.]*"
-                  value={quociente.toLocaleString('pt-BR')}
-                  onChange={e => {
-                    const raw = e.target.value.replace(/\./g, '');
-                    const num = Number(raw);
-                    setQuociente(num || 0);
-                  }}
-                  className="text-xl font-extrabold text-gray-900 bg-transparent border-b border-gray-200 focus:border-blue-400 outline-none w-28 text-center px-1"
-                  style={{ maxWidth: 120 }}
-                />
-              </div>
-            </div>
-            <div className="w-full flex-1 grid grid-cols-1 md:grid-cols-4 gap-6">
-              {partidos.map((partido, pIdx) => (
-                <div key={partido.nome} className="flex flex-col items-center bg-white rounded-lg shadow-sm border border-gray-100 p-3 h-full min-h-[420px]">
-                  <div className="w-full text-center py-1 font-bold text-base mb-2 rounded bg-gray-200 text-gray-800">{partido.nome}</div>
-                  <div className="w-full flex flex-col flex-1">
-                    <table className="w-full text-xs mb-2">
-                      <tbody>
-                        {partido.candidatos
-                          .sort((a, b) => b.votos - a.votos) // Ordenar por votos (maior para menor)
-                          .map((c, idx) => (
-                          <tr 
-                            key={c.nome}
-                            onMouseEnter={() => setHoveredRow({ partidoIdx: pIdx, candidatoNome: c.nome })}
-                            onMouseLeave={() => setHoveredRow(null)}
-                            className="group relative hover:bg-gray-50 transition-colors"
-                          >
-                            <td className="pr-2 text-left whitespace-nowrap font-normal align-top w-2/3">
-                              <input
-                                type="text"
-                                value={c.nome}
-                                onFocus={() => startEditingName(pIdx, c.nome)}
-                                onChange={e => {
-                                  const value = e.target.value;
-                                  updateLocalState(pIdx, c.nome, 'nome', value);
-                                }}
-                                onBlur={() => saveNameChange(pIdx, c.nome)}
-                                onKeyDown={e => {
-                                  if (e.key === 'Enter') {
-                                    e.currentTarget.blur(); // Isso vai disparar o onBlur
-                                  }
-                                }}
-                                className="bg-transparent border-b border-gray-200 focus:border-blue-400 outline-none w-full text-xs py-0.5 px-1"
-                              />
-                            </td>
-                            <td className="text-right whitespace-nowrap font-normal align-top">
-                              {editVoto && editVoto.partidoIdx === pIdx && editVoto.candidatoNome === c.nome ? (
-                                <input
-                                  type="number"
-                                  min={0}
-                                  value={c.votos}
-                                  autoFocus
-                                  onChange={e => {
-                                    const value = e.target.value;
-                                    updateLocalState(pIdx, c.nome, 'votos', value);
-                                  }}
-                                  onBlur={() => {
-                                    saveVotosChange(pIdx, c.nome, c.votos);
-                                    setEditVoto(null);
-                                  }}
-                                  onKeyDown={e => {
-                                    if (e.key === 'Enter') {
-                                      saveVotosChange(pIdx, c.nome, c.votos);
-                                      setEditVoto(null);
-                                    }
-                                  }}
-                                  className="bg-transparent border-b border-gray-200 focus:border-blue-400 outline-none w-full text-xs py-0.5 px-1 text-right"
-                                  style={{ textAlign: 'right' }}
-                                />
-                              ) : (
-                                <span
-                                  className="cursor-pointer select-text"
-                                  onClick={() => setEditVoto({ partidoIdx: pIdx, candidatoNome: c.nome })}
+        </div>
+
+        {/* Grid de partidos */}
+        <div className="w-full grid grid-cols-1 md:grid-cols-4 gap-6">
+          {partidos.map((partido, pIdx) => (
+            <div key={partido.nome} className="flex flex-col items-center bg-white rounded-lg shadow-sm border border-gray-100 p-3 h-full min-h-[420px]">
+              <div className="w-full text-center py-1 font-bold text-base mb-2 rounded bg-gray-200 text-gray-800">{partido.nome}</div>
+              <div className="w-full flex flex-col flex-1">
+                <table className="w-full text-xs mb-2">
+                  <tbody>
+                    {partido.candidatos
+                      .sort((a, b) => b.votos - a.votos) // Ordenar por votos (maior para menor)
+                      .map((c, idx) => (
+                      <tr 
+                        key={c.nome}
+                        onMouseEnter={() => setHoveredRow({ partidoIdx: pIdx, candidatoNome: c.nome })}
+                        onMouseLeave={() => setHoveredRow(null)}
+                        className="group relative hover:bg-gray-50 transition-colors"
+                      >
+                        <td className="pr-2 text-left whitespace-nowrap font-normal align-top w-2/3">
+                          <input
+                            type="text"
+                            value={editingName?.partidoIdx === pIdx && editingName?.candidatoNome === c.nome 
+                              ? editingName.tempValue 
+                              : c.nome}
+                            onFocus={() => startEditingName(pIdx, c.nome)}
+                            onChange={e => {
+                              if (editingName?.partidoIdx === pIdx && editingName?.candidatoNome === c.nome) {
+                                setEditingName({ ...editingName, tempValue: e.target.value });
+                              }
+                            }}
+                            onBlur={() => saveNameChange(pIdx, c.nome)}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') {
+                                e.currentTarget.blur();
+                              } else if (e.key === 'Escape') {
+                                setEditingName(null);
+                                e.currentTarget.blur();
+                              }
+                            }}
+                            className="bg-transparent border-b border-gray-200 focus:border-blue-400 outline-none w-full text-xs py-0.5 px-1"
+                          />
+                        </td>
+                        <td className="text-right whitespace-nowrap font-normal align-top">
+                          {editVoto && editVoto.partidoIdx === pIdx && editVoto.candidatoNome === c.nome ? (
+                            <input
+                              type="number"
+                              min={0}
+                              value={c.votos}
+                              autoFocus
+                              onChange={e => {
+                                const value = e.target.value;
+                                updateLocalState(pIdx, c.nome, 'votos', value);
+                              }}
+                              onBlur={() => {
+                                saveVotosChange(pIdx, c.nome, c.votos);
+                                setEditVoto(null);
+                              }}
+                              onKeyDown={e => {
+                                if (e.key === 'Enter') {
+                                  saveVotosChange(pIdx, c.nome, c.votos);
+                                  setEditVoto(null);
+                                }
+                              }}
+                              className="bg-transparent border-b border-gray-200 focus:border-blue-400 outline-none w-full text-xs py-0.5 px-1 text-right"
+                              style={{ textAlign: 'right' }}
+                            />
+                          ) : (
+                            <span
+                              className="cursor-pointer select-text"
+                              onClick={() => setEditVoto({ partidoIdx: pIdx, candidatoNome: c.nome })}
+                            >
+                              {Number(c.votos).toLocaleString('pt-BR')}
+                            </span>
+                          )}
+                        </td>
+                        <td className="pl-2 text-right whitespace-nowrap font-normal align-top w-8">
+                          {hoveredRow?.partidoIdx === pIdx && hoveredRow?.candidatoNome === c.nome && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
                                 >
-                                  {Number(c.votos).toLocaleString('pt-BR')}
-                                </span>
-                              )}
-                            </td>
-                            <td className="pl-2 text-right whitespace-nowrap font-normal align-top w-8">
-                              {hoveredRow?.partidoIdx === pIdx && hoveredRow?.candidatoNome === c.nome && (
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>Excluir candidato</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        Tem certeza que deseja excluir o candidato {c.nome} do partido {partido.nome}?
-                                        Esta ação não pode ser desfeita.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                      <AlertDialogAction
-                                        onClick={() => handleExcluirCandidato(pIdx, c.nome)}
-                                        className="bg-red-500 hover:bg-red-600 text-white"
-                                      >
-                                        Excluir
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  
-                  {/* Botão para adicionar novo candidato */}
-                  <div className="w-full mt-2 mb-3">
-                    <Dialog open={dialogAberto === pIdx} onOpenChange={(open) => {
-                      if (!open) {
-                        setDialogAberto(null);
-                        setNovoCandidato({ nome: '', votos: 0 });
-                      }
-                    }}>
-                      <DialogTrigger asChild>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Excluir candidato</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Tem certeza que deseja excluir o candidato {c.nome} do partido {partido.nome}?
+                                    Esta ação não pode ser desfeita.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleExcluirCandidato(pIdx, c.nome)}
+                                    className="bg-red-500 hover:bg-red-600 text-white"
+                                  >
+                                    Excluir
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              {/* Botão para adicionar novo candidato */}
+              <div className="w-full mt-2 mb-3">
+                <Dialog open={dialogAberto === pIdx} onOpenChange={(open) => {
+                  if (!open) {
+                    setDialogAberto(null);
+                    setNovoCandidato({ nome: '', votos: 0 });
+                  }
+                }}>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full h-8 text-xs border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-50"
+                      onClick={() => setDialogAberto(pIdx)}
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Adicionar Candidato
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Adicionar Candidato - {partido.nome}</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">Nome do Candidato</label>
+                        <Input
+                          placeholder="Digite o nome do candidato"
+                          value={novoCandidato.nome}
+                          onChange={(e) => setNovoCandidato(prev => ({ ...prev, nome: e.target.value }))}
+                          disabled={salvandoCandidato}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">Votos Projetados</label>
+                        <Input
+                          type="number"
+                          placeholder="0"
+                          min="0"
+                          value={novoCandidato.votos}
+                          onChange={(e) => setNovoCandidato(prev => ({ ...prev, votos: parseInt(e.target.value) || 0 }))}
+                          disabled={salvandoCandidato}
+                        />
+                      </div>
+                      <div className="flex gap-2 justify-end">
                         <Button
                           variant="outline"
-                          size="sm"
-                          className="w-full h-8 text-xs border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-50"
-                          onClick={() => setDialogAberto(pIdx)}
+                          onClick={() => {
+                            setDialogAberto(null);
+                            setNovoCandidato({ nome: '', votos: 0 });
+                          }}
+                          disabled={salvandoCandidato}
                         >
-                          <Plus className="h-3 w-3 mr-1" />
-                          Adicionar Candidato
+                          Cancelar
                         </Button>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-md">
-                        <DialogHeader>
-                          <DialogTitle>Adicionar Candidato - {partido.nome}</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <div>
-                            <label className="text-sm font-medium mb-2 block">Nome do Candidato</label>
-                            <Input
-                              placeholder="Digite o nome do candidato"
-                              value={novoCandidato.nome}
-                              onChange={(e) => setNovoCandidato(prev => ({ ...prev, nome: e.target.value }))}
-                              disabled={salvandoCandidato}
-                            />
-                          </div>
-                          <div>
-                            <label className="text-sm font-medium mb-2 block">Votos Projetados</label>
-                            <Input
-                              type="number"
-                              placeholder="0"
-                              min="0"
-                              value={novoCandidato.votos}
-                              onChange={(e) => setNovoCandidato(prev => ({ ...prev, votos: parseInt(e.target.value) || 0 }))}
-                              disabled={salvandoCandidato}
-                            />
-                          </div>
-                          <div className="flex gap-2 justify-end">
-                            <Button
-                              variant="outline"
-                              onClick={() => {
-                                setDialogAberto(null);
-                                setNovoCandidato({ nome: '', votos: 0 });
-                              }}
-                              disabled={salvandoCandidato}
-                            >
-                              Cancelar
-                            </Button>
-                            <Button
-                              onClick={() => handleAdicionarCandidato(pIdx)}
-                              disabled={salvandoCandidato || !novoCandidato.nome.trim()}
-                            >
-                              {salvandoCandidato ? 'Salvando...' : 'Adicionar'}
-                            </Button>
-                          </div>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
+                        <Button
+                          onClick={() => handleAdicionarCandidato(pIdx)}
+                          disabled={salvandoCandidato || !novoCandidato.nome.trim()}
+                        >
+                          {salvandoCandidato ? 'Salvando...' : 'Adicionar'}
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
 
-                  <div className="w-full mt-auto pt-2">
-                    <div className="font-bold text-xs mb-0.5 text-center">VOTOS PROJETADOS</div>
-                    <div className="text-base font-extrabold mb-1 text-center">{getVotosProjetados(partido.candidatos).toLocaleString('pt-BR')}</div>
-                    <div className="font-bold text-xs mb-0.5 text-center">PROJEÇÃO ELEITOS</div>
-                    <div className="text-base font-extrabold mb-1 text-center">{getProjecaoEleitos(getVotosProjetados(partido.candidatos))}</div>
-                    <div className="text-[10px] text-gray-500 mb-1 text-center">{getVotosProjetados(partido.candidatos).toLocaleString('pt-BR')} / {quociente.toLocaleString('pt-BR')} = {getProjecaoEleitos(getVotosProjetados(partido.candidatos))}</div>
-                  </div>
-                </div>
-              ))}
+              <div className="w-full mt-auto pt-2">
+                <div className="font-bold text-xs mb-0.5 text-center">VOTOS PROJETADOS</div>
+                <div className="text-base font-extrabold mb-1 text-center">{getVotosProjetados(partido.candidatos).toLocaleString('pt-BR')}</div>
+                <div className="font-bold text-xs mb-0.5 text-center">PROJEÇÃO ELEITOS</div>
+                <div className="text-base font-extrabold mb-1 text-center">{getProjecaoEleitos(getVotosProjetados(partido.candidatos))}</div>
+                <div className="text-[10px] text-gray-500 mb-1 text-center">{getVotosProjetados(partido.candidatos).toLocaleString('pt-BR')} / {quociente.toLocaleString('pt-BR')} = {getProjecaoEleitos(getVotosProjetados(partido.candidatos))}</div>
+              </div>
             </div>
-          </div>
-        </main>
-        {/* Footer */}
-        <footer className="mt-auto text-center py-3 text-xs text-gray-500 border-t border-gray-100">
-          © 2025 86 Dynamics - Todos os direitos reservados
-        </footer>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -182,26 +182,6 @@ export default function PWAHandler() {
 
   return (
     <div className="fixed bottom-4 right-4 z-50 space-y-2">
-      {/* Debug Box */}
-      <div className="bg-gray-900 text-white text-xs p-3 rounded-lg shadow-lg max-w-sm">
-        <div className="font-bold mb-2">🔧 PWA Debug</div>
-        <div>📱 {debugInfo.isMobile ? 'Mobile' : 'Desktop'} | {isIOS ? 'iOS' : 'Android'}</div>
-        <div>🌐 {debugInfo.isChrome ? 'Chrome' : 'Outro'}</div>
-        <div>🔒 HTTPS: {debugInfo.httpsActive ? '✅' : '❌'}</div>
-        <div>📄 Manifest: {debugInfo.manifestFound ? '✅' : '❌'}</div>
-        <div>⚙️ SW: {debugInfo.swRegistered ? '✅' : '❌'}</div>
-        <div>🎯 Event: {debugInfo.deferredPromptAvailable ? '✅' : '❌'}</div>
-        <div className="mt-2 text-yellow-300">📋 {debugInfo.status}</div>
-        
-        <button 
-          onClick={handleRetry}
-          className="mt-2 bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700 flex items-center gap-1"
-        >
-          <RefreshCw className="h-3 w-3" />
-          Recarregar
-        </button>
-      </div>
-
       {/* Botão de Instalação */}
       {(isInstallable || (!isInstallable && debugInfo.isMobile)) && (
         <Button

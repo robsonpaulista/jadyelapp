@@ -60,6 +60,23 @@ module.exports = {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
   			sm: 'calc(var(--radius) - 4px)'
+  		},
+  		animation: {
+  			'spin-slow': 'spin 3s linear infinite',
+  			'pulse-slow': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+  			'blur-in': 'blur-in 0.4s ease-out forwards',
+  		},
+  		keyframes: {
+  			'blur-in': {
+  				'0%': {
+  					opacity: '0',
+  					backdropFilter: 'blur(0)',
+  				},
+  				'100%': {
+  					opacity: '1',
+  					backdropFilter: 'blur(4px)',
+  				},
+  			},
   		}
   	}
   },
