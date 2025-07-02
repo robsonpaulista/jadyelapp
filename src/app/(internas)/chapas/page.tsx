@@ -285,20 +285,20 @@ export default function ChapasPage() {
 
   // Função para salvar nome no Firestore
   const saveNameChange = async (partidoIdx: number, oldNome: string) => {
-    if (!editingName) return;
+    if (!editingName || editingName.partidoIdx !== partidoIdx || editingName.candidatoNome !== oldNome) return;
     
+    const partidoAtual = partidos[partidoIdx];
+    const candidatoIndex = partidoAtual.candidatos.findIndex(c => c.nome === oldNome);
     const newNome = editingName.tempValue.trim();
-    if (!newNome || newNome === oldNome) {
+    
+    if (candidatoIndex === -1 || newNome === oldNome || !newNome) {
       setEditingName(null);
       return;
     }
 
     setSalvandoCandidato(true);
+    
     try {
-      const partidoAtual = partidos[partidoIdx];
-      const candidatoIndex = partidoAtual.candidatos.findIndex(c => c.nome === oldNome);
-      if (candidatoIndex === -1) return;
-
       const novoPartidos = [...partidos];
       novoPartidos[partidoIdx] = {
         ...partidoAtual,
@@ -309,8 +309,12 @@ export default function ChapasPage() {
         ]
       };
 
+      // Atualizar no Firestore
+      const candidato = partidoAtual.candidatos[candidatoIndex];
+      await atualizarChapa(partidoAtual.nome, newNome, candidato.votos);
+      
+      // Atualizar estado local
       setPartidos(novoPartidos);
-      await salvarPartidos(novoPartidos);
     } catch (error) {
       console.error('Erro ao salvar nome do candidato:', error);
     } finally {
