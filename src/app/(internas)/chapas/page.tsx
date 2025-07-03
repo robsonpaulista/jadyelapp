@@ -111,6 +111,7 @@ export default function ChapasPage() {
   const [editVoto, setEditVoto] = useState<{ partidoIdx: number; candidatoNome: string } | null>(null);
   const [hoveredRow, setHoveredRow] = useState<{ partidoIdx: number; candidatoNome: string } | null>(null);
   const [editingName, setEditingName] = useState<{ partidoIdx: number; candidatoNome: string; tempValue: string } | null>(null);
+  const [votosIgreja, setVotosIgreja] = useState(50000);
 
   // Estados para adicionar novo candidato
   const [dialogAberto, setDialogAberto] = useState<number | null>(null);
@@ -339,6 +340,26 @@ export default function ChapasPage() {
   // Soma dos votos e cálculo da projeção
   const getVotosProjetados = (candidatos: { votos: number }[]) => candidatos.reduce((acc, c) => acc + c.votos, 0);
   const getProjecaoEleitos = (votosProjetados: number) => (votosProjetados / quociente).toFixed(2);
+  const getDivisaoPorQuatro = (votosProjetados: number) => (votosProjetados / 4).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const getDivisaoPorCinco = (votosProjetados: number) => (votosProjetados / 5).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const getVotosFusaoPSDJadyel = () => {
+    const psdmdb = partidos.find(p => p.nome === "PSD/MDB");
+    const republicanos = partidos.find(p => p.nome === "REPUBLICANOS");
+    const jadyel = republicanos?.candidatos.find(c => c.nome === "JADYEL");
+    
+    if (!psdmdb || !jadyel) return null;
+
+    const votosPSDMDB = getVotosProjetados(psdmdb.candidatos);
+    const votosTotal = votosPSDMDB + jadyel.votos;
+
+    return {
+      total: votosTotal,
+      projecao: (votosTotal / quociente).toFixed(2),
+      divisaoPorQuatro: (votosTotal / 4).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      divisaoPorCinco: (votosTotal / 5).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    };
+  };
 
   // Função para excluir candidato
   const handleExcluirCandidato = async (partidoIdx: number, candidatoNome: string) => {
@@ -436,34 +457,39 @@ export default function ChapasPage() {
                       .sort((a, b) => b.votos - a.votos) // Ordenar por votos (maior para menor)
                       .map((c, idx) => (
                       <tr 
-                        key={c.nome}
-                        onMouseEnter={() => setHoveredRow({ partidoIdx: pIdx, candidatoNome: c.nome })}
-                        onMouseLeave={() => setHoveredRow(null)}
+                        key={`${c.nome}-${idx}`}
                         className="group relative hover:bg-gray-50 transition-colors"
                       >
                         <td className="pr-2 text-left whitespace-nowrap font-normal align-top w-2/3">
-                          <input
-                            type="text"
-                            value={editingName?.partidoIdx === pIdx && editingName?.candidatoNome === c.nome 
-                              ? editingName.tempValue 
-                              : c.nome}
-                            onFocus={() => startEditingName(pIdx, c.nome)}
-                            onChange={e => {
-                              if (editingName?.partidoIdx === pIdx && editingName?.candidatoNome === c.nome) {
-                                setEditingName({ ...editingName, tempValue: e.target.value });
-                              }
-                            }}
-                            onBlur={() => saveNameChange(pIdx, c.nome)}
-                            onKeyDown={e => {
-                              if (e.key === 'Enter') {
-                                e.currentTarget.blur();
-                              } else if (e.key === 'Escape') {
-                                setEditingName(null);
-                                e.currentTarget.blur();
-                              }
-                            }}
-                            className="bg-transparent border-b border-gray-200 focus:border-blue-400 outline-none w-full text-xs py-0.5 px-1"
-                          />
+                          <div
+                            className="flex items-center gap-2"
+                            onMouseEnter={() => setHoveredRow({ partidoIdx: pIdx, candidatoNome: c.nome })}
+                            onMouseLeave={() => setHoveredRow(null)}
+                          >
+                            <span className="text-sm text-gray-500">{idx + 1}.</span>
+                            <input
+                              type="text"
+                              value={editingName?.partidoIdx === pIdx && editingName?.candidatoNome === c.nome 
+                                ? editingName.tempValue 
+                                : c.nome}
+                              onFocus={() => startEditingName(pIdx, c.nome)}
+                              onChange={e => {
+                                if (editingName?.partidoIdx === pIdx && editingName?.candidatoNome === c.nome) {
+                                  setEditingName({ ...editingName, tempValue: e.target.value });
+                                }
+                              }}
+                              onBlur={() => saveNameChange(pIdx, c.nome)}
+                              onKeyDown={e => {
+                                if (e.key === 'Enter') {
+                                  e.currentTarget.blur();
+                                } else if (e.key === 'Escape') {
+                                  setEditingName(null);
+                                  e.currentTarget.blur();
+                                }
+                              }}
+                              className="bg-transparent border-b border-gray-200 focus:border-blue-400 outline-none w-full text-xs py-0.5 px-1"
+                            />
+                          </div>
                         </td>
                         <td className="text-right whitespace-nowrap font-normal align-top">
                           {editVoto && editVoto.partidoIdx === pIdx && editVoto.candidatoNome === c.nome ? (
@@ -611,8 +637,97 @@ export default function ChapasPage() {
                 <div className="text-base font-extrabold mb-1 text-center">{getProjecaoEleitos(getVotosProjetados(partido.candidatos))}</div>
                 <div className="text-[10px] text-gray-500 mb-1 text-center">{getVotosProjetados(partido.candidatos).toLocaleString('pt-BR')} / {quociente.toLocaleString('pt-BR')} = {getProjecaoEleitos(getVotosProjetados(partido.candidatos))}</div>
               </div>
+
+              <div className="flex flex-col gap-1 mt-2">
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div>
+                    QE: {getProjecaoEleitos(getVotosProjetados(partido.candidatos))}
+                  </div>
+                  <div>
+                    ÷4: {getDivisaoPorQuatro(getVotosProjetados(partido.candidatos))}
+                  </div>
+                  <div>
+                    ÷5: {getDivisaoPorCinco(getVotosProjetados(partido.candidatos))}
+                  </div>
+                </div>
+              </div>
             </div>
           ))}
+        </div>
+
+        {/* Container para as simulações */}
+        <div className="mt-8 grid grid-cols-2 gap-4">
+          {/* Seção independente para soma PSD/MDB + JADYEL */}
+          <div className="p-4 bg-gray-100 rounded-lg">
+            <div className="text-base font-semibold mb-2">
+              Simulação de Fusão - PSD/MDB + JADYEL
+            </div>
+            {(() => {
+              const psdmdb = partidos.find(p => p.nome === "PSD/MDB");
+              const republicanos = partidos.find(p => p.nome === "REPUBLICANOS");
+              const jadyel = republicanos?.candidatos.find(c => c.nome === "JADYEL");
+              
+              if (!psdmdb || !jadyel) return null;
+
+              const votosPSDMDB = getVotosProjetados(psdmdb.candidatos);
+              const votosTotal = votosPSDMDB + jadyel.votos;
+
+              return (
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span>PSD/MDB ({votosPSDMDB.toLocaleString('pt-BR')})</span>
+                    <span>+</span>
+                    <span>JADYEL ({jadyel.votos.toLocaleString('pt-BR')})</span>
+                    <span>=</span>
+                    <span className="font-bold">{votosTotal.toLocaleString('pt-BR')}</span>
+                  </div>
+                  <div className="flex flex-col gap-2 text-sm text-gray-600">
+                    <div>Eleitos pelo Quociente ({quociente.toLocaleString('pt-BR')}): {(votosTotal / quociente).toFixed(2)}</div>
+                    <div>÷4: {(votosTotal / 4).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                    <div>÷5: {(votosTotal / 5).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Seção independente para soma PP + IGREJA */}
+          <div className="p-4 bg-gray-100 rounded-lg">
+            <div className="text-base font-semibold mb-2">
+              Simulação de Fusão - PP + IGREJA
+            </div>
+            {(() => {
+              const pp = partidos.find(p => p.nome === "PP");
+              if (!pp) return null;
+
+              const votosPP = getVotosProjetados(pp.candidatos);
+              const votosTotal = votosPP + votosIgreja;
+
+              return (
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span>PP ({votosPP.toLocaleString('pt-BR')})</span>
+                    <span>+</span>
+                    <div className="flex items-center gap-1">
+                      <span>IGREJA</span>
+                      <input
+                        type="number"
+                        value={votosIgreja}
+                        onChange={(e) => setVotosIgreja(Number(e.target.value))}
+                        className="w-24 px-1 py-0.5 text-xs border rounded"
+                      />
+                    </div>
+                    <span>=</span>
+                    <span className="font-bold">{votosTotal.toLocaleString('pt-BR')}</span>
+                  </div>
+                  <div className="flex flex-col gap-2 text-sm text-gray-600">
+                    <div>Eleitos pelo Quociente ({quociente.toLocaleString('pt-BR')}): {(votosTotal / quociente).toFixed(2)}</div>
+                    <div>÷2: {(votosTotal / 2).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
         </div>
       </div>
     </div>
