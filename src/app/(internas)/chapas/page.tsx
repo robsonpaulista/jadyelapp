@@ -641,9 +641,6 @@ export default function ChapasPage() {
               <div className="flex flex-col gap-1 mt-2">
                 <div className="grid grid-cols-3 gap-2 text-xs">
                   <div>
-                    QE: {getProjecaoEleitos(getVotosProjetados(partido.candidatos))}
-                  </div>
-                  <div>
                     ÷4: {getDivisaoPorQuatro(getVotosProjetados(partido.candidatos))}
                   </div>
                   <div>
