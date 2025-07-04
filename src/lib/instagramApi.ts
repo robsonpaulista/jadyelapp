@@ -347,7 +347,7 @@ export async function fetchInstagramData(
         };
 
         // Calcular crescimento de seguidores
-        const followersHistory = followersData.data?.[0]?.values || [];
+        const followersHistory = ((followersData.data as any)?.[0]?.values as any[]) || [];
         const currentFollowers = pageData.followers_count || 0;
         const previousFollowers = followersHistory.length > 1 ? followersHistory[followersHistory.length - 2]?.value || currentFollowers : currentFollowers;
         const gainedFollowers = Math.max(0, currentFollowers - previousFollowers);
