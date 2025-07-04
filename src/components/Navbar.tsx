@@ -181,7 +181,7 @@ export default function Navbar() {
             <div className="flex items-center gap-2 ml-auto">
               {user && (
                 <div className="mr-2 hidden sm:block">
-                  <p className="text-xs lg:text-sm text-white">
+                  <div className="flex items-center text-xs lg:text-sm text-white">
                     <span className="hidden lg:inline">Usuário: </span>
                     {user.name?.split(' ')[0] || (user as any).nome?.split(' ')[0] || user.email?.split('@')[0] || 'Admin'}
                     {userLevel && (
@@ -189,7 +189,7 @@ export default function Navbar() {
                         {userLevel}
                       </Badge>
                     )}
-                  </p>
+                  </div>
                 </div>
               )}
               

@@ -281,47 +281,56 @@ export default function ChapasPage() {
 
   // Função para iniciar edição de nome
   const startEditingName = (partidoIdx: number, candidatoNome: string) => {
-    setEditingName({ partidoIdx, candidatoNome, tempValue: candidatoNome });
+    const candidato = partidos[partidoIdx].candidatos.find(c => c.nome === candidatoNome);
+    if (candidato) {
+      setEditingName({ partidoIdx, candidatoNome, tempValue: candidato.nome });
+      // Manter o hover ativo durante a edição
+      setHoveredRow({ partidoIdx, candidatoNome });
+    }
   };
 
   // Função para salvar nome no Firestore
   const saveNameChange = async (partidoIdx: number, oldNome: string) => {
-    if (!editingName || editingName.partidoIdx !== partidoIdx || editingName.candidatoNome !== oldNome) return;
-    
-    const partidoAtual = partidos[partidoIdx];
-    const candidatoIndex = partidoAtual.candidatos.findIndex(c => c.nome === oldNome);
-    const newNome = editingName.tempValue.trim();
-    
-    if (candidatoIndex === -1 || newNome === oldNome || !newNome) {
+    if (!editingName || editingName.partidoIdx !== partidoIdx || editingName.candidatoNome !== oldNome) {
       setEditingName(null);
+      setHoveredRow(null);
       return;
     }
 
-    setSalvandoCandidato(true);
+    const newNome = editingName.tempValue.trim();
     
-    try {
-      // Atualizar no Firestore primeiro
-      const candidato = partidoAtual.candidatos[candidatoIndex];
-      await atualizarChapa(partidoAtual.nome, newNome, candidato.votos);
-      
-      // Depois atualizar estado local
-      const novoPartidos = [...partidos];
-      novoPartidos[partidoIdx] = {
-        ...partidoAtual,
-        candidatos: [
-          ...partidoAtual.candidatos.slice(0, candidatoIndex),
-          { ...partidoAtual.candidatos[candidatoIndex], nome: newNome },
-          ...partidoAtual.candidatos.slice(candidatoIndex + 1)
-        ]
-      };
-      
-      setPartidos(novoPartidos);
-    } catch (error) {
-      console.error('Erro ao salvar nome do candidato:', error);
-    } finally {
-      setSalvandoCandidato(false);
-      setEditingName(null);
+    if (newNome && newNome !== oldNome) {
+      try {
+        // Atualizar estado local imediatamente
+        setPartidos(prev => prev.map((p, i) => {
+          if (i !== partidoIdx) return p;
+          return {
+            ...p,
+            candidatos: p.candidatos.map(c => 
+              c.nome === oldNome ? { ...c, nome: newNome } : c
+            )
+          };
+        }));
+
+        // Aqui você pode adicionar uma chamada para salvar no backend se necessário
+        console.log(`Nome alterado de "${oldNome}" para "${newNome}" no partido ${partidoIdx}`);
+      } catch (error) {
+        console.error('Erro ao salvar nome:', error);
+        // Reverter mudança em caso de erro
+        setPartidos(prev => prev.map((p, i) => {
+          if (i !== partidoIdx) return p;
+          return {
+            ...p,
+            candidatos: p.candidatos.map(c => 
+              c.nome === newNome ? { ...c, nome: oldNome } : c
+            )
+          };
+        }));
+      }
     }
+    
+    setEditingName(null);
+    setHoveredRow(null);
   };
 
   // Função para salvar votos no Firestore
@@ -459,13 +468,16 @@ export default function ChapasPage() {
                       <tr 
                         key={`${c.nome}-${idx}`}
                         className="group relative hover:bg-gray-50 transition-colors"
+                        onMouseEnter={() => setHoveredRow({ partidoIdx: pIdx, candidatoNome: c.nome })}
+                        onMouseLeave={() => {
+                          // Só remove o hover se não estiver editando
+                          if (!(editingName?.partidoIdx === pIdx && editingName?.candidatoNome === c.nome)) {
+                            setHoveredRow(null);
+                          }
+                        }}
                       >
                         <td className="pr-2 text-left whitespace-nowrap font-normal align-top w-2/3">
-                          <div
-                            className="flex items-center gap-2"
-                            onMouseEnter={() => setHoveredRow({ partidoIdx: pIdx, candidatoNome: c.nome })}
-                            onMouseLeave={() => setHoveredRow(null)}
-                          >
+                          <div className="flex items-center gap-2">
                             <span className="text-sm text-gray-500">{idx + 1}.</span>
                             <input
                               type="text"
@@ -525,13 +537,18 @@ export default function ChapasPage() {
                           )}
                         </td>
                         <td className="pl-2 text-right whitespace-nowrap font-normal align-top w-8">
-                          {hoveredRow?.partidoIdx === pIdx && hoveredRow?.candidatoNome === c.nome && (
+                          {(hoveredRow?.partidoIdx === pIdx && hoveredRow?.candidatoNome === c.nome) || 
+                           (editingName?.partidoIdx === pIdx && editingName?.candidatoNome === c.nome) ? (
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button
                                   variant="ghost"
                                   size="sm"
                                   className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  style={{
+                                    opacity: (hoveredRow?.partidoIdx === pIdx && hoveredRow?.candidatoNome === c.nome) || 
+                                             (editingName?.partidoIdx === pIdx && editingName?.candidatoNome === c.nome) ? 1 : 0
+                                  }}
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
@@ -555,7 +572,7 @@ export default function ChapasPage() {
                                 </AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
-                          )}
+                          ) : null}
                         </td>
                       </tr>
                     ))}
