@@ -112,7 +112,7 @@ async function fetchInstagramData(token: string, businessAccountId: string, time
 
     // 5. Processar insights
     const getInsightValue = (metricName: string) => {
-      const insight = insightsData.data?.find((i: any) => i.name === metricName);
+      const insight = insightsData.data?.find((i: any) => i.name === metricName) as any;
       return insight?.values?.[0]?.value || 0;
     };
 
