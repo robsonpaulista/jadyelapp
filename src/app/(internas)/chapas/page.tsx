@@ -658,31 +658,31 @@ export default function ChapasPage() {
               </div>
 
               <div className="flex flex-col gap-1 mt-2">
-                <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="grid grid-cols-3 gap-2 text-xs items-center justify-start min-h-[24px]">
                   {partido.nome === "PT" ? (
                     <>
-                      <div>
+                      <div className="whitespace-nowrap flex items-center">
                         ÷4: {getDivisaoPorQuatro(getVotosProjetados(partido.candidatos))}
                       </div>
-                      <div>
+                      <div className="whitespace-nowrap flex items-center">
                         ÷5: {getDivisaoPorCinco(getVotosProjetados(partido.candidatos))}
                       </div>
                     </>
                   ) : partido.nome === "PP" || partido.nome === "REPUBLICANOS" ? (
                     <>
-                      <div>
+                      <div className="whitespace-nowrap flex items-center">
                         ÷3: {getDivisaoPorTres(getVotosProjetados(partido.candidatos))}
                       </div>
-                      <div>
+                      <div className="whitespace-nowrap flex items-center">
                         ÷2: {getDivisaoPorDois(getVotosProjetados(partido.candidatos))}
                       </div>
                     </>
                   ) : (
                     <>
-                      <div>
+                      <div className="whitespace-nowrap flex items-center">
                         ÷3: {getDivisaoPorTres(getVotosProjetados(partido.candidatos))}
                       </div>
-                      <div>
+                      <div className="whitespace-nowrap flex items-center">
                         ÷4: {getDivisaoPorQuatro(getVotosProjetados(partido.candidatos))}
                       </div>
                     </>
