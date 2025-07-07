@@ -26,7 +26,7 @@ const nextConfig = {
   },
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production' ? {
-      exclude: ['error', 'warn'], // Manter logs em desenvolvimento
+      exclude: ['error', 'warn'],
     } : false,
   },
   async headers() {
@@ -70,6 +70,7 @@ const nextConfig = {
   },
   swcMinify: true,
   optimizeFonts: true,
+
 };
 
 module.exports = nextConfig; 

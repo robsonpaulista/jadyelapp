@@ -88,14 +88,14 @@ export default function InstagramAnalyticsPage() {
         if (response.ok) {
           const data = await response.json();
           setMetrics(data);
-          setIsConfigured(true);
+      setIsConfigured(true);
           setUsername(data.username || '@jadyelalencar');
-        } else {
+    } else {
           const errorData = await response.json();
           console.warn('Erro ao carregar dados do Instagram:', errorData);
           
           if (errorData.error === 'Token do Instagram expirado ou inválido') {
-            setIsConfigured(false);
+          setIsConfigured(false);
             toast.error('Token do Instagram expirado. Entre em contato com o administrador.');
           } else if (errorData.error === 'Credenciais do Instagram não configuradas') {
             setIsConfigured(false);
@@ -110,8 +110,8 @@ export default function InstagramAnalyticsPage() {
         setIsConfigured(false);
         toast.error('Erro de conexão. Verifique sua internet.');
       } finally {
-        setIsLoading(false);
-      }
+      setIsLoading(false);
+    }
     };
 
     const userData = getCurrentUser();
@@ -1049,8 +1049,8 @@ export default function InstagramAnalyticsPage() {
           <TabsContent value="audience">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {/* Visualizações Detalhadas */}
-              <Card>
-                <CardHeader>
+            <Card>
+              <CardHeader>
                   <CardTitle className="text-xl font-bold flex items-center gap-2">
                     <Eye className="h-5 w-5" />
                     Visualizações

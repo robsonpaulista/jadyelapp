@@ -314,7 +314,7 @@ export default function ChapasPage() {
 
         // Aqui você pode adicionar uma chamada para salvar no backend se necessário
         console.log(`Nome alterado de "${oldNome}" para "${newNome}" no partido ${partidoIdx}`);
-      } catch (error) {
+    } catch (error) {
         console.error('Erro ao salvar nome:', error);
         // Reverter mudança em caso de erro
         setPartidos(prev => prev.map((p, i) => {
@@ -329,7 +329,7 @@ export default function ChapasPage() {
       }
     }
     
-    setEditingName(null);
+      setEditingName(null);
     setHoveredRow(null);
   };
 
@@ -348,9 +348,11 @@ export default function ChapasPage() {
 
   // Soma dos votos e cálculo da projeção
   const getVotosProjetados = (candidatos: { votos: number }[]) => candidatos.reduce((acc, c) => acc + c.votos, 0);
-  const getProjecaoEleitos = (votosProjetados: number) => (votosProjetados / quociente).toFixed(2);
-  const getDivisaoPorQuatro = (votosProjetados: number) => (votosProjetados / 4).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const getDivisaoPorCinco = (votosProjetados: number) => (votosProjetados / 5).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const getProjecaoEleitos = (votosTotal: number) => (votosTotal / quociente).toFixed(2);
+  const getDivisaoPorDois = (votosTotal: number) => (votosTotal / 2).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const getDivisaoPorTres = (votosTotal: number) => (votosTotal / 3).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const getDivisaoPorQuatro = (votosTotal: number) => (votosTotal / 4).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const getDivisaoPorCinco = (votosTotal: number) => (votosTotal / 5).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const getVotosFusaoPSDJadyel = () => {
     const psdmdb = partidos.find(p => p.nome === "PSD/MDB");
@@ -365,8 +367,8 @@ export default function ChapasPage() {
     return {
       total: votosTotal,
       projecao: (votosTotal / quociente).toFixed(2),
-      divisaoPorQuatro: (votosTotal / 4).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-      divisaoPorCinco: (votosTotal / 5).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      divisaoPorTres: (votosTotal / 3).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      divisaoPorQuatro: (votosTotal / 4).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     };
   };
 
@@ -657,12 +659,34 @@ export default function ChapasPage() {
 
               <div className="flex flex-col gap-1 mt-2">
                 <div className="grid grid-cols-3 gap-2 text-xs">
-                  <div>
-                    ÷4: {getDivisaoPorQuatro(getVotosProjetados(partido.candidatos))}
-                  </div>
-                  <div>
-                    ÷5: {getDivisaoPorCinco(getVotosProjetados(partido.candidatos))}
-                  </div>
+                  {partido.nome === "PT" ? (
+                    <>
+                      <div>
+                        ÷4: {getDivisaoPorQuatro(getVotosProjetados(partido.candidatos))}
+                      </div>
+                      <div>
+                        ÷5: {getDivisaoPorCinco(getVotosProjetados(partido.candidatos))}
+                      </div>
+                    </>
+                  ) : partido.nome === "PP" || partido.nome === "REPUBLICANOS" ? (
+                    <>
+                      <div>
+                        ÷3: {getDivisaoPorTres(getVotosProjetados(partido.candidatos))}
+                      </div>
+                      <div>
+                        ÷2: {getDivisaoPorDois(getVotosProjetados(partido.candidatos))}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div>
+                        ÷3: {getDivisaoPorTres(getVotosProjetados(partido.candidatos))}
+                      </div>
+                      <div>
+                        ÷4: {getDivisaoPorQuatro(getVotosProjetados(partido.candidatos))}
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -697,8 +721,8 @@ export default function ChapasPage() {
                   </div>
                   <div className="flex flex-col gap-2 text-sm text-gray-600">
                     <div>Eleitos pelo Quociente ({quociente.toLocaleString('pt-BR')}): {(votosTotal / quociente).toFixed(2)}</div>
-                    <div>÷4: {(votosTotal / 4).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                    <div>÷5: {(votosTotal / 5).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                    <div>÷3: {getDivisaoPorTres(votosTotal)}</div>
+                    <div>÷4: {getDivisaoPorQuatro(votosTotal)}</div>
                   </div>
                 </div>
               );
@@ -735,8 +759,9 @@ export default function ChapasPage() {
                     <span className="font-bold">{votosTotal.toLocaleString('pt-BR')}</span>
                   </div>
                   <div className="flex flex-col gap-2 text-sm text-gray-600">
-                    <div>Eleitos pelo Quociente ({quociente.toLocaleString('pt-BR')}): {(votosTotal / quociente).toFixed(2)}</div>
-                    <div>÷2: {(votosTotal / 2).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                    <div>Eleitos pelo Quociente ({quociente.toLocaleString('pt-BR')}): {getProjecaoEleitos(votosTotal)}</div>
+                    <div>÷3: {getDivisaoPorTres(votosTotal)}</div>
+                    <div>÷2: {getDivisaoPorDois(votosTotal)}</div>
                   </div>
                 </div>
               );

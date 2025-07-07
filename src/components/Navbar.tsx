@@ -60,7 +60,8 @@ const MENUS: Menu[] = [
     submenus: [
       { label: 'Formação de chapas 2026', href: '/chapas', icon: <Vote size={16} /> },
       { label: 'Pesquisas Eleitorais', href: '/pesquisas-eleitorais', icon: <BarChart2 size={16} /> },
-      { label: 'Dashboard Municípios', href: '/eleicoes-anteriores', icon: <LineChart size={16} /> }
+      { label: 'Dashboard Municípios', href: '/eleicoes-anteriores', icon: <LineChart size={16} /> },
+      { label: 'Projeção por Municípios', href: '/eleicoes-anteriores/projecao-municipios', icon: <LineChart size={16} /> }
     ]
   },
   {
@@ -92,19 +93,13 @@ export default function Navbar() {
       router.push('/');
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
-      // Opcional: Mostrar uma notificação de erro para o usuário
     }
   };
 
-  // Sistema de permissões
   const getVisibleMenus = () => {
-    if (isLoading) return []; // Não mostrar menus enquanto carrega
-    
+    if (isLoading) return [];
     return MENUS.filter(menu => {
-      // Se não tem permissão definida, mostrar sempre (como o ícone de configurações)
       if (!menu.permission) return true;
-      
-      // Verificar se tem acesso ao menu baseado no nível do usuário
       return hasMenuAccess(menu.permission);
     });
   };
@@ -112,21 +107,17 @@ export default function Navbar() {
   const getVisibleSubmenus = (submenus: Submenu[] | undefined) => {
     if (isLoading || !submenus) return [];
     
-    // Para usuários gabineteemendas, filtrar apenas as rotas permitidas
     if (userLevel === 'gabineteemendas') {
       return submenus.filter(submenu => {
         return submenu.href === '/consultar-tetos' || submenu.href === '/emendas2025';
       });
     }
     
-    // Por enquanto, mostrar todos os submenus se o menu principal está visível
-    // Posteriormente podemos adicionar permissões específicas para submenus
     return submenus;
   };
 
   const visibleMenus = getVisibleMenus();
 
-  // Fechar menu mobile quando clicar em um link
   const handleMobileLinkClick = () => {
     setMobileMenuOpen(false);
   };
@@ -146,7 +137,6 @@ export default function Navbar() {
               </Link>
             </div>
 
-            {/* Menu Desktop - Oculto no mobile */}
             <div className="hidden lg:flex gap-8 flex-1">
               {visibleMenus.map(menu => {
                 const visibleSubmenus = getVisibleSubmenus(menu.submenus);
@@ -154,8 +144,8 @@ export default function Navbar() {
                 return (
                   <div key={menu.label || 'config'} className="relative group">
                     <div className={`flex items-center gap-2 text-white font-medium px-3 py-2 rounded hover:bg-blue-700 transition whitespace-nowrap cursor-pointer ${menu.href === '#' ? 'pointer-events-none' : ''}`}>
-              {menu.icon}
-              {menu.label}
+                      {menu.icon}
+                      {menu.label}
                     </div>
                     {visibleSubmenus.length > 0 && (
                       <div className="absolute left-0 mt-0 bg-white rounded shadow-lg py-2 min-w-[220px] invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 z-[9999]">
@@ -167,17 +157,16 @@ export default function Navbar() {
                             className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-blue-50 whitespace-nowrap"
                           >
                             {sub.icon}
-                    {sub.label}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
+                            {sub.label}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>
 
-            {/* Informações do usuário - Adaptadas para mobile */}
             <div className="flex items-center gap-2 ml-auto">
               {user && (
                 <div className="mr-2 hidden sm:block">
@@ -193,7 +182,6 @@ export default function Navbar() {
                 </div>
               )}
               
-              {/* Botões Desktop */}
               <div className="hidden lg:flex items-center gap-2">
                 <Button 
                   onClick={() => router.back()} 
@@ -215,7 +203,6 @@ export default function Navbar() {
                 </Button>
               </div>
 
-              {/* Botão Menu Mobile */}
               <Button
                 variant="ghost"
                 size="sm"
@@ -229,14 +216,12 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Menu Mobile Overlay */}
       {mobileMenuOpen && (
         <div className="lg:hidden fixed inset-0 z-[9997] bg-black bg-opacity-50" onClick={() => setMobileMenuOpen(false)}>
           <div 
             className="fixed top-0 right-0 h-full w-80 max-w-[90vw] bg-white shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header do menu mobile */}
             <div className="bg-blue-600 p-4 text-white">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold">Menu</h3>
@@ -263,7 +248,6 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Conteúdo do menu mobile */}
             <div className="p-4 space-y-2 max-h-[calc(100vh-200px)] overflow-y-auto">
               {visibleMenus.map(menu => {
                 const visibleSubmenus = getVisibleSubmenus(menu.submenus);
@@ -298,15 +282,14 @@ export default function Navbar() {
                             {sub.icon}
                             {sub.label}
                           </Link>
-        ))}
-      </div>
+                        ))}
+                      </div>
                     )}
                   </div>
                 );
               })}
             </div>
 
-            {/* Footer do menu mobile */}
             <div className="absolute bottom-0 left-0 right-0 p-4 bg-gray-50 border-t space-y-2">
               <Button 
                 onClick={() => {
@@ -338,4 +321,4 @@ export default function Navbar() {
       )}
     </>
   );
-} 
+}
