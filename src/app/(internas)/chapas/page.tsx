@@ -112,11 +112,29 @@ export default function ChapasPage() {
   const [hoveredRow, setHoveredRow] = useState<{ partidoIdx: number; candidatoNome: string } | null>(null);
   const [editingName, setEditingName] = useState<{ partidoIdx: number; candidatoNome: string; tempValue: string } | null>(null);
   const [votosIgreja, setVotosIgreja] = useState(50000);
+  const [votosLegenda, setVotosLegenda] = useState<{ [partido: string]: number }>({});
 
   // Estados para adicionar novo candidato
   const [dialogAberto, setDialogAberto] = useState<number | null>(null);
   const [novoCandidato, setNovoCandidato] = useState({ nome: '', votos: 0 });
   const [salvandoCandidato, setSalvandoCandidato] = useState(false);
+
+  const handleSalvarVotosLegenda = async (partidoIdx: number, votos: number) => {
+    const partido = partidos[partidoIdx];
+    try {
+      // Salvar no Firestore como um candidato especial
+      await atualizarChapa(partido.nome, "VOTOS LEGENDA", votos);
+      
+      // Atualizar estado local
+      setVotosLegenda(prev => ({
+        ...prev,
+        [partido.nome]: votos
+      }));
+    } catch (error) {
+      console.error('Erro ao salvar votos de legenda:', error);
+      alert('Erro ao salvar votos de legenda. Tente novamente.');
+    }
+  };
 
   const handleAtualizar = async () => {
     setLoading(true);
@@ -124,6 +142,16 @@ export default function ChapasPage() {
       const novasChapas = await carregarChapas();
       setChapas(novasChapas);
       filtrarChapas(novasChapas);
+
+      // Carregar votos de legenda
+      const votosLegendaTemp: { [partido: string]: number } = {};
+      for (const partido of partidos) {
+        const votosLegendaChapa = novasChapas.find(c => c.partido === partido.nome && c.nome === "VOTOS LEGENDA");
+        if (votosLegendaChapa) {
+          votosLegendaTemp[partido.nome] = votosLegendaChapa.votos;
+        }
+      }
+      setVotosLegenda(votosLegendaTemp);
     } catch (error) {
       console.error("Erro ao carregar chapas:", error);
     } finally {
@@ -347,7 +375,10 @@ export default function ChapasPage() {
   };
 
   // Soma dos votos e cálculo da projeção
-  const getVotosProjetados = (candidatos: { votos: number }[]) => candidatos.reduce((acc, c) => acc + c.votos, 0);
+  const getVotosProjetados = (candidatos: { votos: number }[], partidoNome: string) => {
+    const votosLegendaPartido = votosLegenda[partidoNome] || 0;
+    return candidatos.reduce((acc, c) => acc + c.votos, 0) + votosLegendaPartido;
+  };
   const getProjecaoEleitos = (votosTotal: number) => (votosTotal / quociente).toFixed(2);
   const getDivisaoPorDois = (votosTotal: number) => (votosTotal / 2).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const getDivisaoPorTres = (votosTotal: number) => (votosTotal / 3).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -461,6 +492,7 @@ export default function ChapasPage() {
           {partidos.map((partido, pIdx) => (
             <div key={partido.nome} className="flex flex-col items-center bg-white rounded-lg shadow-sm border border-gray-100 p-3 h-full min-h-[420px]">
               <div className="w-full text-center py-1 font-bold text-base mb-2 rounded bg-gray-200 text-gray-800">{partido.nome}</div>
+              
               <div className="w-full flex flex-col flex-1">
                 <table className="w-full text-xs mb-2">
                   <tbody>
@@ -580,10 +612,31 @@ export default function ChapasPage() {
                     ))}
                   </tbody>
                 </table>
-              </div>
-              
-              {/* Botão para adicionar novo candidato */}
-              <div className="w-full mt-2 mb-3">
+
+                {/* Input de Votos Legenda */}
+                <div className="w-full mb-3 px-2">
+                  <div className="flex items-center justify-between bg-gray-50 p-2 rounded-md border border-gray-200">
+                    <span className="text-xs font-semibold text-gray-600">VOTOS LEGENDA:</span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={votosLegenda[partido.nome]?.toLocaleString('pt-BR') || '0'}
+                      onChange={e => {
+                        const value = e.target.value.replace(/\D/g, '');
+                        const numValue = parseInt(value, 10) || 0;
+                        handleSalvarVotosLegenda(pIdx, numValue);
+                      }}
+                      onBlur={e => {
+                        const value = e.target.value.replace(/\D/g, '');
+                        const numValue = parseInt(value, 10) || 0;
+                        handleSalvarVotosLegenda(pIdx, numValue);
+                      }}
+                      className="bg-white border border-gray-300 rounded px-2 py-1 text-xs w-24 text-right"
+                    />
+                  </div>
+                </div>
+
+                {/* Botão para adicionar novo candidato */}
                 <Dialog open={dialogAberto === pIdx} onOpenChange={(open) => {
                   if (!open) {
                     setDialogAberto(null);
@@ -651,10 +704,10 @@ export default function ChapasPage() {
 
               <div className="w-full mt-auto pt-2">
                 <div className="font-bold text-xs mb-0.5 text-center">VOTOS PROJETADOS</div>
-                <div className="text-base font-extrabold mb-1 text-center">{getVotosProjetados(partido.candidatos).toLocaleString('pt-BR')}</div>
+                <div className="text-base font-extrabold mb-1 text-center">{getVotosProjetados(partido.candidatos, partido.nome).toLocaleString('pt-BR')}</div>
                 <div className="font-bold text-xs mb-0.5 text-center">PROJEÇÃO ELEITOS</div>
-                <div className="text-base font-extrabold mb-1 text-center">{getProjecaoEleitos(getVotosProjetados(partido.candidatos))}</div>
-                <div className="text-[10px] text-gray-500 mb-1 text-center">{getVotosProjetados(partido.candidatos).toLocaleString('pt-BR')} / {quociente.toLocaleString('pt-BR')} = {getProjecaoEleitos(getVotosProjetados(partido.candidatos))}</div>
+                <div className="text-base font-extrabold mb-1 text-center">{getProjecaoEleitos(getVotosProjetados(partido.candidatos, partido.nome))}</div>
+                <div className="text-[10px] text-gray-500 mb-1 text-center">{getVotosProjetados(partido.candidatos, partido.nome).toLocaleString('pt-BR')} / {quociente.toLocaleString('pt-BR')} = {getProjecaoEleitos(getVotosProjetados(partido.candidatos, partido.nome))}</div>
               </div>
 
               <div className="flex flex-col gap-1 mt-2">
@@ -662,31 +715,36 @@ export default function ChapasPage() {
                   {partido.nome === "PT" ? (
                     <>
                       <div className="whitespace-nowrap flex items-center">
-                        ÷4: {getDivisaoPorQuatro(getVotosProjetados(partido.candidatos))}
+                        ÷4: {getDivisaoPorQuatro(getVotosProjetados(partido.candidatos, partido.nome))}
                       </div>
                       <div className="whitespace-nowrap flex items-center">
-                        ÷5: {getDivisaoPorCinco(getVotosProjetados(partido.candidatos))}
+                        ÷5: {getDivisaoPorCinco(getVotosProjetados(partido.candidatos, partido.nome))}
                       </div>
                     </>
                   ) : partido.nome === "PP" || partido.nome === "REPUBLICANOS" ? (
                     <>
                       <div className="whitespace-nowrap flex items-center">
-                        ÷3: {getDivisaoPorTres(getVotosProjetados(partido.candidatos))}
+                        ÷3: {getDivisaoPorTres(getVotosProjetados(partido.candidatos, partido.nome))}
                       </div>
                       <div className="whitespace-nowrap flex items-center">
-                        ÷2: {getDivisaoPorDois(getVotosProjetados(partido.candidatos))}
+                        ÷2: {getDivisaoPorDois(getVotosProjetados(partido.candidatos, partido.nome))}
                       </div>
                     </>
                   ) : (
                     <>
                       <div className="whitespace-nowrap flex items-center">
-                        ÷3: {getDivisaoPorTres(getVotosProjetados(partido.candidatos))}
+                        ÷3: {getDivisaoPorTres(getVotosProjetados(partido.candidatos, partido.nome))}
                       </div>
                       <div className="whitespace-nowrap flex items-center">
-                        ÷4: {getDivisaoPorQuatro(getVotosProjetados(partido.candidatos))}
+                        ÷4: {getDivisaoPorQuatro(getVotosProjetados(partido.candidatos, partido.nome))}
                       </div>
                     </>
                   )}
+                  <div className="whitespace-nowrap flex items-center">
+                    <span className="text-xs font-semibold">
+                      {getProjecaoEleitos(getVotosProjetados(partido.candidatos, partido.nome))}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
