@@ -119,6 +119,9 @@ export default function ChapasPage() {
   const [novoCandidato, setNovoCandidato] = useState({ nome: '', votos: 0 });
   const [salvandoCandidato, setSalvandoCandidato] = useState(false);
 
+  // Adicionar estado para edição temporária dos votos de legenda
+  const [votosLegendaTemp, setVotosLegendaTemp] = useState<{ [partido: string]: string }>({});
+
   const handleSalvarVotosLegenda = async (partidoIdx: number, votos: number) => {
     const partido = partidos[partidoIdx];
     try {
@@ -375,9 +378,11 @@ export default function ChapasPage() {
   };
 
   // Soma dos votos e cálculo da projeção
-  const getVotosProjetados = (candidatos: { votos: number }[], partidoNome: string) => {
+  const getVotosProjetados = (candidatos: { votos: number; nome: string }[], partidoNome: string) => {
     const votosLegendaPartido = votosLegenda[partidoNome] || 0;
-    return candidatos.reduce((acc, c) => acc + c.votos, 0) + votosLegendaPartido;
+    return candidatos
+      .filter(c => c.nome !== "VOTOS LEGENDA") // Filtra o candidato especial de votos de legenda
+      .reduce((acc, c) => acc + c.votos, 0) + votosLegendaPartido;
   };
   const getProjecaoEleitos = (votosTotal: number) => (votosTotal / quociente).toFixed(2);
   const getDivisaoPorDois = (votosTotal: number) => (votosTotal / 2).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -392,7 +397,7 @@ export default function ChapasPage() {
     
     if (!psdmdb || !jadyel) return null;
 
-    const votosPSDMDB = getVotosProjetados(psdmdb.candidatos);
+    const votosPSDMDB = getVotosProjetados(psdmdb.candidatos, "PSD/MDB");
     const votosTotal = votosPSDMDB + jadyel.votos;
 
     return {
@@ -497,6 +502,7 @@ export default function ChapasPage() {
                 <table className="w-full text-xs mb-2">
                   <tbody>
                     {partido.candidatos
+                      .filter(c => c.nome !== "VOTOS LEGENDA") // Filtrar o candidato especial de votos de legenda
                       .sort((a, b) => b.votos - a.votos) // Ordenar por votos (maior para menor)
                       .map((c, idx) => (
                       <tr 
@@ -620,16 +626,37 @@ export default function ChapasPage() {
                     <input
                       type="text"
                       inputMode="numeric"
-                      value={votosLegenda[partido.nome]?.toLocaleString('pt-BR') || '0'}
+                      value={
+                        votosLegendaTemp[partido.nome] !== undefined
+                          ? votosLegendaTemp[partido.nome]
+                          : (votosLegenda[partido.nome]?.toLocaleString('pt-BR') || '')
+                      }
                       onChange={e => {
-                        const value = e.target.value.replace(/\D/g, '');
-                        const numValue = parseInt(value, 10) || 0;
-                        handleSalvarVotosLegenda(pIdx, numValue);
+                        // Permitir digitação livre
+                        setVotosLegendaTemp(prev => ({ ...prev, [partido.nome]: e.target.value }));
                       }}
                       onBlur={e => {
                         const value = e.target.value.replace(/\D/g, '');
                         const numValue = parseInt(value, 10) || 0;
                         handleSalvarVotosLegenda(pIdx, numValue);
+                        setVotosLegendaTemp(prev => {
+                          const temp = { ...prev };
+                          delete temp[partido.nome];
+                          return temp;
+                        });
+                      }}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          const value = (e.target as HTMLInputElement).value.replace(/\D/g, '');
+                          const numValue = parseInt(value, 10) || 0;
+                          handleSalvarVotosLegenda(pIdx, numValue);
+                          setVotosLegendaTemp(prev => {
+                            const temp = { ...prev };
+                            delete temp[partido.nome];
+                            return temp;
+                          });
+                          (e.target as HTMLInputElement).blur();
+                        }
                       }}
                       className="bg-white border border-gray-300 rounded px-2 py-1 text-xs w-24 text-right"
                     />
@@ -765,7 +792,7 @@ export default function ChapasPage() {
               
               if (!psdmdb || !jadyel) return null;
 
-              const votosPSDMDB = getVotosProjetados(psdmdb.candidatos);
+              const votosPSDMDB = getVotosProjetados(psdmdb.candidatos, "PSD/MDB");
               const votosTotal = votosPSDMDB + jadyel.votos;
 
               return (
@@ -796,7 +823,7 @@ export default function ChapasPage() {
               const pp = partidos.find(p => p.nome === "PP");
               if (!pp) return null;
 
-              const votosPP = getVotosProjetados(pp.candidatos);
+              const votosPP = getVotosProjetados(pp.candidatos, "PP");
               const votosTotal = votosPP + votosIgreja;
 
               return (
@@ -822,6 +849,30 @@ export default function ChapasPage() {
                     <div>÷2: {getDivisaoPorDois(votosTotal)}</div>
                   </div>
                 </div>
+              );
+            })()}
+          </div>
+
+          {/* Fusão PSD/MDB + PP */}
+          <div className="text-[10px] text-gray-500 mb-1 text-center">
+            {(() => {
+              const psdmdb = partidos.find(p => p.nome === "PSD/MDB");
+              const pp = partidos.find(p => p.nome === "PP");
+              
+              if (!psdmdb || !pp) return null;
+
+              const votosPSDMDB = getVotosProjetados(psdmdb.candidatos, "PSD/MDB");
+              const votosPP = getVotosProjetados(pp.candidatos, "PP");
+              const votosTotal = votosPSDMDB + votosPP;
+
+              return (
+                <>
+                  <div className="font-bold">FUSÃO PSD/MDB + PP</div>
+                  <div>Total: {votosTotal.toLocaleString('pt-BR')}</div>
+                  <div>Projeção: {(votosTotal / quociente).toFixed(2)}</div>
+                  <div>÷3: {(votosTotal / 3).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                  <div>÷4: {(votosTotal / 4).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                </>
               );
             })()}
           </div>
