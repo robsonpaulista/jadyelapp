@@ -27,10 +27,10 @@ function getCorCrescimento(crescimento: number): string {
   return '#cc0000'; // Vermelho: queda expressiva
 }
 
-// Mapeamento simplificado dos principais municípios
+// Mapeamento expandido dos IDs do SVG (como estão no arquivo) para nomes dos municípios
 const municipiosSVG: { [key: string]: string } = {
   'teresina': 'TERESINA',
-  'parnaiba': 'PARNAÍBA',
+  'parnaiba': 'PARNAÍBA', 
   'picos': 'PICOS',
   'floriano': 'FLORIANO',
   'piripiri': 'PIRIPIRI',
@@ -62,25 +62,36 @@ function getNomeMunicipioPorId(idSVG: string): string | null {
 }
 
 const MapaPiaui: React.FC<MapaPiauiProps> = ({ projecoes }) => {
-  console.log('🗺️ MapaPiaui renderizado com', projecoes.length, 'projeções');
+  console.log('🗺️ === DEBUG DETALHADO DO MAPA ===');
+  console.log('📊 Total de projeções:', projecoes.length);
+  console.log('🎯 Projeções disponíveis:', projecoes.map(p => p.municipio));
+  console.log('🔗 IDs mapeados:', Object.keys(municipiosSVG));
 
   // Função para colorir cada município usando IDs do SVG
   const getFill = useCallback((idSVG: string) => {
+    console.log(`🎨 Processando ID SVG: "${idSVG}"`);
+    
     const nomeMunicipio = getNomeMunicipioPorId(idSVG);
+    console.log(`📍 ID "${idSVG}" -> Nome: "${nomeMunicipio}"`);
     
     if (!nomeMunicipio) {
+      console.log(`❌ ID SVG "${idSVG}" não mapeado`);
       return '#e0e0e0'; // Cinza para IDs não mapeados
     }
 
-    const projecao = projecoes.find(p => 
-      p.municipio.toUpperCase().trim() === nomeMunicipio.trim()
-    );
+    const projecao = projecoes.find(p => {
+      const match = p.municipio.toUpperCase().trim() === nomeMunicipio.trim();
+      console.log(`🔍 Comparando "${p.municipio.toUpperCase().trim()}" com "${nomeMunicipio.trim()}" = ${match}`);
+      return match;
+    });
 
     if (!projecao) {
+      console.log(`❌ Projeção não encontrada para "${nomeMunicipio}"`);
       return '#f5f5f5'; // Cinza claro para municípios sem dados
     }
 
     const cor = getCorCrescimento(projecao.crescimento);
+    console.log(`✅ ${nomeMunicipio}: crescimento ${projecao.crescimento}% -> cor ${cor}`);
     return cor;
   }, [projecoes]);
 
@@ -99,6 +110,21 @@ const MapaPiaui: React.FC<MapaPiauiProps> = ({ projecoes }) => {
     return projecao || null;
   }, [projecoes]);
 
+  // Função para testar se as cores estão sendo aplicadas
+  const testarCores = () => {
+    console.log('🧪 === TESTE DE CORES ===');
+    const testIds = ['teresina', 'parnaiba', 'picos', 'floriano'];
+    testIds.forEach(id => {
+      const cor = getFill(id);
+      console.log(`ID: ${id} -> Cor: ${cor}`);
+    });
+  };
+
+  // Executar teste na primeira renderização
+  React.useEffect(() => {
+    setTimeout(testarCores, 1000);
+  }, []);
+
   return (
     <div className="w-full max-w-4xl mx-auto relative">
       <div className="bg-white rounded-lg shadow-lg p-4">
@@ -113,6 +139,12 @@ const MapaPiaui: React.FC<MapaPiauiProps> = ({ projecoes }) => {
           ) : (
             <div className="bg-green-50 border border-green-200 rounded p-3 text-sm text-green-700">
               <strong>✅ Dados carregados:</strong> {projecoes.length} municípios com projeções
+              <button 
+                onClick={testarCores}
+                className="ml-2 px-2 py-1 bg-blue-500 text-white text-xs rounded"
+              >
+                🧪 Testar Cores
+              </button>
             </div>
           )}
         </div>
