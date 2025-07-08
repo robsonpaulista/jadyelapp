@@ -70,7 +70,68 @@ const nextConfig = {
   },
   swcMinify: true,
   optimizeFonts: true,
-
+  webpack(config) {
+    config.module.rules.push({
+      test: /\.svg$/i,
+      issuer: /\.[jt]sx?$/,
+      use: [
+        {
+          loader: '@svgr/webpack',
+          options: {
+            svgo: true,
+            svgoConfig: {
+              plugins: [
+                {
+                  name: 'removeViewBox',
+                  active: false,
+                },
+                {
+                  name: 'removeXMLNS',
+                  active: true,
+                },
+                {
+                  name: 'removeDoctype',
+                  active: true,
+                },
+                {
+                  name: 'removeXMLProcInst',
+                  active: true,
+                },
+                {
+                  name: 'removeComments',
+                  active: true,
+                },
+                {
+                  name: 'removeMetadata',
+                  active: true,
+                },
+                {
+                  name: 'removeEditorsNSData',
+                  active: true,
+                },
+              ],
+            },
+            replaceAttrValues: {
+              'xml:space': 'xmlSpace',
+            },
+            jsx: {
+              babelConfig: {
+                plugins: [
+                  [
+                    '@babel/plugin-transform-react-jsx',
+                    {
+                      throwIfNamespace: false,
+                    },
+                  ],
+                ],
+              },
+            },
+          },
+        },
+      ],
+    });
+    return config;
+  },
 };
 
 module.exports = nextConfig; 

@@ -124,14 +124,14 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 bg-blue-600 text-white z-50">
+      <nav className="fixed top-0 left-0 right-0 bg-gradient-to-r from-orange-500 to-red-500 text-white z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14">
             <div className="flex items-center">
               <Link href="/painel-aplicacoes" className="text-lg font-semibold mr-8">
                 Dynamics Integration
               </Link>
-              <Link href="/painel-aplicacoes" className="flex items-center gap-2 text-sm font-medium hover:bg-blue-700 px-3 py-2 rounded-lg transition-colors mr-6">
+              <Link href="/painel-aplicacoes" className="flex items-center gap-2 text-sm font-medium hover:bg-orange-600 px-3 py-2 rounded-lg transition-colors mr-6">
                 <Home className="h-5 w-5" />
                 <span>Home</span>
               </Link>
@@ -143,23 +143,35 @@ export default function Navbar() {
                 
                 return (
                   <div key={menu.label || 'config'} className="relative group">
-                    <div className={`flex items-center gap-2 text-white font-medium px-3 py-2 rounded hover:bg-blue-700 transition whitespace-nowrap cursor-pointer ${menu.href === '#' ? 'pointer-events-none' : ''}`}>
-                      {menu.icon}
-                      {menu.label}
-                    </div>
+                    {menu.href === '#' ? (
+                      <button className="flex items-center gap-2 text-sm font-medium hover:bg-orange-600 px-3 py-2 rounded-lg transition-colors">
+                        {menu.icon}
+                        <span>{menu.label || 'Configurações'}</span>
+                      </button>
+                    ) : (
+                      <Link 
+                        href={menu.href} 
+                        className="flex items-center gap-2 text-sm font-medium hover:bg-orange-600 px-3 py-2 rounded-lg transition-colors"
+                      >
+                        {menu.icon}
+                        <span>{menu.label || 'Configurações'}</span>
+                      </Link>
+                    )}
+                    
                     {visibleSubmenus.length > 0 && (
-                      <div className="absolute left-0 mt-0 bg-white rounded shadow-lg py-2 min-w-[220px] invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 z-[9999]">
-                        <div className="absolute top-0 left-0 w-full h-2 bg-transparent -translate-y-full"></div>
-                        {visibleSubmenus.map(sub => (
-                          <Link 
-                            key={sub.href} 
-                            href={sub.href} 
-                            className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-blue-50 whitespace-nowrap"
-                          >
-                            {sub.icon}
-                            {sub.label}
-                          </Link>
-                        ))}
+                      <div className="absolute top-full left-0 mt-1 w-64 bg-white text-gray-700 shadow-lg rounded-lg border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                        <div className="p-2">
+                          {visibleSubmenus.map(sub => (
+                            <Link 
+                              key={sub.href} 
+                              href={sub.href} 
+                              className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                            >
+                              {sub.icon}
+                              {sub.label}
+                            </Link>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -187,7 +199,7 @@ export default function Navbar() {
                   onClick={() => router.back()} 
                   variant="ghost" 
                   size="sm"
-                  className="text-white hover:text-white hover:bg-blue-700"
+                  className="text-white hover:text-white hover:bg-orange-600"
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Voltar
@@ -196,7 +208,7 @@ export default function Navbar() {
                   onClick={handleLogout} 
                   variant="ghost" 
                   size="sm"
-                  className="text-white hover:text-white hover:bg-blue-700"
+                  className="text-white hover:text-white hover:bg-orange-600"
                 >
                   <LogOut className="w-4 h-4 mr-2" />
                   Sair
@@ -206,7 +218,7 @@ export default function Navbar() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="lg:hidden text-white hover:text-white hover:bg-blue-700 p-2"
+                className="lg:hidden text-white hover:text-white hover:bg-orange-600 p-2"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               >
                 {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
@@ -222,20 +234,20 @@ export default function Navbar() {
             className="fixed top-0 right-0 h-full w-80 max-w-[90vw] bg-white shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="bg-blue-600 p-4 text-white">
+            <div className="bg-gradient-to-r from-orange-500 to-red-500 p-4 text-white">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold">Menu</h3>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-white hover:text-white hover:bg-blue-700 p-1"
+                  className="text-white hover:text-white hover:bg-orange-600 p-1"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <X size={20} />
                 </Button>
               </div>
               {user && (
-                <div className="mt-2 pt-2 border-t border-blue-500">
+                <div className="mt-2 pt-2 border-t border-orange-400">
                   <p className="text-sm">
                     {user.name?.split(' ')[0] || (user as any).nome?.split(' ')[0] || user.email?.split('@')[0] || 'Admin'}
                     {userLevel && (

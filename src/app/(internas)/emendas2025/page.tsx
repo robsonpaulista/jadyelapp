@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Loader2, RefreshCw, Search, Filter, ChevronDown, ChevronRight, DollarSign, TrendingUp, CheckCircle, CreditCard } from 'lucide-react';
+import { Loader2, RefreshCw, Search, Filter, ChevronDown, ChevronRight, ChevronUp, DollarSign, TrendingUp, CheckCircle, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -16,7 +16,8 @@ import {
   ArrowUp, 
   ArrowDown,
   Save,
-  X
+  X,
+  CheckCircle2
 } from 'lucide-react';
 import { Label } from "@/components/ui/label";
 import { toast } from 'react-hot-toast';
@@ -63,6 +64,7 @@ export default function Emendas2025() {
   const [emendasFiltradas, setEmendasFiltradas] = useState<Emenda[]>([]);
   const [blocos, setBlocos] = useState<BlocoData[]>([]);
   const [blocosExpandidos, setBlocosExpandidos] = useState<Set<string>>(new Set());
+  const [skipNextFilterProcessing, setSkipNextFilterProcessing] = useState(false);
   
   // Filtros
   const [filtroTexto, setFiltroTexto] = useState('');
@@ -72,6 +74,9 @@ export default function Emendas2025() {
   
   // Ordenação
   const [ordenacaoAtual, setOrdenacaoAtual] = useState<{campo: string, direcao: 'asc' | 'desc'} | null>(null);
+  
+  // Filtros retráteis
+  const [filtrosVisiveis, setFiltrosVisiveis] = useState(true);
 
   // Estados do modal de edição
   const [modalAberto, setModalAberto] = useState(false);
@@ -184,16 +189,51 @@ export default function Emendas2025() {
         
         // Atualização local imediata e silenciosa
         const emendaAtualizada = { ...emendaEditando, ...dadosEdicao };
-        setEmendas(prev => prev.map(emenda => 
-          emenda.id === dadosEdicao.id ? emendaAtualizada : emenda
-        ));
         
-        // Reprocessar filtros com dados atualizados
-        const novasEmendas = emendas.map(emenda => 
-          emenda.id === dadosEdicao.id ? emendaAtualizada : emenda
+        // Sinalizar para pular o próximo processamento de filtros
+        setSkipNextFilterProcessing(true);
+        
+        // 1. Primeiro atualizar o estado principal das emendas
+        setEmendas(prev => {
+          const novasEmendas = prev.map(emenda => 
+            emenda.id === dadosEdicao.id ? emendaAtualizada : emenda
+          );
+          return novasEmendas;
+        });
+        
+        // 2. Depois atualizar as emendas filtradas separadamente
+        setEmendasFiltradas(prev => 
+          prev.map(emenda => 
+            emenda.id === dadosEdicao.id ? emendaAtualizada : emenda
+          )
         );
-        setEmendasFiltradas(novasEmendas);
-        processarBlocos(novasEmendas);
+        
+        // 3. Forçar reprocessamento dos blocos usando a emenda atualizada
+        // Atualizar os blocos diretamente sem depender do useEffect
+        setBlocos(prev => 
+          prev.map(bloco => ({
+            ...bloco,
+            emendas: bloco.emendas.map(emenda => 
+              emenda.id === dadosEdicao.id ? emendaAtualizada : emenda
+            ),
+            // Recalcular totais do bloco
+            totalValorIndicado: bloco.emendas
+              .map(e => e.id === dadosEdicao.id ? emendaAtualizada : e)
+              .reduce((acc, emenda) => acc + (emenda.valorIndicado || 0), 0),
+            totalValorAEmpenhar: bloco.emendas
+              .map(e => e.id === dadosEdicao.id ? emendaAtualizada : e)
+              .reduce((acc, emenda) => acc + (emenda.valorAEmpenhar || 0), 0),
+            totalValorEmpenhado: bloco.emendas
+              .map(e => e.id === dadosEdicao.id ? emendaAtualizada : e)
+              .reduce((acc, emenda) => acc + (emenda.valorEmpenhado || 0), 0),
+            totalValorPago: bloco.emendas
+              .map(e => e.id === dadosEdicao.id ? emendaAtualizada : e)
+              .reduce((acc, emenda) => acc + (emenda.valorPago || 0), 0)
+          }))
+        );
+        
+        // Resetar o flag após um pequeno delay
+        setTimeout(() => setSkipNextFilterProcessing(false), 100);
         
         fecharModalEdicao();
       } else {
@@ -266,6 +306,11 @@ export default function Emendas2025() {
 
   // Aplicar filtros
   useEffect(() => {
+    // Se devemos pular este processamento (devido a uma atualização manual), retornar
+    if (skipNextFilterProcessing) {
+      return;
+    }
+
     // Primeiro, vamos agrupar as emendas por bloco
     const blocoMap = new Map<string, Emenda[]>();
     emendas.forEach(emenda => {
@@ -319,7 +364,7 @@ export default function Emendas2025() {
 
     setEmendasFiltradas(dadosFiltrados);
     processarBlocos(dadosFiltrados);
-  }, [emendas, filtroTexto, filtroBloco, filtroMunicipio, filtroEmenda, ordenacaoAtual]);
+  }, [emendas, filtroTexto, filtroBloco, filtroMunicipio, filtroEmenda, ordenacaoAtual, skipNextFilterProcessing]);
 
   // Carregar dados iniciais
   useEffect(() => {
@@ -332,6 +377,53 @@ export default function Emendas2025() {
       style: 'currency',
       currency: 'BRL'
     }).format(valor);
+  };
+
+  const formatarPercentual = (valor: number, total: number) => {
+    if (!total || total === 0) return '0%';
+    const percentual = (valor / total) * 100;
+    return `${percentual.toFixed(1)}%`;
+  };
+
+  const calcularPercentual = (valor: number, total: number) => {
+    if (!total || total === 0) return 0;
+    return Math.min((valor / total) * 100, 100);
+  };
+
+  const isBlocoTotalmentePago = (bloco: BlocoData) => {
+    if (!bloco.totalValorIndicado || bloco.totalValorIndicado === 0) return false;
+    const percentualPago = (bloco.totalValorPago / bloco.totalValorIndicado) * 100;
+    return percentualPago >= 100;
+  };
+
+  const BarraProgresso = ({ valor, total, className = "", tipo = "normal" }: { valor: number, total: number, className?: string, tipo?: "normal" | "pago" }) => {
+    const percentual = calcularPercentual(valor, total);
+    const isSmall = className.includes('h-1');
+    const isPago = tipo === "pago";
+    const is100Percent = percentual >= 100;
+    
+    // Definir cor da barra baseada no tipo e se está 100%
+    let barColor = "bg-gradient-to-r from-orange-500 to-red-500";
+    if (isPago && is100Percent) {
+      barColor = "bg-gradient-to-r from-green-500 to-green-600";
+    }
+    
+    return (
+      <div className="w-full max-w-full overflow-hidden">
+        <div className={`w-full bg-gray-200 rounded-full mt-1 overflow-hidden ${isSmall ? 'h-1' : 'h-1.5'} ${className.replace('h-1', '')}`}>
+          <div 
+            className={`${barColor} rounded-full transition-all duration-300 ease-in-out ${isSmall ? 'h-1' : 'h-1.5'}`}
+            style={{ width: `${Math.min(percentual, 100)}%`, maxWidth: '100%' }}
+          ></div>
+        </div>
+        <div className={`text-xs mt-1 break-words overflow-hidden ${isPago && is100Percent ? 'text-green-600 font-medium' : 'text-gray-500'}`}>
+          {formatarPercentual(valor, total)}
+          {isPago && is100Percent && (
+            <span className="ml-1">✓</span>
+          )}
+        </div>
+      </div>
+    );
   };
 
   const toggleBloco = (bloco: string) => {
@@ -486,8 +578,8 @@ export default function Emendas2025() {
       ) : (
         <>
           {isRefreshing && <LoadingOverlay message="Atualizando emendas..." />}
-          <div className="flex flex-col gap-4">
-            <div className="flex justify-between items-center py-3">
+          <div className="flex flex-col gap-2">
+            <div className="flex justify-between items-center py-2">
               <h1 className="text-lg font-semibold text-gray-900">Emendas 2025</h1>
               <div className="flex gap-2">
                 <Button
@@ -522,143 +614,171 @@ export default function Emendas2025() {
             </div>
 
             {/* Resumo geral */}
-            <Card className="mt-2">
-              <CardHeader className="py-3">
+            <Card>
+              <CardHeader className="py-2">
                 <CardTitle className="text-sm font-medium">Resumo Geral</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <div className="flex items-center gap-2 mb-2">
+              <CardContent className="pt-2">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="bg-gray-50 rounded-lg p-2">
+                    <div className="flex items-center gap-2 mb-1">
                       <DollarSign className="h-4 w-4 text-gray-600" />
                       <p className="text-xs font-medium text-gray-600">Valor Total Indicado</p>
                     </div>
-                    <p className="text-base font-semibold text-gray-900">{formatarValor(totaisGerais.valorIndicado)}</p>
+                    <p className="text-sm font-semibold text-gray-900">{formatarValor(totaisGerais.valorIndicado)}</p>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <div className="flex items-center gap-2 mb-2">
+                  <div className="bg-gray-50 rounded-lg p-2">
+                    <div className="flex items-center gap-2 mb-1">
                       <TrendingUp className="h-4 w-4 text-gray-600" />
                       <p className="text-xs font-medium text-gray-600">Valor Total a Empenhar</p>
                     </div>
-                    <p className="text-base font-semibold text-gray-900">{formatarValor(totaisGerais.valorAEmpenhar)}</p>
+                    <p className="text-sm font-semibold text-gray-900 mb-1">{formatarValor(totaisGerais.valorAEmpenhar)}</p>
+                    <BarraProgresso 
+                      valor={totaisGerais.valorAEmpenhar} 
+                      total={totaisGerais.valorIndicado} 
+                    />
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <div className="flex items-center gap-2 mb-2">
+                  <div className="bg-gray-50 rounded-lg p-2">
+                    <div className="flex items-center gap-2 mb-1">
                       <CheckCircle className="h-4 w-4 text-gray-600" />
                       <p className="text-xs font-medium text-gray-600">Valor Total Empenhado</p>
                     </div>
-                    <p className="text-base font-semibold text-gray-900">{formatarValor(totaisGerais.valorEmpenhado)}</p>
+                    <p className="text-sm font-semibold text-gray-900 mb-1">{formatarValor(totaisGerais.valorEmpenhado)}</p>
+                    <BarraProgresso 
+                      valor={totaisGerais.valorEmpenhado} 
+                      total={totaisGerais.valorIndicado} 
+                    />
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <div className="flex items-center gap-2 mb-2">
+                  <div className="bg-gray-50 rounded-lg p-2">
+                    <div className="flex items-center gap-2 mb-1">
                       <CreditCard className="h-4 w-4 text-gray-600" />
                       <p className="text-xs font-medium text-gray-600">Valor Total Pago</p>
                     </div>
-                    <p className="text-base font-semibold text-gray-900">{formatarValor(totaisGerais.valorPago)}</p>
+                    <p className="text-sm font-semibold text-gray-900 mb-1">{formatarValor(totaisGerais.valorPago)}</p>
+                    <BarraProgresso 
+                      valor={totaisGerais.valorPago} 
+                      total={totaisGerais.valorIndicado} 
+                    />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             {/* Filtros */}
-            <Card className="mt-4">
-              <CardHeader className="py-3">
-                <CardTitle className="text-sm font-medium">Filtros</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="flex items-center gap-2">
-                    <Search className="h-4 w-4 text-gray-500" />
-                    <Input
-                      placeholder="Buscar..."
-                      value={filtroTexto}
-                      onChange={(e) => setFiltroTexto(e.target.value)}
-                      disabled={isRefreshing}
-                      className="w-full"
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Filter className="h-4 w-4 text-gray-500" />
-                    <Select
-                      value={filtroBloco}
-                      onValueChange={setFiltroBloco}
-                      disabled={isRefreshing}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Filtrar por bloco" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="TODOS_BLOCOS">Todos os blocos</SelectItem>
-                        {blocos.map((bloco) => (
-                          <SelectItem key={bloco.bloco} value={bloco.bloco}>
-                            {bloco.bloco}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Filter className="h-4 w-4 text-gray-500" />
-                    <Select
-                      value={filtroMunicipio}
-                      onValueChange={setFiltroMunicipio}
-                      disabled={isRefreshing}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Filtrar por município" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="TODOS_MUNICIPIOS">Todos os municípios</SelectItem>
-                        {Array.from(new Set(emendas
-                          .map(e => e.municipioBeneficiario?.toUpperCase().trim())
-                          .filter((municipio): municipio is string => 
-                            municipio !== null && municipio !== undefined && municipio !== ''
-                          )
-                        ))
-                        .sort()
-                        .map(municipio => {
-                          // Encontrar a primeira ocorrência do município para manter a capitalização original
-                          const municipioOriginal = emendas.find(e => 
-                            e.municipioBeneficiario?.toUpperCase().trim() === municipio
-                          )?.municipioBeneficiario || municipio;
-                          
-                          return (
-                            <SelectItem key={municipio} value={municipioOriginal}>
-                              {municipioOriginal}
-                            </SelectItem>
-                          );
-                        })}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={limparFiltros}
-                      disabled={isRefreshing}
-                      className="w-full justify-center"
-                    >
-                      <X className="h-4 w-4" />
-                      <span className="ml-2">Limpar Filtros</span>
-                    </Button>
-                  </div>
+            <Card>
+              <CardHeader className="py-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-medium">Filtros</CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setFiltrosVisiveis(!filtrosVisiveis)}
+                    className="h-6 w-6 p-0"
+                  >
+                    {filtrosVisiveis ? (
+                      <ChevronUp className="h-4 w-4" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4" />
+                    )}
+                  </Button>
                 </div>
-              </CardContent>
+              </CardHeader>
+              {filtrosVisiveis && (
+                <CardContent className="pt-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="flex items-center gap-2">
+                      <Search className="h-4 w-4 text-gray-500" />
+                      <Input
+                        placeholder="Buscar..."
+                        value={filtroTexto}
+                        onChange={(e) => setFiltroTexto(e.target.value)}
+                        disabled={isRefreshing}
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Filter className="h-4 w-4 text-gray-500" />
+                      <Select
+                        value={filtroBloco}
+                        onValueChange={setFiltroBloco}
+                        disabled={isRefreshing}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Filtrar por bloco" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="TODOS_BLOCOS">Todos os blocos</SelectItem>
+                          {blocos.map((bloco) => (
+                            <SelectItem key={bloco.bloco} value={bloco.bloco}>
+                              {bloco.bloco}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Filter className="h-4 w-4 text-gray-500" />
+                      <Select
+                        value={filtroMunicipio}
+                        onValueChange={setFiltroMunicipio}
+                        disabled={isRefreshing}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Filtrar por município" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="TODOS_MUNICIPIOS">Todos os municípios</SelectItem>
+                          {Array.from(new Set(emendas
+                            .map(e => e.municipioBeneficiario?.toUpperCase().trim())
+                            .filter((municipio): municipio is string => 
+                              municipio !== null && municipio !== undefined && municipio !== ''
+                            )
+                          ))
+                          .sort()
+                          .map(municipio => {
+                            // Encontrar a primeira ocorrência do município para manter a capitalização original
+                            const municipioOriginal = emendas.find(e => 
+                              e.municipioBeneficiario?.toUpperCase().trim() === municipio
+                            )?.municipioBeneficiario || municipio;
+                            
+                            return (
+                              <SelectItem key={municipio} value={municipioOriginal}>
+                                {municipioOriginal}
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={limparFiltros}
+                        disabled={isRefreshing}
+                        className="w-full justify-center"
+                      >
+                        <X className="h-4 w-4" />
+                        <span className="ml-2">Limpar Filtros</span>
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              )}
             </Card>
 
             {/* Blocos das emendas */}
-            <div className="space-y-4">
+            <div className="space-y-2">
               {blocos.map((bloco) => (
                 <div key={bloco.bloco} className="bg-white rounded-lg shadow-sm border border-gray-200">
                   {/* Cabeçalho do bloco */}
                   <div 
-                    className="p-3 border-b border-gray-200 cursor-pointer hover:bg-gray-50"
+                    className="p-2 border-b border-gray-200 cursor-pointer hover:bg-gray-50"
                     onClick={() => toggleBloco(bloco.bloco)}
                   >
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-3 md:space-y-0">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-2 md:space-y-0">
                       <div className="flex items-center gap-2">
                         {blocosExpandidos.has(bloco.bloco) ? (
                           <ChevronDown className="h-4 w-4 text-gray-500" />
@@ -666,61 +786,114 @@ export default function Emendas2025() {
                           <ChevronRight className="h-4 w-4 text-gray-500" />
                         )}
                         <h3 className="text-sm font-medium text-gray-900">{bloco.bloco}</h3>
+                        {isBlocoTotalmentePago(bloco) && (
+                          <div title="Bloco 100% pago">
+                            <CheckCircle2 className="h-4 w-4 text-green-600 opacity-70" />
+                          </div>
+                        )}
                         <span className="text-xs text-gray-500">
                           ({bloco.emendas.length} emendas • {bloco.totalMunicipios} municípios)
                         </span>
                       </div>
-                      <div className="hidden md:grid md:grid-cols-4 gap-8 text-sm">
-                        <div className="w-[200px]">
+                      <div className="hidden md:flex md:gap-2 text-sm">
+                        <div className="w-36">
                           <span className="text-gray-500 text-sm">Valor Indicado:</span>
-                          <span className="block font-medium text-gray-900">
+                          <span className="block font-medium text-gray-900 text-xs">
                             {formatarValor(bloco.totalValorIndicado)}
                           </span>
                         </div>
-                        <div className="w-[200px]">
+                        <div className="w-36">
                           <span className="text-gray-500 text-sm">Empenhado:</span>
-                          <span className="block font-medium text-gray-900">
+                          <span className="block font-medium text-gray-900 mb-1 text-xs">
                             {formatarValor(bloco.totalValorEmpenhado)}
                           </span>
+                          <div className="w-full">
+                            <BarraProgresso 
+                              valor={bloco.totalValorEmpenhado} 
+                              total={bloco.totalValorIndicado}
+                              className="h-1"
+                            />
+                          </div>
                         </div>
-                        <div className="w-[200px]">
+                        <div className="w-36">
                           <span className="text-gray-500 text-sm">A Empenhar:</span>
-                          <span className="block font-medium text-gray-900">
+                          <span className="block font-medium text-gray-900 mb-1 text-xs">
                             {formatarValor(bloco.totalValorAEmpenhar)}
                           </span>
+                          <div className="w-full">
+                            <BarraProgresso 
+                              valor={bloco.totalValorAEmpenhar} 
+                              total={bloco.totalValorIndicado}
+                              className="h-1"
+                            />
+                          </div>
                         </div>
-                        <div className="w-[200px]">
+                        <div className="w-36">
                           <span className="text-gray-500 text-sm">Valor Pago:</span>
-                          <span className="block font-medium text-gray-900">
+                          <span className="block font-medium text-gray-900 mb-1 text-xs">
                             {formatarValor(bloco.totalValorPago)}
                           </span>
+                          <div className="w-full">
+                            <BarraProgresso 
+                              valor={bloco.totalValorPago} 
+                              total={bloco.totalValorIndicado}
+                              className="h-1"
+                              tipo="pago"
+                            />
+                          </div>
                         </div>
                       </div>
-                      {/* Layout mobile */}
-                      <div className="grid grid-cols-2 gap-4 md:hidden text-sm pl-8">
-                        <div>
-                          <span className="block text-gray-500 text-xs mb-1">Valor Indicado:</span>
-                          <span className="font-medium text-gray-900">
-                            {formatarValor(bloco.totalValorIndicado)}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="block text-gray-500 text-xs mb-1">Empenhado:</span>
-                          <span className="font-medium text-gray-900">
-                            {formatarValor(bloco.totalValorEmpenhado)}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="block text-gray-500 text-xs mb-1">A Empenhar:</span>
-                          <span className="font-medium text-gray-900">
-                            {formatarValor(bloco.totalValorAEmpenhar)}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="block text-gray-500 text-xs mb-1">Valor Pago:</span>
-                          <span className="font-medium text-gray-900">
-                            {formatarValor(bloco.totalValorPago)}
-                          </span>
+                      {/* Layout mobile/tablet */}
+                      <div className="block md:hidden text-sm">
+                        <div className="px-2 py-2">
+                          <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                            <div className="min-w-0">
+                              <span className="block text-gray-500 text-xs mb-1">Valor Indicado:</span>
+                              <span className="font-medium text-gray-900 text-sm break-words">
+                                {formatarValor(bloco.totalValorIndicado)}
+                              </span>
+                            </div>
+                            <div className="min-w-0">
+                              <span className="block text-gray-500 text-xs mb-1">Empenhado:</span>
+                              <span className="block font-medium text-gray-900 mb-1 text-sm break-words">
+                                {formatarValor(bloco.totalValorEmpenhado)}
+                              </span>
+                              <div className="w-full max-w-full overflow-hidden">
+                                <BarraProgresso 
+                                  valor={bloco.totalValorEmpenhado} 
+                                  total={bloco.totalValorIndicado}
+                                  className="h-1"
+                                />
+                              </div>
+                            </div>
+                            <div className="min-w-0">
+                              <span className="block text-gray-500 text-xs mb-1">A Empenhar:</span>
+                              <span className="block font-medium text-gray-900 mb-1 text-sm break-words">
+                                {formatarValor(bloco.totalValorAEmpenhar)}
+                              </span>
+                              <div className="w-full max-w-full overflow-hidden">
+                                <BarraProgresso 
+                                  valor={bloco.totalValorAEmpenhar} 
+                                  total={bloco.totalValorIndicado}
+                                  className="h-1"
+                                />
+                              </div>
+                            </div>
+                            <div className="min-w-0">
+                              <span className="block text-gray-500 text-xs mb-1">Valor Pago:</span>
+                              <span className="block font-medium text-gray-900 mb-1 text-sm break-words">
+                                {formatarValor(bloco.totalValorPago)}
+                              </span>
+                              <div className="w-full max-w-full overflow-hidden">
+                                <BarraProgresso 
+                                  valor={bloco.totalValorPago} 
+                                  total={bloco.totalValorIndicado}
+                                  className="h-1"
+                                  tipo="pago"
+                                />
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -734,28 +907,28 @@ export default function Emendas2025() {
                         <table className="w-full text-sm">
                           <thead className="bg-gray-50">
                             <tr>
-                              <th className="px-4 py-3 text-left font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('emenda')}>
+                              <th className="px-3 py-2 text-left font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('emenda')}>
                                 Emenda {obterIconeOrdenacao('emenda')}
                               </th>
-                              <th className="px-4 py-3 text-left font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('municipioBeneficiario')}>
+                              <th className="px-3 py-2 text-left font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('municipioBeneficiario')}>
                                 Município/Beneficiário {obterIconeOrdenacao('municipioBeneficiario')}
                               </th>
-                              <th className="px-4 py-3 text-right font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('valorIndicado')}>
+                              <th className="px-3 py-2 text-right font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('valorIndicado')}>
                                 Valor Indicado {obterIconeOrdenacao('valorIndicado')}
                               </th>
-                              <th className="px-4 py-3 text-right font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('valorAEmpenhar')}>
+                              <th className="px-3 py-2 text-right font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('valorAEmpenhar')}>
                                 Valor a Empenhar {obterIconeOrdenacao('valorAEmpenhar')}
                               </th>
-                              <th className="px-4 py-3 text-right font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('valorEmpenhado')}>
+                              <th className="px-3 py-2 text-right font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('valorEmpenhado')}>
                                 Valor Empenhado {obterIconeOrdenacao('valorEmpenhado')}
                               </th>
-                              <th className="px-4 py-3 text-right font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('valorPago')}>
+                              <th className="px-3 py-2 text-right font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('valorPago')}>
                                 Valor Pago {obterIconeOrdenacao('valorPago')}
                               </th>
-                              <th className="px-4 py-3 text-left font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('liderancas')}>
+                              <th className="px-3 py-2 text-left font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('liderancas')}>
                                 Lideranças {obterIconeOrdenacao('liderancas')}
                               </th>
-                              <th className="px-4 py-3 text-left font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('objeto')}>
+                              <th className="px-3 py-2 text-left font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('objeto')}>
                                 Objeto {obterIconeOrdenacao('objeto')}
                               </th>
                             </tr>
@@ -768,22 +941,22 @@ export default function Emendas2025() {
                                 onDoubleClick={() => handleDuploClic(emenda)}
                                 title="Duplo clique para editar"
                               >
-                                <td className="px-4 py-3 font-medium text-gray-900">{emenda.emenda || 'N/A'}</td>
-                                <td className="px-4 py-3 text-gray-900">{emenda.municipioBeneficiario || 'N/A'}</td>
-                                <td className="px-4 py-3 text-right font-medium text-gray-900">
+                                <td className="px-3 py-2 font-medium text-gray-900">{emenda.emenda || 'N/A'}</td>
+                                <td className="px-3 py-2 text-gray-900">{emenda.municipioBeneficiario || 'N/A'}</td>
+                                <td className="px-3 py-2 text-right font-medium text-gray-900">
                                   {formatarValor(emenda.valorIndicado)}
                                 </td>
-                                <td className="px-4 py-3 text-right font-medium text-gray-900">
+                                <td className="px-3 py-2 text-right font-medium text-gray-900">
                                   {formatarValor(emenda.valorAEmpenhar)}
                                 </td>
-                                <td className="px-4 py-3 text-right font-medium text-gray-900">
+                                <td className="px-3 py-2 text-right font-medium text-gray-900">
                                   {formatarValor(emenda.valorEmpenhado)}
                                 </td>
-                                <td className="px-4 py-3 text-right font-medium text-gray-900">
+                                <td className="px-3 py-2 text-right font-medium text-gray-900">
                                   {formatarValor(emenda.valorPago)}
                                 </td>
-                                <td className="px-4 py-3 text-gray-900">{emenda.liderancas || 'N/A'}</td>
-                                <td className="px-4 py-3 text-gray-900 max-w-xs truncate" title={emenda.objeto || ''}>
+                                <td className="px-3 py-2 text-gray-900">{emenda.liderancas || 'N/A'}</td>
+                                <td className="px-3 py-2 text-gray-900 max-w-xs truncate" title={emenda.objeto || ''}>
                                   {emenda.objeto || 'N/A'}
                                 </td>
                               </tr>
@@ -798,10 +971,10 @@ export default function Emendas2025() {
                           {bloco.emendas.map((emenda, index) => (
                             <div 
                               key={emenda.id || index}
-                              className="p-4 hover:bg-gray-50"
+                              className="p-2 hover:bg-gray-50"
                               onClick={() => handleDuploClic(emenda)}
                             >
-                              <div className="space-y-3">
+                              <div className="space-y-2">
                                 {/* Emenda e Município */}
                                 <div>
                                   <div className="font-medium text-gray-900">{emenda.emenda || 'N/A'}</div>
@@ -809,7 +982,7 @@ export default function Emendas2025() {
                                 </div>
 
                                 {/* Valores em grid */}
-                                <div className="grid grid-cols-2 gap-3 text-sm">
+                                <div className="grid grid-cols-2 gap-2 text-sm">
                                   <div>
                                     <div className="text-gray-500 text-xs">Valor Indicado</div>
                                     <div className="font-medium text-gray-900">{formatarValor(emenda.valorIndicado)}</div>

@@ -20,6 +20,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ArrowUpDown, RotateCw, ChevronLeft, ChevronRight } from "lucide-react";
+import MapaPiaui from '@/components/MapaPiaui';
 
 interface ProjecaoMunicipio {
   municipio: string;
@@ -162,6 +163,11 @@ export default function ProjecaoMunicipios() {
           <RotateCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
           Atualizar
         </Button>
+      </div>
+
+      {/* Mapa Interativo do Piauí */}
+      <div className="mb-8">
+        <MapaPiaui projecoes={projecoes} />
       </div>
 
       <div className="flex justify-between items-center mb-4">
