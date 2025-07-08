@@ -11,6 +11,35 @@ interface ProjecaoMunicipio {
   alcance: number;
 }
 
+// Dados mocados para teste rápido do mapa
+const DADOS_MOCK: ProjecaoMunicipio[] = [
+  { municipio: 'TERESINA', liderancasAtuais: 5, votacao2022: 125000, expectativa2026: 150000, crescimento: 20, eleitores: 650000, alcance: 23 },
+  { municipio: 'PARNAÍBA', liderancasAtuais: 3, votacao2022: 45000, expectativa2026: 50000, crescimento: 11.1, eleitores: 120000, alcance: 41.7 },
+  { municipio: 'PICOS', liderancasAtuais: 2, votacao2022: 25000, expectativa2026: 28000, crescimento: 12, eleitores: 85000, alcance: 32.9 },
+  { municipio: 'FLORIANO', liderancasAtuais: 2, votacao2022: 22000, expectativa2026: 24000, crescimento: 9.1, eleitores: 75000, alcance: 32 },
+  { municipio: 'PIRIPIRI', liderancasAtuais: 1, votacao2022: 18000, expectativa2026: 19000, crescimento: 5.6, eleitores: 45000, alcance: 42.2 },
+  { municipio: 'CAMPO MAIOR', liderancasAtuais: 1, votacao2022: 15000, expectativa2026: 16000, crescimento: 6.7, eleitores: 40000, alcance: 40 },
+  { municipio: 'BARRAS', liderancasAtuais: 1, votacao2022: 12000, expectativa2026: 13500, crescimento: 12.5, eleitores: 35000, alcance: 38.6 },
+  { municipio: 'UNIÃO', liderancasAtuais: 1, votacao2022: 10000, expectativa2026: 11000, crescimento: 10, eleitores: 30000, alcance: 36.7 },
+  { municipio: 'ALTOS', liderancasAtuais: 1, votacao2022: 8000, expectativa2026: 9000, crescimento: 12.5, eleitores: 28000, alcance: 32.1 },
+  { municipio: 'JOSÉ DE FREITAS', liderancasAtuais: 1, votacao2022: 9000, expectativa2026: 9500, crescimento: 5.6, eleitores: 25000, alcance: 38 },
+  { municipio: 'ESPERANTINA', liderancasAtuais: 1, votacao2022: 7500, expectativa2026: 8500, crescimento: 13.3, eleitores: 22000, alcance: 38.6 },
+  { municipio: 'LUÍS CORREIA', liderancasAtuais: 1, votacao2022: 6000, expectativa2026: 6800, crescimento: 13.3, eleitores: 20000, alcance: 34 },
+  { municipio: 'PIRACURUCA', liderancasAtuais: 1, votacao2022: 5500, expectativa2026: 6000, crescimento: 9.1, eleitores: 18000, alcance: 33.3 },
+  { municipio: 'BATALHA', liderancasAtuais: 0, votacao2022: 4000, expectativa2026: 4200, crescimento: 5, eleitores: 15000, alcance: 28 },
+  { municipio: 'OEIRAS', liderancasAtuais: 1, votacao2022: 8000, expectativa2026: 7500, crescimento: -6.25, eleitores: 25000, alcance: 30 },
+  { municipio: 'SÃO RAIMUNDO NONATO', liderancasAtuais: 1, votacao2022: 6500, expectativa2026: 6000, crescimento: -7.7, eleitores: 22000, alcance: 27.3 },
+  { municipio: 'BOM JESUS', liderancasAtuais: 1, votacao2022: 5000, expectativa2026: 4500, crescimento: -10, eleitores: 18000, alcance: 25 },
+  { municipio: 'CORRENTE', liderancasAtuais: 0, votacao2022: 4500, expectativa2026: 3800, crescimento: -15.6, eleitores: 16000, alcance: 23.8 },
+  { municipio: 'URUÇUÍ', liderancasAtuais: 1, votacao2022: 4000, expectativa2026: 4400, crescimento: 10, eleitores: 14000, alcance: 31.4 },
+  { municipio: 'COCAL', liderancasAtuais: 1, votacao2022: 3500, expectativa2026: 3800, crescimento: 8.6, eleitores: 12000, alcance: 31.7 },
+  { municipio: 'PEDRO II', liderancasAtuais: 1, votacao2022: 8500, expectativa2026: 9200, crescimento: 8.2, eleitores: 24000, alcance: 38.3 },
+  { municipio: 'ÁGUA BRANCA', liderancasAtuais: 0, votacao2022: 2800, expectativa2026: 3000, crescimento: 7.1, eleitores: 10000, alcance: 30 },
+  { municipio: 'MIGUEL ALVES', liderancasAtuais: 1, votacao2022: 2500, expectativa2026: 2700, crescimento: 8, eleitores: 9000, alcance: 30 },
+  { municipio: 'VALENÇA DO PIAUÍ', liderancasAtuais: 1, votacao2022: 3000, expectativa2026: 3200, crescimento: 6.7, eleitores: 11000, alcance: 29.1 },
+  { municipio: 'REGENERAÇÃO', liderancasAtuais: 1, votacao2022: 3200, expectativa2026: 3400, crescimento: 6.25, eleitores: 12000, alcance: 28.3 }
+];
+
 // Configurações da planilha
 const SHEET_ID = '1PI4N2BOkJZ2ByOCbhUxijzkW3fk1yWn4bYBgdL1Y_WA';
 const SHEET_NAME = 'VOTAÇÃO FINAL';
@@ -30,6 +59,14 @@ async function getSheetsClient() {
 
 export async function buscarProjecoesMunicipios() {
   try {
+    logger.info('=== USANDO DADOS MOCK PARA TESTE RÁPIDO DO MAPA ===');
+    
+    // Retorna dados mock para teste imediato
+    logger.info(`Retornando ${DADOS_MOCK.length} municípios mock para teste`);
+    return DADOS_MOCK;
+
+    // Código original comentado para teste
+    /*
     logger.info('=== DEBUG - Iniciando busca de dados de projeções ===');
     logger.info(`Sheet ID: ${SHEET_ID}`);
     logger.info(`Sheet Name: ${SHEET_NAME}`);
@@ -124,6 +161,7 @@ export async function buscarProjecoesMunicipios() {
 
     logger.info(`Processados ${projecoes.length} municípios únicos`);
     return projecoes;
+    */
   } catch (error) {
     logger.error('Erro ao buscar projeções dos municípios:', error);
     throw error;
