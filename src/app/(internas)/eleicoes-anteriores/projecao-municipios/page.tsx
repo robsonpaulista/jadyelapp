@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
+import dynamic from 'next/dynamic';
 import {
   Table,
   TableBody,
@@ -20,9 +21,14 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ArrowUpDown, RotateCw, ChevronLeft, ChevronRight, FileDown } from "lucide-react";
-import MapaPiaui from '@/components/MapaPiaui';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+
+// Carregamento dinâmico do MapaPiaui apenas no cliente
+const MapaPiaui = dynamic(() => import('@/components/MapaPiaui'), {
+  ssr: false,
+  loading: () => <div className="flex justify-center items-center h-96">Carregando mapa...</div>
+});
 
 interface ProjecaoMunicipio {
   municipio: string;

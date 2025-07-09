@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Tooltip } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -76,6 +78,19 @@ const criarIconePersonalizado = (cor: string): L.Icon => {
       <circle cx="6" cy="6" r="2" fill="#fff"/>
     </svg>
   `;
+  
+  // Verificar se estamos no cliente antes de usar APIs do browser
+  if (typeof window === 'undefined') {
+    return new L.Icon({
+      iconUrl: 'data:image/svg+xml;base64,' + btoa(svgString),
+      iconSize: [8, 14],
+      iconAnchor: [4, 14],
+      popupAnchor: [1, -14],
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+      shadowSize: [14, 14],
+      shadowAnchor: [6, 16],
+    });
+  }
   
   const blob = new Blob([svgString], { type: 'image/svg+xml' });
   const url = URL.createObjectURL(blob);
@@ -171,6 +186,9 @@ export default function MapaPiaui() {
 
   // Detectar mudanças no estado de tela cheia
   useEffect(() => {
+    // Verificar se estamos no cliente
+    if (typeof window === 'undefined') return;
+    
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
       // Redimensionar o mapa quando entrar/sair da tela cheia
@@ -284,7 +302,7 @@ export default function MapaPiaui() {
   }
 
   const toggleFullScreen = () => {
-    if (!mapRef.current) return;
+    if (!mapRef.current || typeof window === 'undefined') return;
 
     if (!isFullscreen) {
       // Entrar em tela cheia - colocar o container do mapa em tela cheia
