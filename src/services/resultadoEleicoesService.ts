@@ -92,4 +92,61 @@ export async function buscarResultadosPorCidade(cidade: string) {
     logger.error('Erro ao buscar resultados por cidade:', error);
     throw error;
   }
+}
+
+export async function buscarResultadosDeputadoFederal2022() {
+  try {
+    const sheets = await getSheetsClient();
+    const range = `${SHEET_NAME}!A:Z`;
+    
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range,
+    });
+    
+    const data = response.data.values;
+    
+    if (!data || data.length < 2) {
+      return [];
+    }
+    
+    const headers = data[0];
+    const rows = data.slice(1);
+    
+    // Filtra apenas dados de Deputado Federal 2022
+    const resultados = rows
+      .filter(row => {
+        const cargo = row[3]?.toLowerCase() || '';
+        const ano = row[16] || '';
+        return cargo.includes('federal') && ano === '2022';
+      })
+      .map(row => ({
+        uf: row[0] || '',
+        municipio: row[1] || '',
+        codigoCargo: row[2] || '',
+        cargo: row[3] || '',
+        numeroUrna: row[4] || '',
+        nomeCandidato: row[5] || '',
+        nomeUrnaCandidato: row[6] || '',
+        partido: row[7] || '',
+        coligacao: row[8] || '',
+        turno: row[9] || '',
+        situacao: row[10] || '',
+        dataUltimaTotalizacao: row[11] || '',
+        ue: row[12] || '',
+        sequencialCandidato: row[13] || '',
+        tipoDestinocaoVotos: row[14] || '',
+        sequencialEleicao: row[15] || '',
+        anoEleicao: row[16] || '',
+        regiao: row[17] || '',
+        percentualVotosValidos: row[18] || '',
+        quantidadeVotosNominais: row[19] || '',
+        quantidadeVotosConcorrentes: row[20] || ''
+      })) as ResultadoEleicao[];
+
+    return resultados;
+  } catch (error) {
+    logger.error('Erro ao buscar resultados de Deputado Federal 2022:', error);
+    throw error;
+  }
 } 

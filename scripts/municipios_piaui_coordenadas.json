@@ -1,0 +1,1352 @@
+{
+  "estado": "PIAUÍ",
+  "total_municipios": 224,
+  "fonte": "latitudelongitude.pdf",
+  "data_extracao": "2024-12-19",
+  "municipios": [
+    {
+      "nome": "PI ACAUÃ -41.083059 -8.219542 ACAUÃ",
+      "latitude": -41.083059,
+      "longitude": -8.219542,
+      "fonte_linha": "2952 PI Acauã -41.083059 -8.219542 ACAUÃ"
+    },
+    {
+      "nome": "PI AGRICOLÂNDIA -42.666371 -5.796763 AGRICOLÂNDIA",
+      "latitude": -42.666371,
+      "longitude": -5.796763,
+      "fonte_linha": "2953 PI Agricolândia -42.666371 -5.796763 AGRICOLÂNDIA"
+    },
+    {
+      "nome": "PI ALAGOINHA DO PIAUÍ -40.92817 -7.000392 ALAGOINHA DO PIAUÍ",
+      "latitude": -40.92817,
+      "longitude": -7.000392,
+      "fonte_linha": "2955 PI Alagoinha do Piauí -40.92817 -7.000392 ALAGOINHA DO PIAUÍ"
+    },
+    {
+      "nome": "PI ALEGRETE DO PIAUÍ -40.856587 -7.241964 ALEGRETE DO PIAUÍ",
+      "latitude": -40.856587,
+      "longitude": -7.241964,
+      "fonte_linha": "2956 PI Alegrete do Piauí -40.856587 -7.241964 ALEGRETE DO PIAUÍ"
+    },
+    {
+      "nome": "PI ALTO LONGÁ -42.209582 -5.256341 ALTO LONGÁ",
+      "latitude": -42.209582,
+      "longitude": -5.256341,
+      "fonte_linha": "2957 PI Alto Longá -42.209582 -5.256341 ALTO LONGÁ"
+    },
+    {
+      "nome": "PI ALTOS -42.46116 -5.038879 ALTO",
+      "latitude": -42.46116,
+      "longitude": -5.038879,
+      "fonte_linha": "2958 PI Altos -42.46116 -5.038879 ALTOS"
+    },
+    {
+      "nome": "PI ALVORADA DO GURGUÉIA -43.777016 -8.424183 ALVORADA DO GURGUÉIA",
+      "latitude": -43.777016,
+      "longitude": -8.424183,
+      "fonte_linha": "2959 PI Alvorada do Gurguéia -43.777016 -8.424183 ALVORADA DO GURGUÉIA"
+    },
+    {
+      "nome": "PI AMARANTE -42.843343 -6.243045 AMARANT",
+      "latitude": -42.843343,
+      "longitude": -6.243045,
+      "fonte_linha": "2960 PI Amarante -42.843343 -6.243045 AMARANTE"
+    },
+    {
+      "nome": "PI ANGICAL DO PIAUÍ -42.740047 -6.087864 ANGICAL DO PIAUÍ",
+      "latitude": -42.740047,
+      "longitude": -6.087864,
+      "fonte_linha": "2961 PI Angical do Piauí -42.740047 -6.087864 ANGICAL DO PIAUÍ"
+    },
+    {
+      "nome": "PI ANTÔNIO ALMEIDA -44.188929 -7.212759 ANTÔNIO ALMEIDA",
+      "latitude": -44.188929,
+      "longitude": -7.212759,
+      "fonte_linha": "2963 PI Antônio Almeida -44.188929 -7.212759 ANTÔNIO ALMEIDA"
+    },
+    {
+      "nome": "PI ANÍSIO DE ABREU -43.04941 -9.185643 ANÍSIO DE ABREU",
+      "latitude": -43.04941,
+      "longitude": -9.185643,
+      "fonte_linha": "2962 PI Anísio de Abreu -43.04941 -9.185643 ANÍSIO DE ABREU"
+    },
+    {
+      "nome": "PI AROAZES -41.78218 -6.110221 AROAZ",
+      "latitude": -41.78218,
+      "longitude": -6.110221,
+      "fonte_linha": "2964 PI Aroazes -41.78218 -6.110221 AROAZES"
+    },
+    {
+      "nome": "PI AROEIRAS DO ITAIM -41.564868 -7.276906 AROEIRAS DO ITAIM",
+      "latitude": -41.564868,
+      "longitude": -7.276906,
+      "fonte_linha": "5626 PI Aroeiras do Itaim -41.564868 -7.276906 AROEIRAS DO ITAIM"
+    },
+    {
+      "nome": "PI ARRAIAL -42.541809 -6.650753 ARRAIAL",
+      "latitude": -42.541809,
+      "longitude": -6.650753,
+      "fonte_linha": "2965 PI Arraial -42.541809 -6.650753 ARRAIAL"
+    },
+    {
+      "nome": "PI ASSUNÇÃO DO PIAUÍ -41.038851 -5.864996 ASSUNÇÃO DO PIAUÍ",
+      "latitude": -41.038851,
+      "longitude": -5.864996,
+      "fonte_linha": "2966 PI Assunção do Piauí -41.038851 -5.864996 ASSUNÇÃO DO PIAUÍ"
+    },
+    {
+      "nome": "PI AVELINO LOPES -43.956305 -10.134487 AVELINO LOP",
+      "latitude": -43.956305,
+      "longitude": -10.134487,
+      "fonte_linha": "2967 PI Avelino Lopes -43.956305 -10.134487 AVELINO LOPES"
+    },
+    {
+      "nome": "PI BAIXA GRANDE DO RIBEIRO -45.218977 -7.849031 BAIXA GRANDE DO RIBEIRO",
+      "latitude": -45.218977,
+      "longitude": -7.849031,
+      "fonte_linha": "2968 PI Baixa Grande do Ribeiro -45.218977 -7.849031 BAIXA GRANDE DO RIBEIRO"
+    },
+    {
+      "nome": "PI BARRA D`ALCÂNTARA -42.114609 -6.516453 BARRA D`ALCÂNTARA",
+      "latitude": -42.114609,
+      "longitude": -6.516453,
+      "fonte_linha": "2969 PI Barra d`Alcântara -42.114609 -6.516453 BARRA D`ALCÂNTARA"
+    },
+    {
+      "nome": "PI BARRAS -42.292161 -4.244675 BARRA",
+      "latitude": -42.292161,
+      "longitude": -4.244675,
+      "fonte_linha": "2970 PI Barras -42.292161 -4.244675 BARRAS"
+    },
+    {
+      "nome": "PI BARREIRAS DO PIAUÍ -45.470172 -9.929605 BARREIRAS DO PIAUÍ",
+      "latitude": -45.470172,
+      "longitude": -9.929605,
+      "fonte_linha": "2971 PI Barreiras do Piauí -45.470172 -9.929605 BARREIRAS DO PIAUÍ"
+    },
+    {
+      "nome": "PI BARRO DURO -42.514656 -5.816732 BARRO DURO",
+      "latitude": -42.514656,
+      "longitude": -5.816732,
+      "fonte_linha": "2972 PI Barro Duro -42.514656 -5.816732 BARRO DURO"
+    },
+    {
+      "nome": "PI BATALHA -42.07868 -4.0223 BATALHA",
+      "latitude": -42.07868,
+      "longitude": -4.0223,
+      "fonte_linha": "2973 PI Batalha -42.07868 -4.0223 BATALHA"
+    },
+    {
+      "nome": "PI BELA VISTA DO PIAUÍ -41.867522 -7.988091 BELA VISTA DO PIAUÍ",
+      "latitude": -41.867522,
+      "longitude": -7.988091,
+      "fonte_linha": "2974 PI Bela Vista do Piauí -41.867522 -7.988091 BELA VISTA DO PIAUÍ"
+    },
+    {
+      "nome": "PI BELÉM DO PIAUÍ -40.968786 -7.366524 BELÉM DO PIAUÍ",
+      "latitude": -40.968786,
+      "longitude": -7.366524,
+      "fonte_linha": "2975 PI Belém do Piauí -40.968786 -7.366524 BELÉM DO PIAUÍ"
+    },
+    {
+      "nome": "PI BENEDITINOS -42.36382 -5.456758 BENEDITINO",
+      "latitude": -42.36382,
+      "longitude": -5.456758,
+      "fonte_linha": "2976 PI Beneditinos -42.36382 -5.456758 BENEDITINOS"
+    },
+    {
+      "nome": "PI BERTOLÍNIA -43.949778 -7.633377 BERTOLÍNIA",
+      "latitude": -43.949778,
+      "longitude": -7.633377,
+      "fonte_linha": "2977 PI Bertolínia -43.949778 -7.633377 BERTOLÍNIA"
+    },
+    {
+      "nome": "PI BETÂNIA DO PIAUÍ -40.79891 -8.143761 BETÂNIA DO PIAUÍ",
+      "latitude": -40.79891,
+      "longitude": -8.143761,
+      "fonte_linha": "2978 PI Betânia do Piauí -40.79891 -8.143761 BETÂNIA DO PIAUÍ"
+    },
+    {
+      "nome": "PI BOA HORA -42.135748 -4.414041 BOA HORA",
+      "latitude": -42.135748,
+      "longitude": -4.414041,
+      "fonte_linha": "2979 PI Boa Hora -42.135748 -4.414041 BOA HORA"
+    },
+    {
+      "nome": "PI BOCAINA -41.316752 -6.941236 BOCAINA",
+      "latitude": -41.316752,
+      "longitude": -6.941236,
+      "fonte_linha": "2980 PI Bocaina -41.316752 -6.941236 BOCAINA"
+    },
+    {
+      "nome": "PI BOM JESUS -44.358951 -9.071239 BOM JESU",
+      "latitude": -44.358951,
+      "longitude": -9.071239,
+      "fonte_linha": "2981 PI Bom Jesus -44.358951 -9.071239 BOM JESUS"
+    },
+    {
+      "nome": "PI BOM PRINCÍPIO DO PIAUÍ -41.640333 -3.196314 BOM PRINCÍPIO DO PIAUÍ",
+      "latitude": -41.640333,
+      "longitude": -3.196314,
+      "fonte_linha": "2982 PI Bom Princípio do Piauí -41.640333 -3.196314 BOM PRINCÍPIO DO PIAUÍ"
+    },
+    {
+      "nome": "PI BONFIM DO PIAUÍ -42.886482 -9.160502 BONFIM DO PIAUÍ",
+      "latitude": -42.886482,
+      "longitude": -9.160502,
+      "fonte_linha": "2983 PI Bonfim do Piauí -42.886482 -9.160502 BONFIM DO PIAUÍ"
+    },
+    {
+      "nome": "PI BOQUEIRÃO DO PIAUÍ -42.121232 -4.481806 BOQUEIRÃO DO PIAUÍ",
+      "latitude": -42.121232,
+      "longitude": -4.481806,
+      "fonte_linha": "2984 PI Boqueirão do Piauí -42.121232 -4.481806 BOQUEIRÃO DO PIAUÍ"
+    },
+    {
+      "nome": "PI BRASILEIRA -41.785855 -4.133696 BRASILEIRA",
+      "latitude": -41.785855,
+      "longitude": -4.133696,
+      "fonte_linha": "2985 PI Brasileira -41.785855 -4.133696 BRASILEIRA"
+    },
+    {
+      "nome": "PI BREJO DO PIAUÍ -42.822917 -8.20314 BREJO DO PIAUÍ",
+      "latitude": -42.822917,
+      "longitude": -8.20314,
+      "fonte_linha": "2986 PI Brejo do Piauí -42.822917 -8.20314 BREJO DO PIAUÍ"
+    },
+    {
+      "nome": "PI BURITI DOS LOPES -41.869481 -3.182592 BURITI DOS LOP",
+      "latitude": -41.869481,
+      "longitude": -3.182592,
+      "fonte_linha": "2987 PI Buriti dos Lopes -41.869481 -3.182592 BURITI DOS LOPES"
+    },
+    {
+      "nome": "PI BURITI DOS MONTES -41.093349 -5.30584 BURITI DOS MONT",
+      "latitude": -41.093349,
+      "longitude": -5.30584,
+      "fonte_linha": "2988 PI Buriti dos Montes -41.093349 -5.30584 BURITI DOS MONTES"
+    },
+    {
+      "nome": "PI CABECEIRAS DO PIAUÍ -42.306889 -4.4773 CABECEIRAS DO PIAUÍ",
+      "latitude": -42.306889,
+      "longitude": -4.4773,
+      "fonte_linha": "2989 PI Cabeceiras do Piauí -42.306889 -4.4773 CABECEIRAS DO PIAUÍ"
+    },
+    {
+      "nome": "PI CAJAZEIRAS DO PIAUÍ -42.390278 -6.796667 CAJAZEIRAS DO PIAUÍ",
+      "latitude": -42.390278,
+      "longitude": -6.796667,
+      "fonte_linha": "2990 PI Cajazeiras do Piauí -42.390278 -6.796667 CAJAZEIRAS DO PIAUÍ"
+    },
+    {
+      "nome": "PI CAJUEIRO DA PRAIA -41.340801 -2.931114 CAJUEIRO DA PRAIA",
+      "latitude": -41.340801,
+      "longitude": -2.931114,
+      "fonte_linha": "2991 PI Cajueiro da Praia -41.340801 -2.931114 CAJUEIRO DA PRAIA"
+    },
+    {
+      "nome": "PI CALDEIRÃO GRANDE DO PIAUÍ -40.6366 -7.331404 CALDEIRÃO GRANDE DO PIAUÍ",
+      "latitude": -40.6366,
+      "longitude": -7.331404,
+      "fonte_linha": "2992 PI Caldeirão Grande do Piauí -40.6366 -7.331404 CALDEIRÃO GRANDE DO PIAUÍ"
+    },
+    {
+      "nome": "PI CAMPINAS DO PIAUÍ -41.877487 -7.659299 CAMPINAS DO PIAUÍ",
+      "latitude": -41.877487,
+      "longitude": -7.659299,
+      "fonte_linha": "2993 PI Campinas do Piauí -41.877487 -7.659299 CAMPINAS DO PIAUÍ"
+    },
+    {
+      "nome": "PI CAMPO ALEGRE DO FIDALGO -41.834399 -8.382357 CAMPO ALEGRE DO FIDALGO",
+      "latitude": -41.834399,
+      "longitude": -8.382357,
+      "fonte_linha": "2994 PI Campo Alegre do Fidalgo -41.834399 -8.382357 CAMPO ALEGRE DO FIDALGO"
+    },
+    {
+      "nome": "PI CAMPO GRANDE DO PIAUÍ -41.031486 -7.128274 CAMPO GRANDE DO PIAUÍ",
+      "latitude": -41.031486,
+      "longitude": -7.128274,
+      "fonte_linha": "2995 PI Campo Grande do Piauí -41.031486 -7.128274 CAMPO GRANDE DO PIAUÍ"
+    },
+    {
+      "nome": "PI CAMPO LARGO DO PIAUÍ -42.639991 -3.804411 CAMPO LARGO DO PIAUÍ",
+      "latitude": -42.639991,
+      "longitude": -3.804411,
+      "fonte_linha": "2996 PI Campo Largo do Piauí -42.639991 -3.804411 CAMPO LARGO DO PIAUÍ"
+    },
+    {
+      "nome": "PI CAMPO MAIOR -42.164124 -4.821697 CAMPO MAIOR",
+      "latitude": -42.164124,
+      "longitude": -4.821697,
+      "fonte_linha": "2997 PI Campo Maior -42.164124 -4.821697 CAMPO MAIOR"
+    },
+    {
+      "nome": "PI CANAVIEIRA -43.72333 -7.688215 CANAVIEIRA",
+      "latitude": -43.72333,
+      "longitude": -7.688215,
+      "fonte_linha": "2998 PI Canavieira -43.72333 -7.688215 CANAVIEIRA"
+    },
+    {
+      "nome": "PI CANTO DO BURITI -42.951721 -8.111101 CANTO DO BURITI",
+      "latitude": -42.951721,
+      "longitude": -8.111101,
+      "fonte_linha": "2999 PI Canto do Buriti -42.951721 -8.111101 CANTO DO BURITI"
+    },
+    {
+      "nome": "PI CAPITÃO GERVÁSIO OLIVEIRA -41.813973 -8.496548 CAPITÃO GERVÁSIO OLIVEIRA",
+      "latitude": -41.813973,
+      "longitude": -8.496548,
+      "fonte_linha": "3001 PI Capitão Gervásio Oliveira -41.813973 -8.496548 CAPITÃO GERVÁSIO OLIVEIRA"
+    },
+    {
+      "nome": "PI CAPITÃO DE CAMPOS -41.943999 -4.457 CAPITÃO DE CAMPO",
+      "latitude": -41.943999,
+      "longitude": -4.457,
+      "fonte_linha": "3000 PI Capitão de Campos -41.943999 -4.457 CAPITÃO DE CAMPOS"
+    },
+    {
+      "nome": "PI CARACOL -43.328998 -9.279333 CARACOL",
+      "latitude": -43.328998,
+      "longitude": -9.279333,
+      "fonte_linha": "3002 PI Caracol -43.328998 -9.279333 CARACOL"
+    },
+    {
+      "nome": "PI CARAÚBAS DO PIAUÍ -41.842517 -3.475249 CARAÚBAS DO PIAUÍ",
+      "latitude": -41.842517,
+      "longitude": -3.475249,
+      "fonte_linha": "3003 PI Caraúbas do Piauí -41.842517 -3.475249 CARAÚBAS DO PIAUÍ"
+    },
+    {
+      "nome": "PI CARIDADE DO PIAUÍ -40.984763 -7.734349 CARIDADE DO PIAUÍ",
+      "latitude": -40.984763,
+      "longitude": -7.734349,
+      "fonte_linha": "3004 PI Caridade do Piauí -40.984763 -7.734349 CARIDADE DO PIAUÍ"
+    },
+    {
+      "nome": "PI CASTELO DO PIAUÍ -41.549865 -5.318693 CASTELO DO PIAUÍ",
+      "latitude": -41.549865,
+      "longitude": -5.318693,
+      "fonte_linha": "3005 PI Castelo do Piauí -41.549865 -5.318693 CASTELO DO PIAUÍ"
+    },
+    {
+      "nome": "PI CAXINGÓ -41.895476 -3.419044 CAXINGÓ",
+      "latitude": -41.895476,
+      "longitude": -3.419044,
+      "fonte_linha": "3006 PI Caxingó -41.895476 -3.419044 CAXINGÓ"
+    },
+    {
+      "nome": "PI COCAL -41.554623 -3.472792 COCAL",
+      "latitude": -41.554623,
+      "longitude": -3.472792,
+      "fonte_linha": "3007 PI Cocal -41.554623 -3.472792 COCAL"
+    },
+    {
+      "nome": "PI COCAL DE TELHA -41.958668 -4.557098 COCAL DE TELHA",
+      "latitude": -41.958668,
+      "longitude": -4.557098,
+      "fonte_linha": "3008 PI Cocal de Telha -41.958668 -4.557098 COCAL DE TELHA"
+    },
+    {
+      "nome": "PI COCAL DOS ALVES -41.440197 -3.620471 COCAL DOS ALV",
+      "latitude": -41.440197,
+      "longitude": -3.620471,
+      "fonte_linha": "3009 PI Cocal dos Alves -41.440197 -3.620471 COCAL DOS ALVES"
+    },
+    {
+      "nome": "PI COIVARAS -42.207951 -5.092242 COIVARA",
+      "latitude": -42.207951,
+      "longitude": -5.092242,
+      "fonte_linha": "3010 PI Coivaras -42.207951 -5.092242 COIVARAS"
+    },
+    {
+      "nome": "PI COLÔNIA DO GURGUÉIA -43.793999 -8.183697 COLÔNIA DO GURGUÉIA",
+      "latitude": -43.793999,
+      "longitude": -8.183697,
+      "fonte_linha": "3011 PI Colônia do Gurguéia -43.793999 -8.183697 COLÔNIA DO GURGUÉIA"
+    },
+    {
+      "nome": "PI COLÔNIA DO PIAUÍ -42.175555 -7.226512 COLÔNIA DO PIAUÍ",
+      "latitude": -42.175555,
+      "longitude": -7.226512,
+      "fonte_linha": "3012 PI Colônia do Piauí -42.175555 -7.226512 COLÔNIA DO PIAUÍ"
+    },
+    {
+      "nome": "PI CONCEIÇÃO DO CANINDÉ -41.594193 -7.876378 CONCEIÇÃO DO CANINDÉ",
+      "latitude": -41.594193,
+      "longitude": -7.876378,
+      "fonte_linha": "3013 PI Conceição do Canindé -41.594193 -7.876378 CONCEIÇÃO DO CANINDÉ"
+    },
+    {
+      "nome": "PI CORONEL JOSÉ DIAS -42.523195 -8.813971 CORONEL JOSÉ DIA",
+      "latitude": -42.523195,
+      "longitude": -8.813971,
+      "fonte_linha": "3014 PI Coronel José Dias -42.523195 -8.813971 CORONEL JOSÉ DIAS"
+    },
+    {
+      "nome": "PI CORRENTE -45.163348 -10.433349 CORRENT",
+      "latitude": -45.163348,
+      "longitude": -10.433349,
+      "fonte_linha": "3015 PI Corrente -45.163348 -10.433349 CORRENTE"
+    },
+    {
+      "nome": "PI CRISTALÂNDIA DO PIAUÍ -45.189262 -10.644311 CRISTALÂNDIA DO PIAUÍ",
+      "latitude": -45.189262,
+      "longitude": -10.644311,
+      "fonte_linha": "3016 PI Cristalândia do Piauí -45.189262 -10.644311 CRISTALÂNDIA DO PIAUÍ"
+    },
+    {
+      "nome": "PI CRISTINO CASTRO -44.222972 -8.822731 CRISTINO CASTRO",
+      "latitude": -44.222972,
+      "longitude": -8.822731,
+      "fonte_linha": "3017 PI Cristino Castro -44.222972 -8.822731 CRISTINO CASTRO"
+    },
+    {
+      "nome": "PI CURIMATÁ -44.3002 -10.032608 CURIMATÁ",
+      "latitude": -44.3002,
+      "longitude": -10.032608,
+      "fonte_linha": "3018 PI Curimatá -44.3002 -10.032608 CURIMATÁ"
+    },
+    {
+      "nome": "PI CURRAIS -44.406194 -9.011755 CURRAI",
+      "latitude": -44.406194,
+      "longitude": -9.011755,
+      "fonte_linha": "3019 PI Currais -44.406194 -9.011755 CURRAIS"
+    },
+    {
+      "nome": "PI CURRAL NOVO DO PIAUÍ -40.895704 -7.831302 CURRAL NOVO DO PIAUÍ",
+      "latitude": -40.895704,
+      "longitude": -7.831302,
+      "fonte_linha": "3021 PI Curral Novo do Piauí -40.895704 -7.831302 CURRAL NOVO DO PIAUÍ"
+    },
+    {
+      "nome": "PI CURRALINHOS -42.837602 -5.608252 CURRALINHO",
+      "latitude": -42.837602,
+      "longitude": -5.608252,
+      "fonte_linha": "3020 PI Curralinhos -42.837602 -5.608252 CURRALINHOS"
+    },
+    {
+      "nome": "PI DEMERVAL LOBÃO -42.677583 -5.358752 DEMERVAL LOBÃO",
+      "latitude": -42.677583,
+      "longitude": -5.358752,
+      "fonte_linha": "3022 PI Demerval Lobão -42.677583 -5.358752 DEMERVAL LOBÃO"
+    },
+    {
+      "nome": "PI DIRCEU ARCOVERDE -42.434792 -9.339386 DIRCEU ARCOVERD",
+      "latitude": -42.434792,
+      "longitude": -9.339386,
+      "fonte_linha": "3023 PI Dirceu Arcoverde -42.434792 -9.339386 DIRCEU ARCOVERDE"
+    },
+    {
+      "nome": "PI DOM EXPEDITO LOPES -41.639632 -6.953319 DOM EXPEDITO LOP",
+      "latitude": -41.639632,
+      "longitude": -6.953319,
+      "fonte_linha": "3024 PI Dom Expedito Lopes -41.639632 -6.953319 DOM EXPEDITO LOPES"
+    },
+    {
+      "nome": "PI DOM INOCÊNCIO -41.969733 -9.005158 DOM INOCÊNCIO",
+      "latitude": -41.969733,
+      "longitude": -9.005158,
+      "fonte_linha": "3026 PI Dom Inocêncio -41.969733 -9.005158 DOM INOCÊNCIO"
+    },
+    {
+      "nome": "PI DOMINGOS MOURÃO -41.268267 -4.249498 DOMINGOS MOURÃO",
+      "latitude": -41.268267,
+      "longitude": -4.249498,
+      "fonte_linha": "3025 PI Domingos Mourão -41.268267 -4.249498 DOMINGOS MOURÃO"
+    },
+    {
+      "nome": "PI ELESBÃO VELOSO -42.135458 -6.199475 ELESBÃO VELOSO",
+      "latitude": -42.135458,
+      "longitude": -6.199475,
+      "fonte_linha": "3027 PI Elesbão Veloso -42.135458 -6.199475 ELESBÃO VELOSO"
+    },
+    {
+      "nome": "PI ELISEU MARTINS -43.670481 -8.096286 ELISEU MARTI",
+      "latitude": -43.670481,
+      "longitude": -8.096286,
+      "fonte_linha": "3028 PI Eliseu Martins -43.670481 -8.096286 ELISEU MARTINS"
+    },
+    {
+      "nome": "PI ESPERANTINA -42.232422 -3.888631 ESPERANTINA",
+      "latitude": -42.232422,
+      "longitude": -3.888631,
+      "fonte_linha": "3029 PI Esperantina -42.232422 -3.888631 ESPERANTINA"
+    },
+    {
+      "nome": "PI FARTURA DO PIAUÍ -42.791176 -9.48342 FARTURA DO PIAUÍ",
+      "latitude": -42.791176,
+      "longitude": -9.48342,
+      "fonte_linha": "3030 PI Fartura do Piauí -42.791176 -9.48342 FARTURA DO PIAUÍ"
+    },
+    {
+      "nome": "PI FLORES DO PIAUÍ -42.918009 -7.787931 FLORES DO PIAUÍ",
+      "latitude": -42.918009,
+      "longitude": -7.787931,
+      "fonte_linha": "3031 PI Flores do Piauí -42.918009 -7.787931 FLORES DO PIAUÍ"
+    },
+    {
+      "nome": "PI FLORESTA DO PIAUÍ -41.788328 -7.466821 FLORESTA DO PIAUÍ",
+      "latitude": -41.788328,
+      "longitude": -7.466821,
+      "fonte_linha": "3032 PI Floresta do Piauí -41.788328 -7.466821 FLORESTA DO PIAUÍ"
+    },
+    {
+      "nome": "PI FLORIANO -43.024136 -6.771821 FLORIANO",
+      "latitude": -43.024136,
+      "longitude": -6.771821,
+      "fonte_linha": "3033 PI Floriano -43.024136 -6.771821 FLORIANO"
+    },
+    {
+      "nome": "PI FRANCINÓPOLIS -42.259062 -6.393341 FRANCINÓPOLI",
+      "latitude": -42.259062,
+      "longitude": -6.393341,
+      "fonte_linha": "3034 PI Francinópolis -42.259062 -6.393341 FRANCINÓPOLIS"
+    },
+    {
+      "nome": "PI FRANCISCO AYRES -42.688149 -6.626064 FRANCISCO AYR",
+      "latitude": -42.688149,
+      "longitude": -6.626064,
+      "fonte_linha": "3035 PI Francisco Ayres -42.688149 -6.626064 FRANCISCO AYRES"
+    },
+    {
+      "nome": "PI FRANCISCO MACEDO -40.787999 -7.331 FRANCISCO MACEDO",
+      "latitude": -40.787999,
+      "longitude": -7.331,
+      "fonte_linha": "3036 PI Francisco Macedo -40.787999 -7.331 FRANCISCO MACEDO"
+    },
+    {
+      "nome": "PI FRANCISCO SANTOS -41.128789 -6.994914 FRANCISCO SANTO",
+      "latitude": -41.128789,
+      "longitude": -6.994914,
+      "fonte_linha": "3037 PI Francisco Santos -41.128789 -6.994914 FRANCISCO SANTOS"
+    },
+    {
+      "nome": "PI FRONTEIRAS -40.614601 -7.081727 FRONTEIRA",
+      "latitude": -40.614601,
+      "longitude": -7.081727,
+      "fonte_linha": "3038 PI Fronteiras -40.614601 -7.081727 FRONTEIRAS"
+    },
+    {
+      "nome": "PI GEMINIANO -41.340879 -7.154759 GEMINIANO",
+      "latitude": -41.340879,
+      "longitude": -7.154759,
+      "fonte_linha": "3039 PI Geminiano -41.340879 -7.154759 GEMINIANO"
+    },
+    {
+      "nome": "PI GILBUÉS -45.342267 -9.830008 GILBUÉ",
+      "latitude": -45.342267,
+      "longitude": -9.830008,
+      "fonte_linha": "3040 PI Gilbués -45.342267 -9.830008 GILBUÉS"
+    },
+    {
+      "nome": "PI GUADALUPE -43.559441 -6.782848 GUADALUP",
+      "latitude": -43.559441,
+      "longitude": -6.782848,
+      "fonte_linha": "3041 PI Guadalupe -43.559441 -6.782848 GUADALUPE"
+    },
+    {
+      "nome": "PI GUARIBAS -43.694341 -9.386465 GUARIBA",
+      "latitude": -43.694341,
+      "longitude": -9.386465,
+      "fonte_linha": "3042 PI Guaribas -43.694341 -9.386465 GUARIBAS"
+    },
+    {
+      "nome": "PI HUGO NAPOLEÃO -42.559755 -5.988597 HUGO NAPOLEÃO",
+      "latitude": -42.559755,
+      "longitude": -5.988597,
+      "fonte_linha": "3043 PI Hugo Napoleão -42.559755 -5.988597 HUGO NAPOLEÃO"
+    },
+    {
+      "nome": "PI ILHA GRANDE -41.81858 -2.857737 ILHA GRAND",
+      "latitude": -41.81858,
+      "longitude": -2.857737,
+      "fonte_linha": "3044 PI Ilha Grande -41.81858 -2.857737 ILHA GRANDE"
+    },
+    {
+      "nome": "PI INHUMA -41.704127 -6.665001 INHUMA",
+      "latitude": -41.704127,
+      "longitude": -6.665001,
+      "fonte_linha": "3045 PI Inhuma -41.704127 -6.665001 INHUMA"
+    },
+    {
+      "nome": "PI IPIRANGA DO PIAUÍ -41.738086 -6.824215 IPIRANGA DO PIAUÍ",
+      "latitude": -41.738086,
+      "longitude": -6.824215,
+      "fonte_linha": "3046 PI Ipiranga do Piauí -41.738086 -6.824215 IPIRANGA DO PIAUÍ"
+    },
+    {
+      "nome": "PI ISAÍAS COELHO -41.673495 -7.735968 ISAÍAS COELHO",
+      "latitude": -41.673495,
+      "longitude": -7.735968,
+      "fonte_linha": "3047 PI Isaías Coelho -41.673495 -7.735968 ISAÍAS COELHO"
+    },
+    {
+      "nome": "PI ITAINÓPOLIS -41.468713 -7.443357 ITAINÓPOLI",
+      "latitude": -41.468713,
+      "longitude": -7.443357,
+      "fonte_linha": "3048 PI Itainópolis -41.468713 -7.443357 ITAINÓPOLIS"
+    },
+    {
+      "nome": "PI ITAUEIRA -43.0249 -7.59989 ITAUEIRA",
+      "latitude": -43.0249,
+      "longitude": -7.59989,
+      "fonte_linha": "3049 PI Itaueira -43.0249 -7.59989 ITAUEIRA"
+    },
+    {
+      "nome": "PI JACOBINA DO PIAUÍ -41.207506 -7.930634 JACOBINA DO PIAUÍ",
+      "latitude": -41.207506,
+      "longitude": -7.930634,
+      "fonte_linha": "3050 PI Jacobina do Piauí -41.207506 -7.930634 JACOBINA DO PIAUÍ"
+    },
+    {
+      "nome": "PI JAICÓS -41.137126 -7.362286 JAICÓ",
+      "latitude": -41.137126,
+      "longitude": -7.362286,
+      "fonte_linha": "3051 PI Jaicós -41.137126 -7.362286 JAICÓS"
+    },
+    {
+      "nome": "PI JARDIM DO MULATO -42.629999 -6.099 JARDIM DO MULATO",
+      "latitude": -42.629999,
+      "longitude": -6.099,
+      "fonte_linha": "3052 PI Jardim do Mulato -42.629999 -6.099 JARDIM DO MULATO"
+    },
+    {
+      "nome": "PI JATOBÁ DO PIAUÍ -41.816965 -4.770254 JATOBÁ DO PIAUÍ",
+      "latitude": -41.816965,
+      "longitude": -4.770254,
+      "fonte_linha": "3053 PI Jatobá do Piauí -41.816965 -4.770254 JATOBÁ DO PIAUÍ"
+    },
+    {
+      "nome": "PI JERUMENHA -43.503319 -7.09128 JERUMENHA",
+      "latitude": -43.503319,
+      "longitude": -7.09128,
+      "fonte_linha": "3054 PI Jerumenha -43.503319 -7.09128 JERUMENHA"
+    },
+    {
+      "nome": "PI JOAQUIM PIRES -42.186462 -3.501636 JOAQUIM PIR",
+      "latitude": -42.186462,
+      "longitude": -3.501636,
+      "fonte_linha": "3056 PI Joaquim Pires -42.186462 -3.501636 JOAQUIM PIRES"
+    },
+    {
+      "nome": "PI JOCA MARQUES -42.425517 -3.480399 JOCA MARQU",
+      "latitude": -42.425517,
+      "longitude": -3.480399,
+      "fonte_linha": "3057 PI Joca Marques -42.425517 -3.480399 JOCA MARQUES"
+    },
+    {
+      "nome": "PI JOSÉ DE FREITAS -42.574586 -4.751458 JOSÉ DE FREITA",
+      "latitude": -42.574586,
+      "longitude": -4.751458,
+      "fonte_linha": "3058 PI José de Freitas -42.574586 -4.751458 JOSÉ DE FREITAS"
+    },
+    {
+      "nome": "PI JOÃO COSTA -42.426379 -8.50736 JOÃO COSTA",
+      "latitude": -42.426379,
+      "longitude": -8.50736,
+      "fonte_linha": "3055 PI João Costa -42.426379 -8.50736 JOÃO COSTA"
+    },
+    {
+      "nome": "PI JUAZEIRO DO PIAUÍ -41.697561 -5.174589 JUAZEIRO DO PIAUÍ",
+      "latitude": -41.697561,
+      "longitude": -5.174589,
+      "fonte_linha": "3059 PI Juazeiro do Piauí -41.697561 -5.174589 JUAZEIRO DO PIAUÍ"
+    },
+    {
+      "nome": "PI JUREMA -43.133676 -9.219924 JUREMA",
+      "latitude": -43.133676,
+      "longitude": -9.219924,
+      "fonte_linha": "3061 PI Jurema -43.133676 -9.219924 JUREMA"
+    },
+    {
+      "nome": "PI JÚLIO BORGES -44.238142 -10.32253 JÚLIO BORG",
+      "latitude": -44.238142,
+      "longitude": -10.32253,
+      "fonte_linha": "3060 PI Júlio Borges -44.238142 -10.32253 JÚLIO BORGES"
+    },
+    {
+      "nome": "PI LAGOA ALEGRE -42.630876 -4.515394 LAGOA ALEGR",
+      "latitude": -42.630876,
+      "longitude": -4.515394,
+      "fonte_linha": "3062 PI Lagoa Alegre -42.630876 -4.515394 LAGOA ALEGRE"
+    },
+    {
+      "nome": "PI LAGOA DE SÃO FRANCISCO -41.596883 -4.385053 LAGOA DE SÃO FRANCISCO",
+      "latitude": -41.596883,
+      "longitude": -4.385053,
+      "fonte_linha": "3063 PI Lagoa de São Francisco -41.596883 -4.385053 LAGOA DE SÃO FRANCISCO"
+    },
+    {
+      "nome": "PI LAGOA DO BARRO DO PIAUÍ -41.5342 -8.476734 LAGOA DO BARRO DO PIAUÍ",
+      "latitude": -41.5342,
+      "longitude": -8.476734,
+      "fonte_linha": "3064 PI Lagoa do Barro do Piauí -41.5342 -8.476734 LAGOA DO BARRO DO PIAUÍ"
+    },
+    {
+      "nome": "PI LAGOA DO PIAUÍ -42.643659 -5.418639 LAGOA DO PIAUÍ",
+      "latitude": -42.643659,
+      "longitude": -5.418639,
+      "fonte_linha": "3065 PI Lagoa do Piauí -42.643659 -5.418639 LAGOA DO PIAUÍ"
+    },
+    {
+      "nome": "PI LAGOA DO SÍTIO -41.565304 -6.507664 LAGOA DO SÍTIO",
+      "latitude": -41.565304,
+      "longitude": -6.507664,
+      "fonte_linha": "3066 PI Lagoa do Sítio -41.565304 -6.507664 LAGOA DO SÍTIO"
+    },
+    {
+      "nome": "PI LAGOINHA DO PIAUÍ -42.622325 -5.830742 LAGOINHA DO PIAUÍ",
+      "latitude": -42.622325,
+      "longitude": -5.830742,
+      "fonte_linha": "3067 PI Lagoinha do Piauí -42.622325 -5.830742 LAGOINHA DO PIAUÍ"
+    },
+    {
+      "nome": "PI LANDRI SALES -43.936418 -7.259218 LANDRI SAL",
+      "latitude": -43.936418,
+      "longitude": -7.259218,
+      "fonte_linha": "3068 PI Landri Sales -43.936418 -7.259218 LANDRI SALES"
+    },
+    {
+      "nome": "PI LUZILÂNDIA -42.371757 -3.468296 LUZILÂNDIA",
+      "latitude": -42.371757,
+      "longitude": -3.468296,
+      "fonte_linha": "3070 PI Luzilândia -42.371757 -3.468296 LUZILÂNDIA"
+    },
+    {
+      "nome": "PI LUÍS CORREIA -41.664142 -2.88438 LUÍS CORREIA",
+      "latitude": -41.664142,
+      "longitude": -2.88438,
+      "fonte_linha": "3069 PI Luís Correia -41.664142 -2.88438 LUÍS CORREIA"
+    },
+    {
+      "nome": "PI MADEIRO -42.498072 -3.486245 MADEIRO",
+      "latitude": -42.498072,
+      "longitude": -3.486245,
+      "fonte_linha": "3071 PI Madeiro -42.498072 -3.486245 MADEIRO"
+    },
+    {
+      "nome": "PI MANOEL EMÍDIO -43.87549 -8.01234 MANOEL EMÍDIO",
+      "latitude": -43.87549,
+      "longitude": -8.01234,
+      "fonte_linha": "3072 PI Manoel Emídio -43.87549 -8.01234 MANOEL EMÍDIO"
+    },
+    {
+      "nome": "PI MARCOLÂNDIA -40.660179 -7.441691 MARCOLÂNDIA",
+      "latitude": -40.660179,
+      "longitude": -7.441691,
+      "fonte_linha": "3073 PI Marcolândia -40.660179 -7.441691 MARCOLÂNDIA"
+    },
+    {
+      "nome": "PI MARCOS PARENTE -43.892602 -7.115649 MARCOS PARENT",
+      "latitude": -43.892602,
+      "longitude": -7.115649,
+      "fonte_linha": "3074 PI Marcos Parente -43.892602 -7.115649 MARCOS PARENTE"
+    },
+    {
+      "nome": "PI MASSAPÊ DO PIAUÍ -41.110323 -7.474687 MASSAPÊ DO PIAUÍ",
+      "latitude": -41.110323,
+      "longitude": -7.474687,
+      "fonte_linha": "3075 PI Massapê do Piauí -41.110323 -7.474687 MASSAPÊ DO PIAUÍ"
+    },
+    {
+      "nome": "PI MATIAS OLÍMPIO -42.550654 -3.714917 MATIAS OLÍMPIO",
+      "latitude": -42.550654,
+      "longitude": -3.714917,
+      "fonte_linha": "3076 PI Matias Olímpio -42.550654 -3.714917 MATIAS OLÍMPIO"
+    },
+    {
+      "nome": "PI MIGUEL ALVES -42.896301 -4.168575 MIGUEL ALV",
+      "latitude": -42.896301,
+      "longitude": -4.168575,
+      "fonte_linha": "3077 PI Miguel Alves -42.896301 -4.168575 MIGUEL ALVES"
+    },
+    {
+      "nome": "PI MIGUEL LEÃO -42.743594 -5.68077 MIGUEL LEÃO",
+      "latitude": -42.743594,
+      "longitude": -5.68077,
+      "fonte_linha": "3078 PI Miguel Leão -42.743594 -5.68077 MIGUEL LEÃO"
+    },
+    {
+      "nome": "PI MILTON BRANDÃO -41.417343 -4.682946 MILTON BRANDÃO",
+      "latitude": -41.417343,
+      "longitude": -4.682946,
+      "fonte_linha": "3079 PI Milton Brandão -41.417343 -4.682946 MILTON BRANDÃO"
+    },
+    {
+      "nome": "PI MONSENHOR GIL -42.607493 -5.561999 MONSENHOR GIL",
+      "latitude": -42.607493,
+      "longitude": -5.561999,
+      "fonte_linha": "3080 PI Monsenhor Gil -42.607493 -5.561999 MONSENHOR GIL"
+    },
+    {
+      "nome": "PI MONSENHOR HIPÓLITO -41.026003 -6.992754 MONSENHOR HIPÓLITO",
+      "latitude": -41.026003,
+      "longitude": -6.992754,
+      "fonte_linha": "3081 PI Monsenhor Hipólito -41.026003 -6.992754 MONSENHOR HIPÓLITO"
+    },
+    {
+      "nome": "PI MONTE ALEGRE DO PIAUÍ -45.303735 -9.753638 MONTE ALEGRE DO PIAUÍ",
+      "latitude": -45.303735,
+      "longitude": -9.753638,
+      "fonte_linha": "3082 PI Monte Alegre do Piauí -45.303735 -9.753638 MONTE ALEGRE DO PIAUÍ"
+    },
+    {
+      "nome": "PI MORRO CABEÇA NO TEMPO -43.907246 -9.718905 MORRO CABEÇA NO TEMPO",
+      "latitude": -43.907246,
+      "longitude": -9.718905,
+      "fonte_linha": "3083 PI Morro Cabeça no Tempo -43.907246 -9.718905 MORRO CABEÇA NO TEMPO"
+    },
+    {
+      "nome": "PI MORRO DO CHAPÉU DO PIAUÍ -42.302442 -3.733374 MORRO DO CHAPÉU DO PIAUÍ",
+      "latitude": -42.302442,
+      "longitude": -3.733374,
+      "fonte_linha": "3084 PI Morro do Chapéu do Piauí -42.302442 -3.733374 MORRO DO CHAPÉU DO PIAUÍ"
+    },
+    {
+      "nome": "PI MURICI DOS PORTELAS -42.094 -3.319 MURICI DOS PORTELA",
+      "latitude": -42.094,
+      "longitude": -3.319,
+      "fonte_linha": "3085 PI Murici dos Portelas -42.094 -3.319 MURICI DOS PORTELAS"
+    },
+    {
+      "nome": "PI NAZARÉ DO PIAUÍ -42.677316 -6.970235 NAZARÉ DO PIAUÍ",
+      "latitude": -42.677316,
+      "longitude": -6.970235,
+      "fonte_linha": "3086 PI Nazaré do Piauí -42.677316 -6.970235 NAZARÉ DO PIAUÍ"
+    },
+    {
+      "nome": "PI NAZÁRIA -42.811532 -5.352268 NAZÁRIA",
+      "latitude": -42.811532,
+      "longitude": -5.352268,
+      "fonte_linha": "5676 PI Nazária -42.811532 -5.352268 NAZÁRIA"
+    },
+    {
+      "nome": "PI NOSSA SENHORA DE NAZARÉ -42.172954 -4.630188 NOSSA SENHORA DE NAZARÉ",
+      "latitude": -42.172954,
+      "longitude": -4.630188,
+      "fonte_linha": "3087 PI Nossa Senhora de Nazaré -42.172954 -4.630188 NOSSA SENHORA DE NAZARÉ"
+    },
+    {
+      "nome": "PI NOSSA SENHORA DOS REMÉDIOS -42.618408 -3.975744 NOSSA SENHORA DOS REMÉDIO",
+      "latitude": -42.618408,
+      "longitude": -3.975744,
+      "fonte_linha": "3088 PI Nossa Senhora dos Remédios -42.618408 -3.975744 NOSSA SENHORA DOS REMÉDIOS"
+    },
+    {
+      "nome": "PI NOVA SANTA RITA -42.047127 -8.097073 NOVA SANTA RITA",
+      "latitude": -42.047127,
+      "longitude": -8.097073,
+      "fonte_linha": "3089 PI Nova Santa Rita -42.047127 -8.097073 NOVA SANTA RITA"
+    },
+    {
+      "nome": "PI NOVO ORIENTE DO PIAUÍ -41.926124 -6.44901 NOVO ORIENTE DO PIAUÍ",
+      "latitude": -41.926124,
+      "longitude": -6.44901,
+      "fonte_linha": "3090 PI Novo Oriente do Piauí -41.926124 -6.44901 NOVO ORIENTE DO PIAUÍ"
+    },
+    {
+      "nome": "PI NOVO SANTO ANTÔNIO -41.932533 -5.287487 NOVO SANTO ANTÔNIO",
+      "latitude": -41.932533,
+      "longitude": -5.287487,
+      "fonte_linha": "3091 PI Novo Santo Antônio -41.932533 -5.287487 NOVO SANTO ANTÔNIO"
+    },
+    {
+      "nome": "PI OEIRAS -42.128298 -7.019153 OEIRA",
+      "latitude": -42.128298,
+      "longitude": -7.019153,
+      "fonte_linha": "3092 PI Oeiras -42.128298 -7.019153 OEIRAS"
+    },
+    {
+      "nome": "PI OLHO D`ÁGUA DO PIAUÍ -42.559392 -5.841246 OLHO D`ÁGUA DO PIAUÍ",
+      "latitude": -42.559392,
+      "longitude": -5.841246,
+      "fonte_linha": "3093 PI Olho d`Água do Piauí -42.559392 -5.841246 OLHO D`ÁGUA DO PIAUÍ"
+    },
+    {
+      "nome": "PI PADRE MARCOS -40.899665 -7.351011 PADRE MARCO",
+      "latitude": -40.899665,
+      "longitude": -7.351011,
+      "fonte_linha": "3094 PI Padre Marcos -40.899665 -7.351011 PADRE MARCOS"
+    },
+    {
+      "nome": "PI PAES LANDIM -42.247444 -7.773745 PAES LANDIM",
+      "latitude": -42.247444,
+      "longitude": -7.773745,
+      "fonte_linha": "3095 PI Paes Landim -42.247444 -7.773745 PAES LANDIM"
+    },
+    {
+      "nome": "PI PAJEÚ DO PIAUÍ -42.82481 -7.855085 PAJEÚ DO PIAUÍ",
+      "latitude": -42.82481,
+      "longitude": -7.855085,
+      "fonte_linha": "3096 PI Pajeú do Piauí -42.82481 -7.855085 PAJEÚ DO PIAUÍ"
+    },
+    {
+      "nome": "PI PALMEIRA DO PIAUÍ -44.246618 -8.730761 PALMEIRA DO PIAUÍ",
+      "latitude": -44.246618,
+      "longitude": -8.730761,
+      "fonte_linha": "3097 PI Palmeira do Piauí -44.246618 -8.730761 PALMEIRA DO PIAUÍ"
+    },
+    {
+      "nome": "PI PALMEIRAIS -43.056021 -5.970864 PALMEIRAI",
+      "latitude": -43.056021,
+      "longitude": -5.970864,
+      "fonte_linha": "3098 PI Palmeirais -43.056021 -5.970864 PALMEIRAIS"
+    },
+    {
+      "nome": "PI PAQUETÁ -41.700031 -7.103031 PAQUETÁ",
+      "latitude": -41.700031,
+      "longitude": -7.103031,
+      "fonte_linha": "3099 PI Paquetá -41.700031 -7.103031 PAQUETÁ"
+    },
+    {
+      "nome": "PI PARNAGUÁ -44.630018 -10.216642 PARNAGUÁ",
+      "latitude": -44.630018,
+      "longitude": -10.216642,
+      "fonte_linha": "3100 PI Parnaguá -44.630018 -10.216642 PARNAGUÁ"
+    },
+    {
+      "nome": "PI PARNAÍBA -41.775388 -2.905847 PARNAÍBA",
+      "latitude": -41.775388,
+      "longitude": -2.905847,
+      "fonte_linha": "3101 PI Parnaíba -41.775388 -2.905847 PARNAÍBA"
+    },
+    {
+      "nome": "PI PASSAGEM FRANCA DO PIAUÍ -42.44363 -5.860365 PASSAGEM FRANCA DO PIAUÍ",
+      "latitude": -42.44363,
+      "longitude": -5.860365,
+      "fonte_linha": "3102 PI Passagem Franca do Piauí -42.44363 -5.860365 PASSAGEM FRANCA DO PIAUÍ"
+    },
+    {
+      "nome": "PI PATOS DO PIAUÍ -41.240817 -7.67231 PATOS DO PIAUÍ",
+      "latitude": -41.240817,
+      "longitude": -7.67231,
+      "fonte_linha": "3103 PI Patos do Piauí -41.240817 -7.67231 PATOS DO PIAUÍ"
+    },
+    {
+      "nome": "PI PAU D`ARCO DO PIAUÍ -42.390809 -5.260721 PAU D`ARCO DO PIAUÍ",
+      "latitude": -42.390809,
+      "longitude": -5.260721,
+      "fonte_linha": "5625 PI Pau D`Arco do Piauí -42.390809 -5.260721 PAU D`ARCO DO PIAUÍ"
+    },
+    {
+      "nome": "PI PAULISTANA -41.143072 -8.134357 PAULISTANA",
+      "latitude": -41.143072,
+      "longitude": -8.134357,
+      "fonte_linha": "3104 PI Paulistana -41.143072 -8.134357 PAULISTANA"
+    },
+    {
+      "nome": "PI PAVUSSU -43.228438 -7.96059 PAVUSSU",
+      "latitude": -43.228438,
+      "longitude": -7.96059,
+      "fonte_linha": "3105 PI Pavussu -43.228438 -7.96059 PAVUSSU"
+    },
+    {
+      "nome": "PI PEDRO II -41.448184 -4.425845 PEDRO II",
+      "latitude": -41.448184,
+      "longitude": -4.425845,
+      "fonte_linha": "3106 PI Pedro II -41.448184 -4.425845 PEDRO II"
+    },
+    {
+      "nome": "PI PEDRO LAURENTINO -42.284744 -8.068068 PEDRO LAURENTINO",
+      "latitude": -42.284744,
+      "longitude": -8.068068,
+      "fonte_linha": "3107 PI Pedro Laurentino -42.284744 -8.068068 PEDRO LAURENTINO"
+    },
+    {
+      "nome": "PI PICOS -41.467003 -7.077213 PICO",
+      "latitude": -41.467003,
+      "longitude": -7.077213,
+      "fonte_linha": "3108 PI Picos -41.467003 -7.077213 PICOS"
+    },
+    {
+      "nome": "PI PIMENTEIRAS -41.411273 -6.238391 PIMENTEIRA",
+      "latitude": -41.411273,
+      "longitude": -6.238391,
+      "fonte_linha": "3109 PI Pimenteiras -41.411273 -6.238391 PIMENTEIRAS"
+    },
+    {
+      "nome": "PI PIO IX -40.608301 -6.830017 PIO IX",
+      "latitude": -40.608301,
+      "longitude": -6.830017,
+      "fonte_linha": "3110 PI Pio IX -40.608301 -6.830017 PIO IX"
+    },
+    {
+      "nome": "PI PIRACURUCA -41.708779 -3.93335 PIRACURUCA",
+      "latitude": -41.708779,
+      "longitude": -3.93335,
+      "fonte_linha": "3111 PI Piracuruca -41.708779 -3.93335 PIRACURUCA"
+    },
+    {
+      "nome": "PI PIRIPIRI -41.771569 -4.271574 PIRIPIRI",
+      "latitude": -41.771569,
+      "longitude": -4.271574,
+      "fonte_linha": "3112 PI Piripiri -41.771569 -4.271574 PIRIPIRI"
+    },
+    {
+      "nome": "PI PORTO -42.69982 -3.888154 PORTO",
+      "latitude": -42.69982,
+      "longitude": -3.888154,
+      "fonte_linha": "3113 PI Porto -42.69982 -3.888154 PORTO"
+    },
+    {
+      "nome": "PI PORTO ALEGRE DO PIAUÍ -44.183668 -6.964228 PORTO ALEGRE DO PIAUÍ",
+      "latitude": -44.183668,
+      "longitude": -6.964228,
+      "fonte_linha": "3114 PI Porto Alegre do Piauí -44.183668 -6.964228 PORTO ALEGRE DO PIAUÍ"
+    },
+    {
+      "nome": "PI PRATA DO PIAUÍ -42.204644 -5.672653 PRATA DO PIAUÍ",
+      "latitude": -42.204644,
+      "longitude": -5.672653,
+      "fonte_linha": "3115 PI Prata do Piauí -42.204644 -5.672653 PRATA DO PIAUÍ"
+    },
+    {
+      "nome": "PI QUEIMADA NOVA -41.410614 -8.570637 QUEIMADA NOVA",
+      "latitude": -41.410614,
+      "longitude": -8.570637,
+      "fonte_linha": "3116 PI Queimada Nova -41.410614 -8.570637 QUEIMADA NOVA"
+    },
+    {
+      "nome": "PI REDENÇÃO DO GURGUÉIA -44.581145 -9.479368 REDENÇÃO DO GURGUÉIA",
+      "latitude": -44.581145,
+      "longitude": -9.479368,
+      "fonte_linha": "3117 PI Redenção do Gurguéia -44.581145 -9.479368 REDENÇÃO DO GURGUÉIA"
+    },
+    {
+      "nome": "PI REGENERAÇÃO -42.684193 -6.23115 REGENERAÇÃO",
+      "latitude": -42.684193,
+      "longitude": -6.23115,
+      "fonte_linha": "3118 PI Regeneração -42.684193 -6.23115 REGENERAÇÃO"
+    },
+    {
+      "nome": "PI RIACHO FRIO -44.950326 -10.124378 RIACHO FRIO",
+      "latitude": -44.950326,
+      "longitude": -10.124378,
+      "fonte_linha": "3119 PI Riacho Frio -44.950326 -10.124378 RIACHO FRIO"
+    },
+    {
+      "nome": "PI RIBEIRA DO PIAUÍ -42.712778 -7.690278 RIBEIRA DO PIAUÍ",
+      "latitude": -42.712778,
+      "longitude": -7.690278,
+      "fonte_linha": "3120 PI Ribeira do Piauí -42.712778 -7.690278 RIBEIRA DO PIAUÍ"
+    },
+    {
+      "nome": "PI RIBEIRO GONÇALVES -45.244737 -7.556505 RIBEIRO GONÇALV",
+      "latitude": -45.244737,
+      "longitude": -7.556505,
+      "fonte_linha": "3121 PI Ribeiro Gonçalves -45.244737 -7.556505 RIBEIRO GONÇALVES"
+    },
+    {
+      "nome": "PI RIO GRANDE DO PIAUÍ -43.136886 -7.780291 RIO GRANDE DO PIAUÍ",
+      "latitude": -43.136886,
+      "longitude": -7.780291,
+      "fonte_linha": "3122 PI Rio Grande do Piauí -43.136886 -7.780291 RIO GRANDE DO PIAUÍ"
+    },
+    {
+      "nome": "PI SANTA CRUZ DO PIAUÍ -41.760932 -7.178499 SANTA CRUZ DO PIAUÍ",
+      "latitude": -41.760932,
+      "longitude": -7.178499,
+      "fonte_linha": "3123 PI Santa Cruz do Piauí -41.760932 -7.178499 SANTA CRUZ DO PIAUÍ"
+    },
+    {
+      "nome": "PI SANTA CRUZ DOS MILAGRES -41.950644 -5.805808 SANTA CRUZ DOS MILAGR",
+      "latitude": -41.950644,
+      "longitude": -5.805808,
+      "fonte_linha": "3124 PI Santa Cruz dos Milagres -41.950644 -5.805808 SANTA CRUZ DOS MILAGRES"
+    },
+    {
+      "nome": "PI SANTA FILOMENA -45.911607 -9.112278 SANTA FILOMENA",
+      "latitude": -45.911607,
+      "longitude": -9.112278,
+      "fonte_linha": "3125 PI Santa Filomena -45.911607 -9.112278 SANTA FILOMENA"
+    },
+    {
+      "nome": "PI SANTA LUZ -44.129567 -8.948795 SANTA LUZ",
+      "latitude": -44.129567,
+      "longitude": -8.948795,
+      "fonte_linha": "3126 PI Santa Luz -44.129567 -8.948795 SANTA LUZ"
+    },
+    {
+      "nome": "PI SANTA ROSA DO PIAUÍ -42.281375 -6.79581 SANTA ROSA DO PIAUÍ",
+      "latitude": -42.281375,
+      "longitude": -6.79581,
+      "fonte_linha": "3128 PI Santa Rosa do Piauí -42.281375 -6.79581 SANTA ROSA DO PIAUÍ"
+    },
+    {
+      "nome": "PI SANTANA DO PIAUÍ -41.517767 -6.946961 SANTANA DO PIAUÍ",
+      "latitude": -41.517767,
+      "longitude": -6.946961,
+      "fonte_linha": "3127 PI Santana do Piauí -41.517767 -6.946961 SANTANA DO PIAUÍ"
+    },
+    {
+      "nome": "PI SANTO ANTÔNIO DE LISBOA -41.225202 -6.986762 SANTO ANTÔNIO DE LISBOA",
+      "latitude": -41.225202,
+      "longitude": -6.986762,
+      "fonte_linha": "3129 PI Santo Antônio de Lisboa -41.225202 -6.986762 SANTO ANTÔNIO DE LISBOA"
+    },
+    {
+      "nome": "PI SANTO ANTÔNIO DOS MILAGRES -42.712322 -6.046473 SANTO ANTÔNIO DOS MILAGR",
+      "latitude": -42.712322,
+      "longitude": -6.046473,
+      "fonte_linha": "3130 PI Santo Antônio dos Milagres -42.712322 -6.046473 SANTO ANTÔNIO DOS MILAGRES"
+    },
+    {
+      "nome": "PI SANTO INÁCIO DO PIAUÍ -41.906252 -7.42072 SANTO INÁCIO DO PIAUÍ",
+      "latitude": -41.906252,
+      "longitude": -7.42072,
+      "fonte_linha": "3131 PI Santo Inácio do Piauí -41.906252 -7.42072 SANTO INÁCIO DO PIAUÍ"
+    },
+    {
+      "nome": "PI SEBASTIÃO BARROS -44.833718 -10.816978 SEBASTIÃO BARRO",
+      "latitude": -44.833718,
+      "longitude": -10.816978,
+      "fonte_linha": "3155 PI Sebastião Barros -44.833718 -10.816978 SEBASTIÃO BARROS"
+    },
+    {
+      "nome": "PI SEBASTIÃO LEAL -44.059982 -7.568029 SEBASTIÃO LEAL",
+      "latitude": -44.059982,
+      "longitude": -7.568029,
+      "fonte_linha": "3156 PI Sebastião Leal -44.059982 -7.568029 SEBASTIÃO LEAL"
+    },
+    {
+      "nome": "PI SIGEFREDO PACHECO -41.731123 -4.916647 SIGEFREDO PACHECO",
+      "latitude": -41.731123,
+      "longitude": -4.916647,
+      "fonte_linha": "3157 PI Sigefredo Pacheco -41.731123 -4.916647 SIGEFREDO PACHECO"
+    },
+    {
+      "nome": "PI SIMPLÍCIO MENDES -41.907533 -7.852944 SIMPLÍCIO MEND",
+      "latitude": -41.907533,
+      "longitude": -7.852944,
+      "fonte_linha": "3159 PI Simplício Mendes -41.907533 -7.852944 SIMPLÍCIO MENDES"
+    },
+    {
+      "nome": "PI SIMÕES -40.813731 -7.591095 SIMÕ",
+      "latitude": -40.813731,
+      "longitude": -7.591095,
+      "fonte_linha": "3158 PI Simões -40.813731 -7.591095 SIMÕES"
+    },
+    {
+      "nome": "PI SOCORRO DO PIAUÍ -42.492179 -7.86773 SOCORRO DO PIAUÍ",
+      "latitude": -42.492179,
+      "longitude": -7.86773,
+      "fonte_linha": "3160 PI Socorro do Piauí -42.492179 -7.86773 SOCORRO DO PIAUÍ"
+    },
+    {
+      "nome": "PI SUSSUAPARA -41.376699 -7.036868 SUSSUAPARA",
+      "latitude": -41.376699,
+      "longitude": -7.036868,
+      "fonte_linha": "3161 PI Sussuapara -41.376699 -7.036868 SUSSUAPARA"
+    },
+    {
+      "nome": "PI SÃO BRAZ DO PIAUÍ -43.007646 -9.057967 SÃO BRAZ DO PIAUÍ",
+      "latitude": -43.007646,
+      "longitude": -9.057967,
+      "fonte_linha": "3132 PI São Braz do Piauí -43.007646 -9.057967 SÃO BRAZ DO PIAUÍ"
+    },
+    {
+      "nome": "PI SÃO FRANCISCO DE ASSIS DO PIAUÍ -41.681028 -8.239207 SÃO FRANCISCO DE ASSIS DO PIAUÍ",
+      "latitude": -41.681028,
+      "longitude": -8.239207,
+      "fonte_linha": "3134 PI São Francisco de Assis do Piauí -41.681028 -8.239207 SÃO FRANCISCO DE ASSIS DO PIAUÍ"
+    },
+    {
+      "nome": "PI SÃO FRANCISCO DO PIAUÍ -42.54101 -7.246299 SÃO FRANCISCO DO PIAUÍ",
+      "latitude": -42.54101,
+      "longitude": -7.246299,
+      "fonte_linha": "3135 PI São Francisco do Piauí -42.54101 -7.246299 SÃO FRANCISCO DO PIAUÍ"
+    },
+    {
+      "nome": "PI SÃO FÉLIX DO PIAUÍ -42.117179 -5.934853 SÃO FÉLIX DO PIAUÍ",
+      "latitude": -42.117179,
+      "longitude": -5.934853,
+      "fonte_linha": "3133 PI São Félix do Piauí -42.117179 -5.934853 SÃO FÉLIX DO PIAUÍ"
+    },
+    {
+      "nome": "PI SÃO GONÇALO DO GURGUÉIA -45.309219 -10.03195 SÃO GONÇALO DO GURGUÉIA",
+      "latitude": -45.309219,
+      "longitude": -10.03195,
+      "fonte_linha": "3136 PI São Gonçalo do Gurguéia -45.309219 -10.03195 SÃO GONÇALO DO GURGUÉIA"
+    },
+    {
+      "nome": "PI SÃO GONÇALO DO PIAUÍ -42.709537 -5.993934 SÃO GONÇALO DO PIAUÍ",
+      "latitude": -42.709537,
+      "longitude": -5.993934,
+      "fonte_linha": "3137 PI São Gonçalo do Piauí -42.709537 -5.993934 SÃO GONÇALO DO PIAUÍ"
+    },
+    {
+      "nome": "PI SÃO JOSÉ DO DIVINO -41.830793 -3.814114 SÃO JOSÉ DO DIVINO",
+      "latitude": -41.830793,
+      "longitude": -3.814114,
+      "fonte_linha": "3144 PI São José do Divino -41.830793 -3.814114 SÃO JOSÉ DO DIVINO"
+    },
+    {
+      "nome": "PI SÃO JOSÉ DO PEIXE -42.567162 -7.485535 SÃO JOSÉ DO PEIX",
+      "latitude": -42.567162,
+      "longitude": -7.485535,
+      "fonte_linha": "3145 PI São José do Peixe -42.567162 -7.485535 SÃO JOSÉ DO PEIXE"
+    },
+    {
+      "nome": "PI SÃO JOSÉ DO PIAUÍ -41.47311 -6.87194 SÃO JOSÉ DO PIAUÍ",
+      "latitude": -41.47311,
+      "longitude": -6.87194,
+      "fonte_linha": "3146 PI São José do Piauí -41.47311 -6.87194 SÃO JOSÉ DO PIAUÍ"
+    },
+    {
+      "nome": "PI SÃO JOÃO DA CANABRAVA -41.341483 -6.812029 SÃO JOÃO DA CANABRAVA",
+      "latitude": -41.341483,
+      "longitude": -6.812029,
+      "fonte_linha": "3138 PI São João da Canabrava -41.341483 -6.812029 SÃO JOÃO DA CANABRAVA"
+    },
+    {
+      "nome": "PI SÃO JOÃO DA FRONTEIRA -41.256921 -3.954975 SÃO JOÃO DA FRONTEIRA",
+      "latitude": -41.256921,
+      "longitude": -3.954975,
+      "fonte_linha": "3139 PI São João da Fronteira -41.256921 -3.954975 SÃO JOÃO DA FRONTEIRA"
+    },
+    {
+      "nome": "PI SÃO JOÃO DA SERRA -41.892309 -5.510805 SÃO JOÃO DA SERRA",
+      "latitude": -41.892309,
+      "longitude": -5.510805,
+      "fonte_linha": "3140 PI São João da Serra -41.892309 -5.510805 SÃO JOÃO DA SERRA"
+    },
+    {
+      "nome": "PI SÃO JOÃO DA VARJOTA -41.888912 -6.940817 SÃO JOÃO DA VARJOTA",
+      "latitude": -41.888912,
+      "longitude": -6.940817,
+      "fonte_linha": "3141 PI São João da Varjota -41.888912 -6.940817 SÃO JOÃO DA VARJOTA"
+    },
+    {
+      "nome": "PI SÃO JOÃO DO ARRAIAL -42.44586 -3.818597 SÃO JOÃO DO ARRAIAL",
+      "latitude": -42.44586,
+      "longitude": -3.818597,
+      "fonte_linha": "3142 PI São João do Arraial -42.44586 -3.818597 SÃO JOÃO DO ARRAIAL"
+    },
+    {
+      "nome": "PI SÃO JOÃO DO PIAUÍ -42.255898 -8.354661 SÃO JOÃO DO PIAUÍ",
+      "latitude": -42.255898,
+      "longitude": -8.354661,
+      "fonte_linha": "3143 PI São João do Piauí -42.255898 -8.354661 SÃO JOÃO DO PIAUÍ"
+    },
+    {
+      "nome": "PI SÃO JULIÃO -40.824638 -7.083906 SÃO JULIÃO",
+      "latitude": -40.824638,
+      "longitude": -7.083906,
+      "fonte_linha": "3147 PI São Julião -40.824638 -7.083906 SÃO JULIÃO"
+    },
+    {
+      "nome": "PI SÃO LOURENÇO DO PIAUÍ -42.549552 -9.164633 SÃO LOURENÇO DO PIAUÍ",
+      "latitude": -42.549552,
+      "longitude": -9.164633,
+      "fonte_linha": "3148 PI São Lourenço do Piauí -42.549552 -9.164633 SÃO LOURENÇO DO PIAUÍ"
+    },
+    {
+      "nome": "PI SÃO LUIS DO PIAUÍ -41.317454 -6.819363 SÃO LUIS DO PIAUÍ",
+      "latitude": -41.317454,
+      "longitude": -6.819363,
+      "fonte_linha": "3149 PI São Luis do Piauí -41.317454 -6.819363 SÃO LUIS DO PIAUÍ"
+    },
+    {
+      "nome": "PI SÃO MIGUEL DA BAIXA GRANDE -42.193423 -5.856457 SÃO MIGUEL DA BAIXA GRAND",
+      "latitude": -42.193423,
+      "longitude": -5.856457,
+      "fonte_linha": "3150 PI São Miguel da Baixa Grande -42.193423 -5.856457 SÃO MIGUEL DA BAIXA GRANDE"
+    },
+    {
+      "nome": "PI SÃO MIGUEL DO FIDALGO -42.367591 -7.597133 SÃO MIGUEL DO FIDALGO",
+      "latitude": -42.367591,
+      "longitude": -7.597133,
+      "fonte_linha": "3151 PI São Miguel do Fidalgo -42.367591 -7.597133 SÃO MIGUEL DO FIDALGO"
+    },
+    {
+      "nome": "PI SÃO MIGUEL DO TAPUIO -41.316451 -5.497291 SÃO MIGUEL DO TAPUIO",
+      "latitude": -41.316451,
+      "longitude": -5.497291,
+      "fonte_linha": "3152 PI São Miguel do Tapuio -41.316451 -5.497291 SÃO MIGUEL DO TAPUIO"
+    },
+    {
+      "nome": "PI SÃO PEDRO DO PIAUÍ -42.719211 -5.92078 SÃO PEDRO DO PIAUÍ",
+      "latitude": -42.719211,
+      "longitude": -5.92078,
+      "fonte_linha": "3153 PI São Pedro do Piauí -42.719211 -5.92078 SÃO PEDRO DO PIAUÍ"
+    },
+    {
+      "nome": "PI SÃO RAIMUNDO NONATO -42.698659 -9.012412 SÃO RAIMUNDO NONATO",
+      "latitude": -42.698659,
+      "longitude": -9.012412,
+      "fonte_linha": "3154 PI São Raimundo Nonato -42.698659 -9.012412 SÃO RAIMUNDO NONATO"
+    },
+    {
+      "nome": "PI TAMBORIL DO PIAUÍ -42.921107 -8.409369 TAMBORIL DO PIAUÍ",
+      "latitude": -42.921107,
+      "longitude": -8.409369,
+      "fonte_linha": "3162 PI Tamboril do Piauí -42.921107 -8.409369 TAMBORIL DO PIAUÍ"
+    },
+    {
+      "nome": "PI TANQUE DO PIAUÍ -42.279515 -6.597869 TANQUE DO PIAUÍ",
+      "latitude": -42.279515,
+      "longitude": -6.597869,
+      "fonte_linha": "3163 PI Tanque do Piauí -42.279515 -6.597869 TANQUE DO PIAUÍ"
+    },
+    {
+      "nome": "PI TERESINA -42.803364 -5.091944 TERESINA",
+      "latitude": -42.803364,
+      "longitude": -5.091944,
+      "fonte_linha": "3164 PI Teresina -42.803364 -5.091944 TERESINA"
+    },
+    {
+      "nome": "PI UNIÃO -42.858285 -4.585709 UNIÃO",
+      "latitude": -42.858285,
+      "longitude": -4.585709,
+      "fonte_linha": "3165 PI União -42.858285 -4.585709 UNIÃO"
+    },
+    {
+      "nome": "PI URUÇUÍ -44.557683 -7.239439 URUÇUÍ",
+      "latitude": -44.557683,
+      "longitude": -7.239439,
+      "fonte_linha": "3166 PI Uruçuí -44.557683 -7.239439 URUÇUÍ"
+    },
+    {
+      "nome": "PI VALENÇA DO PIAUÍ -41.737498 -6.403013 VALENÇA DO PIAUÍ",
+      "latitude": -41.737498,
+      "longitude": -6.403013,
+      "fonte_linha": "3167 PI Valença do Piauí -41.737498 -6.403013 VALENÇA DO PIAUÍ"
+    },
+    {
+      "nome": "PI VERA MENDES -41.467336 -7.597481 VERA MEND",
+      "latitude": -41.467336,
+      "longitude": -7.597481,
+      "fonte_linha": "3170 PI Vera Mendes -41.467336 -7.597481 VERA MENDES"
+    },
+    {
+      "nome": "PI VILA NOVA DO PIAUÍ -40.934514 -7.132718 VILA NOVA DO PIAUÍ",
+      "latitude": -40.934514,
+      "longitude": -7.132718,
+      "fonte_linha": "3171 PI Vila Nova do Piauí -40.934514 -7.132718 VILA NOVA DO PIAUÍ"
+    },
+    {
+      "nome": "PI VÁRZEA BRANCA -42.969221 -9.238003 VÁRZEA BRANCA",
+      "latitude": -42.969221,
+      "longitude": -9.238003,
+      "fonte_linha": "3168 PI Várzea Branca -42.969221 -9.238003 VÁRZEA BRANCA"
+    },
+    {
+      "nome": "PI VÁRZEA GRANDE -42.247973 -6.548993 VÁRZEA GRAND",
+      "latitude": -42.247973,
+      "longitude": -6.548993,
+      "fonte_linha": "3169 PI Várzea Grande -42.247973 -6.548993 VÁRZEA GRANDE"
+    },
+    {
+      "nome": "PI WALL FERRAZ -41.905037 -7.231511 WALL FERRAZ",
+      "latitude": -41.905037,
+      "longitude": -7.231511,
+      "fonte_linha": "3172 PI Wall Ferraz -41.905037 -7.231511 WALL FERRAZ"
+    },
+    {
+      "nome": "PI ÁGUA BRANCA -42.636961 -5.888564 ÁGUA BRANCA",
+      "latitude": -42.636961,
+      "longitude": -5.888564,
+      "fonte_linha": "2954 PI Água Branca -42.636961 -5.888564 ÁGUA BRANCA"
+    }
+  ]
+}

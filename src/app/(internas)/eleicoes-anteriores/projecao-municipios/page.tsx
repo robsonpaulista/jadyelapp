@@ -19,8 +19,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { ArrowUpDown, RotateCw, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowUpDown, RotateCw, ChevronLeft, ChevronRight, FileDown } from "lucide-react";
 import MapaPiaui from '@/components/MapaPiaui';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface ProjecaoMunicipio {
   municipio: string;
@@ -51,10 +53,10 @@ export default function ProjecaoMunicipios() {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [sortConfig, setSortConfig] = useState<SortConfig>(null);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [selectedMunicipio, setSelectedMunicipio] = useState<string>('');
-  const [liderancas, setLiderancas] = useState<Lideranca[]>([]);
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'municipio', direction: 'asc' });
+  const [showLiderancasModal, setShowLiderancasModal] = useState(false);
+  const [selectedMunicipio, setSelectedMunicipio] = useState('');
+  const [liderancas, setLiderancas] = useState<any[]>([]);
   const [loadingLiderancas, setLoadingLiderancas] = useState(false);
 
   const itemsPerPage = 10;
@@ -92,7 +94,7 @@ export default function ProjecaoMunicipios() {
       );
       setLiderancas(liderancasMunicipio);
       setSelectedMunicipio(municipio);
-      setModalOpen(true);
+      setShowLiderancasModal(true);
     } catch (error) {
       console.error('Erro ao buscar lideranças:', error);
     } finally {
@@ -150,24 +152,138 @@ export default function ProjecaoMunicipios() {
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
+  // Calcular totais
+  const calcularTotais = () => {
+    const totais = {
+      liderancasAtuais: 0,
+      votacao2022: 0,
+      expectativa2026: 0,
+      eleitores: 0,
+      crescimento: 0,
+      alcance: 0
+    };
+
+    filteredData.forEach(item => {
+      if (!isNaN(item.liderancasAtuais)) totais.liderancasAtuais += item.liderancasAtuais;
+      if (!isNaN(item.votacao2022)) totais.votacao2022 += item.votacao2022;
+      if (!isNaN(item.expectativa2026)) totais.expectativa2026 += item.expectativa2026;
+      if (!isNaN(item.eleitores)) totais.eleitores += item.eleitores;
+      if (!isNaN(item.crescimento)) totais.crescimento += item.crescimento;
+      if (!isNaN(item.alcance)) totais.alcance += item.alcance;
+    });
+
+    // Calcular médias para percentuais
+    const count = filteredData.length;
+    if (count > 0) {
+      totais.crescimento = totais.crescimento / count;
+      totais.alcance = totais.alcance / count;
+    }
+
+    return totais;
+  };
+
+  const totais = calcularTotais();
+
+  const gerarPDF = () => {
+    const doc = new jsPDF();
+    
+    // Título
+    doc.setFontSize(18);
+    doc.text('Projeção de Municípios - Eleições 2026', 14, 22);
+    
+    // Data de geração
+    doc.setFontSize(10);
+    doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 14, 30);
+    
+    // Dados da tabela
+    const tableData = filteredData.map(item => [
+      item.municipio,
+      formatNumber(item.liderancasAtuais),
+      formatNumber(item.votacao2022),
+      formatNumber(item.expectativa2026),
+      formatPercentage(item.crescimento),
+      formatNumber(item.eleitores),
+      formatPercentage(item.alcance)
+    ]);
+
+    // Adicionar linha de totais
+    tableData.push([
+      'TOTAL',
+      formatNumber(totais.liderancasAtuais),
+      formatNumber(totais.votacao2022),
+      formatNumber(totais.expectativa2026),
+      formatPercentage(totais.crescimento),
+      formatNumber(totais.eleitores),
+      formatPercentage(totais.alcance)
+    ]);
+
+    autoTable(doc, {
+      head: [['Município', 'Lideranças Atuais', 'Votação 2022', 'Expectativa 2026', 'Crescimento', 'Eleitores', 'Alcance']],
+      body: tableData,
+      startY: 40,
+      styles: {
+        fontSize: 8,
+        cellPadding: 2,
+      },
+      headStyles: {
+        fillColor: [41, 128, 185],
+        textColor: 255,
+        fontStyle: 'bold',
+      },
+      alternateRowStyles: {
+        fillColor: [245, 245, 245],
+      },
+      didDrawPage: function (data) {
+        // Estilo especial para a linha de totais
+        const lastRow = data.table.body.length - 1;
+        if (lastRow >= 0) {
+          const lastRowData = data.table.body[lastRow];
+          if (Array.isArray(lastRowData)) {
+            lastRowData.forEach((cell: any) => {
+              if (cell && cell.styles) {
+                cell.styles.fillColor = [52, 73, 94];
+                cell.styles.textColor = 255;
+                cell.styles.fontStyle = 'bold';
+              }
+            });
+          }
+        }
+      }
+    });
+
+    // Salvar o PDF
+    doc.save('projecao-municipios-2026.pdf');
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-8 py-2">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-medium">Projeção de Municípios</h2>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={buscarProjecoes}
-          disabled={loading}
-        >
-          <RotateCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-          Atualizar
-        </Button>
+        <h2 className="text-lg font-semibold">Projeção de Municípios</h2>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={gerarPDF}
+            disabled={loading || filteredData.length === 0}
+          >
+            <FileDown className="h-4 w-4 mr-2" />
+            Gerar PDF
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={buscarProjecoes}
+            disabled={loading}
+          >
+            <RotateCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Atualizar
+          </Button>
+        </div>
       </div>
 
       {/* Mapa Interativo do Piauí */}
       <div className="mb-8">
-        <MapaPiaui projecoes={projecoes} />
+        <MapaPiaui />
       </div>
 
       <div className="flex justify-between items-center mb-4">
@@ -240,6 +356,16 @@ export default function ProjecaoMunicipios() {
                 <TableCell className="text-right">{formatPercentage(item.alcance)}</TableCell>
               </TableRow>
             ))}
+            {/* Linha de Totalizador */}
+            <TableRow className="bg-gray-100 font-semibold">
+              <TableCell className="font-bold">TOTAL</TableCell>
+              <TableCell className="text-right font-bold">{formatNumber(totais.liderancasAtuais)}</TableCell>
+              <TableCell className="text-right font-bold">{formatNumber(totais.votacao2022)}</TableCell>
+              <TableCell className="text-right font-bold">{formatNumber(totais.expectativa2026)}</TableCell>
+              <TableCell className="text-right font-bold">{formatPercentage(totais.crescimento)}</TableCell>
+              <TableCell className="text-right font-bold">{formatNumber(totais.eleitores)}</TableCell>
+              <TableCell className="text-right font-bold">{formatPercentage(totais.alcance)}</TableCell>
+            </TableRow>
           </TableBody>
         </Table>
       </Card>
@@ -268,7 +394,7 @@ export default function ProjecaoMunicipios() {
         </Button>
       </div>
 
-      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+      <Dialog open={showLiderancasModal} onOpenChange={setShowLiderancasModal}>
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-lg font-medium">
