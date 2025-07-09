@@ -7,7 +7,7 @@ function App() {
         <h1 className="text-2xl font-bold text-gray-800 mb-4">
           Mapa dos Municípios do Piauí
         </h1>
-        <MapaPiaui className="rounded-lg shadow-lg" />
+        <MapaPiaui />
       </div>
     </div>
   );
