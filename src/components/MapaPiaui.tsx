@@ -1,8 +1,20 @@
 import { useEffect, useState, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
 import { Maximize2, Minimize2 } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+// Importação dinâmica do Leaflet para evitar problemas no SSR
+const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), { ssr: false });
+const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLayer), { ssr: false });
+const Marker = dynamic(() => import('react-leaflet').then(mod => mod.Marker), { ssr: false });
+const Popup = dynamic(() => import('react-leaflet').then(mod => mod.Popup), { ssr: false });
+
+// Importação dinâmica do Leaflet
+let L: any;
+if (typeof window !== 'undefined') {
+  L = require('leaflet');
+  // Importar CSS apenas no cliente
+  require('leaflet/dist/leaflet.css');
+}
 
 interface Municipio {
   id: string;
@@ -26,6 +38,10 @@ interface ResultadoEleicao {
   nomeUrnaCandidato: string;
   quantidadeVotosNominais: string;
   partido: string;
+}
+
+interface MapaPiauiProps {
+  className?: string;
 }
 
 // Função para obter cor baseada no crescimento da votação
@@ -88,16 +104,23 @@ const criarIconePersonalizado = (cor: string): L.Icon => {
   });
 };
 
-export default function MapaPiaui() {
+export default function MapaPiaui({ className }: MapaPiauiProps) {
   const [municipios, setMunicipios] = useState<Municipio[]>([]);
   const [projecoes, setProjecoes] = useState<ProjecaoMunicipio[]>([]);
   const [dadosEleicoes2022, setDadosEleicoes2022] = useState<ResultadoEleicao[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isClient) return;
+    
     const carregarDados = async () => {
       try {
         // Carregar coordenadas dos municípios
@@ -122,7 +145,7 @@ export default function MapaPiaui() {
     };
 
     carregarDados();
-  }, []);
+  }, [isClient]);
 
   // Detectar mudanças no estado de tela cheia
   useEffect(() => {
@@ -149,8 +172,12 @@ export default function MapaPiaui() {
     };
   }, []);
 
-  if (loading) {
+  if (!isClient) {
     return <div className="flex justify-center items-center h-96">Carregando mapa...</div>;
+  }
+
+  if (loading) {
+    return <div className="flex justify-center items-center h-96">Carregando dados do mapa...</div>;
   }
 
   const toggleFullScreen = () => {
@@ -183,7 +210,7 @@ export default function MapaPiaui() {
   };
 
   return (
-    <div className="relative" ref={containerRef}>
+    <div className={`relative ${className || ''}`} ref={containerRef}>
       <MapContainer
         center={[-5.5, -42.5]}
         zoom={7}
