@@ -64,6 +64,8 @@ export default function ProjecaoMunicipios() {
   const [selectedMunicipio, setSelectedMunicipio] = useState('');
   const [liderancas, setLiderancas] = useState<any[]>([]);
   const [loadingLiderancas, setLoadingLiderancas] = useState(false);
+  const [filtroTerritorio, setFiltroTerritorio] = useState<string[]>([]);
+  const [territorioSelecionado, setTerritorioSelecionado] = useState<string>('');
 
   const itemsPerPage = 10;
 
@@ -130,6 +132,22 @@ export default function ProjecaoMunicipios() {
     return `${value.toFixed(1)}%`;
   };
 
+  // Função para normalizar nomes de municípios para comparação
+  const normalizeString = (str: string): string => {
+    return str
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+      .toUpperCase()
+      .trim();
+  };
+
+  // Callback para receber mudanças do filtro do mapa
+  const handleMapFilterChange = (territorio: string | null, municipiosNomes: string[]) => {
+    setFiltroTerritorio(territorio ? municipiosNomes : []);
+    setTerritorioSelecionado(territorio || '');
+    setCurrentPage(1); // Resetar para primeira página quando filtrar
+  };
+
   const sortedData = [...projecoes].sort((a, b) => {
     if (!sortConfig) return 0;
     
@@ -147,9 +165,19 @@ export default function ProjecaoMunicipios() {
       : (bValue as number) - (aValue as number);
   });
 
-  const filteredData = sortedData.filter(item =>
-    item.municipio.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filtrar dados considerando busca de texto e território
+  const filteredData = sortedData.filter(item => {
+    // Filtro por termo de busca
+    const matchesSearch = item.municipio.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Filtro por território (se algum território estiver selecionado)
+    const matchesTerritory = filtroTerritorio.length === 0 || 
+      filtroTerritorio.some(municipioTerritorio => 
+        normalizeString(municipioTerritorio) === normalizeString(item.municipio)
+      );
+    
+    return matchesSearch && matchesTerritory;
+  });
 
   const paginatedData = filteredData.slice(
     (currentPage - 1) * itemsPerPage,
@@ -289,22 +317,41 @@ export default function ProjecaoMunicipios() {
 
       {/* Mapa Interativo do Piauí */}
       <div className="mb-8">
-        <MapaPiaui />
+        <MapaPiaui onFilterChange={handleMapFilterChange} />
       </div>
 
       <div className="flex justify-between items-center mb-4">
-        <Input
-          type="text"
-          placeholder="Buscar município..."
-          value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-            setCurrentPage(1);
-          }}
-          className="max-w-xs"
-        />
+        <div className="flex items-center gap-4">
+          <Input
+            type="text"
+            placeholder="Buscar município..."
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="max-w-xs"
+          />
+          {territorioSelecionado && (
+            <div className="flex items-center gap-2 px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm">
+              <span>Filtro: {territorioSelecionado}</span>
+              <button
+                onClick={() => handleMapFilterChange(null, [])}
+                className="text-orange-600 hover:text-orange-800"
+                title="Remover filtro"
+              >
+                ×
+              </button>
+            </div>
+          )}
+        </div>
         <div className="text-sm text-gray-500">
           Mostrando {Math.min(itemsPerPage, filteredData.length)} de {filteredData.length} registros
+          {territorioSelecionado && (
+            <span className="ml-2 text-orange-600">
+              (filtrado por {territorioSelecionado})
+            </span>
+          )}
         </div>
       </div>
 

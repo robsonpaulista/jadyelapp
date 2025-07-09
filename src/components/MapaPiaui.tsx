@@ -117,7 +117,11 @@ const formatPercentage = (value: number | null | undefined): string => {
   return `${value.toFixed(1)}%`;
 };
 
-export default function MapaPiaui() {
+interface MapaPiauiProps {
+  onFilterChange?: (territorio: string | null, municipiosNomes: string[]) => void;
+}
+
+export default function MapaPiaui({ onFilterChange }: MapaPiauiProps) {
   const [municipios, setMunicipios] = useState<Municipio[]>([]);
   const [projecoes, setProjecoes] = useState<ProjecaoMunicipio[]>([]);
   const [dadosEleicoes2022, setDadosEleicoes2022] = useState<ResultadoEleicao[]>([]);
@@ -216,6 +220,11 @@ export default function MapaPiaui() {
     console.log('handleFilterChange chamado:', { territorio, municipiosNomes, projecoes: projecoes.length, eleicoes: dadosEleicoes2022.length });
     setFilteredMunicipios(territorio ? municipiosNomes : []);
     
+    // Chamar callback externo se fornecido
+    if (onFilterChange) {
+      onFilterChange(territorio, municipiosNomes);
+    }
+    
     // Auto-zoom para a área filtrada
     if (mapRef.current && territorio && municipiosNomes.length > 0) {
       // Encontrar coordenadas dos municípios filtrados
@@ -267,7 +276,7 @@ export default function MapaPiaui() {
         });
       }, 300);
     }
-  }, [projecoes, dadosEleicoes2022, municipios]);
+  }, [projecoes, dadosEleicoes2022, municipios, onFilterChange]);
 
   const handleShowSummary = useCallback((territorio: string, municipios: string[]) => {
     console.log('handleShowSummary chamado:', { territorio, municipios, projecoes: projecoes.length, eleicoes: dadosEleicoes2022.length });
