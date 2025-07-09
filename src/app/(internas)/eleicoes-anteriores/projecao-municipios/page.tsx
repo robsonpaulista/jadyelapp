@@ -21,9 +21,8 @@ import {
 } from "@/components/ui/dialog";
 import { ArrowUpDown, RotateCw, ChevronLeft, ChevronRight, FileDown } from "lucide-react";
 import MapaPiaui from '@/components/MapaPiaui';
-// Removendo imports que causam problemas no SSR
-// import jsPDF from 'jspdf';
-// import autoTable from 'jspdf-autotable';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface ProjecaoMunicipio {
   municipio: string;
@@ -185,86 +184,75 @@ export default function ProjecaoMunicipios() {
 
   const totais = calcularTotais();
 
-  const gerarPDF = async () => {
-    try {
-      // Importação dinâmica para evitar problemas no SSR
-      const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
-        import('jspdf'),
-        import('jspdf-autotable')
-      ]);
+  const gerarPDF = () => {
+    const doc = new jsPDF();
+    
+    // Título
+    doc.setFontSize(18);
+    doc.text('Projeção de Municípios - Eleições 2026', 14, 22);
+    
+    // Data de geração
+    doc.setFontSize(10);
+    doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 14, 30);
+    
+    // Dados da tabela
+    const tableData = filteredData.map(item => [
+      item.municipio,
+      formatNumber(item.liderancasAtuais),
+      formatNumber(item.votacao2022),
+      formatNumber(item.expectativa2026),
+      formatPercentage(item.crescimento),
+      formatNumber(item.eleitores),
+      formatPercentage(item.alcance)
+    ]);
 
-      const doc = new jsPDF();
-      
-      // Título
-      doc.setFontSize(18);
-      doc.text('Projeção de Municípios - Eleições 2026', 14, 22);
-      
-      // Data de geração
-      doc.setFontSize(10);
-      doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 14, 30);
-      
-      // Dados da tabela
-      const tableData = filteredData.map(item => [
-        item.municipio,
-        formatNumber(item.liderancasAtuais),
-        formatNumber(item.votacao2022),
-        formatNumber(item.expectativa2026),
-        formatPercentage(item.crescimento),
-        formatNumber(item.eleitores),
-        formatPercentage(item.alcance)
-      ]);
+    // Adicionar linha de totais
+    tableData.push([
+      'TOTAL',
+      formatNumber(totais.liderancasAtuais),
+      formatNumber(totais.votacao2022),
+      formatNumber(totais.expectativa2026),
+      formatPercentage(totais.crescimento),
+      formatNumber(totais.eleitores),
+      formatPercentage(totais.alcance)
+    ]);
 
-      // Adicionar linha de totais
-      tableData.push([
-        'TOTAL',
-        formatNumber(totais.liderancasAtuais),
-        formatNumber(totais.votacao2022),
-        formatNumber(totais.expectativa2026),
-        formatPercentage(totais.crescimento),
-        formatNumber(totais.eleitores),
-        formatPercentage(totais.alcance)
-      ]);
-
-      autoTable(doc, {
-        head: [['Município', 'Lideranças Atuais', 'Votação 2022', 'Expectativa 2026', 'Crescimento', 'Eleitores', 'Alcance']],
-        body: tableData,
-        startY: 40,
-        styles: {
-          fontSize: 8,
-          cellPadding: 2,
-        },
-        headStyles: {
-          fillColor: [41, 128, 185],
-          textColor: 255,
-          fontStyle: 'bold',
-        },
-        alternateRowStyles: {
-          fillColor: [245, 245, 245],
-        },
-        didDrawPage: function (data: any) {
-          // Estilo especial para a linha de totais
-          const lastRow = data.table.body.length - 1;
-          if (lastRow >= 0) {
-            const lastRowData = data.table.body[lastRow];
-            if (Array.isArray(lastRowData)) {
-              lastRowData.forEach((cell: any) => {
-                if (cell && cell.styles) {
-                  cell.styles.fillColor = [52, 73, 94];
-                  cell.styles.textColor = 255;
-                  cell.styles.fontStyle = 'bold';
-                }
-              });
-            }
+    autoTable(doc, {
+      head: [['Município', 'Lideranças Atuais', 'Votação 2022', 'Expectativa 2026', 'Crescimento', 'Eleitores', 'Alcance']],
+      body: tableData,
+      startY: 40,
+      styles: {
+        fontSize: 8,
+        cellPadding: 2,
+      },
+      headStyles: {
+        fillColor: [41, 128, 185],
+        textColor: 255,
+        fontStyle: 'bold',
+      },
+      alternateRowStyles: {
+        fillColor: [245, 245, 245],
+      },
+      didDrawPage: function (data) {
+        // Estilo especial para a linha de totais
+        const lastRow = data.table.body.length - 1;
+        if (lastRow >= 0) {
+          const lastRowData = data.table.body[lastRow];
+          if (Array.isArray(lastRowData)) {
+            lastRowData.forEach((cell: any) => {
+              if (cell && cell.styles) {
+                cell.styles.fillColor = [52, 73, 94];
+                cell.styles.textColor = 255;
+                cell.styles.fontStyle = 'bold';
+              }
+            });
           }
         }
-      });
+      }
+    });
 
-      // Salvar o PDF
-      doc.save('projecao-municipios-2026.pdf');
-    } catch (error) {
-      console.error('Erro ao gerar PDF:', error);
-      alert('Erro ao gerar PDF. Tente novamente.');
-    }
+    // Salvar o PDF
+    doc.save('projecao-municipios-2026.pdf');
   };
 
   return (

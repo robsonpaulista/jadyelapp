@@ -1,20 +1,11 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, Tooltip } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
 import { Maximize2, Minimize2 } from 'lucide-react';
-import dynamic from 'next/dynamic';
-
-// Importação dinâmica do Leaflet para evitar problemas no SSR
-const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), { ssr: false });
-const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLayer), { ssr: false });
-const Marker = dynamic(() => import('react-leaflet').then(mod => mod.Marker), { ssr: false });
-const Popup = dynamic(() => import('react-leaflet').then(mod => mod.Popup), { ssr: false });
-
-// Importação dinâmica do Leaflet
-let L: any;
-if (typeof window !== 'undefined') {
-  L = require('leaflet');
-  // Importar CSS apenas no cliente
-  require('leaflet/dist/leaflet.css');
-}
+import { createRoot } from 'react-dom/client';
+import TerritoriosFilter from './TerritoriosFilter';
+import TerritorioSummaryModal from './TerritorioSummaryModal';
 
 interface Municipio {
   id: string;
@@ -38,10 +29,6 @@ interface ResultadoEleicao {
   nomeUrnaCandidato: string;
   quantidadeVotosNominais: string;
   partido: string;
-}
-
-interface MapaPiauiProps {
-  className?: string;
 }
 
 // Função para obter cor baseada no crescimento da votação
@@ -84,7 +71,7 @@ const obterTop5Candidatos2022 = (municipio: string, dadosEleicoes2022: Resultado
 // Função para criar ícone SVG personalizado baseado na cor
 const criarIconePersonalizado = (cor: string): L.Icon => {
   const svgString = `
-    <svg width="12" height="20" viewBox="0 0 12 20" xmlns="http://www.w3.org/2000/svg">
+    <svg width="8" height="14" viewBox="0 0 12 20" xmlns="http://www.w3.org/2000/svg">
       <path d="M6 0C2.69 0 0 2.69 0 6c0 4.5 6 14 6 14s6-9.5 6-14c0-3.31-2.69-6-6-6z" fill="${cor}" stroke="#fff" stroke-width="1"/>
       <circle cx="6" cy="6" r="2" fill="#fff"/>
     </svg>
@@ -95,32 +82,48 @@ const criarIconePersonalizado = (cor: string): L.Icon => {
   
   return new L.Icon({
     iconUrl: url,
-    iconSize: [12, 20],
-    iconAnchor: [6, 20],
-    popupAnchor: [1, -20],
+    iconSize: [8, 14],
+    iconAnchor: [4, 14],
+    popupAnchor: [1, -14],
     shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-    shadowSize: [20, 20],
-    shadowAnchor: [8, 22],
+    shadowSize: [14, 14],
+    shadowAnchor: [6, 16],
   });
 };
 
-export default function MapaPiaui({ className }: MapaPiauiProps) {
+// Funções de formatação
+const formatNumber = (value: number | null | undefined): string => {
+  if (!value || isNaN(value)) return '-';
+  return new Intl.NumberFormat('pt-BR').format(value);
+};
+
+const formatPercentage = (value: number | null | undefined): string => {
+  if (!value || isNaN(value)) return '-';
+  return `${value.toFixed(1)}%`;
+};
+
+export default function MapaPiaui() {
   const [municipios, setMunicipios] = useState<Municipio[]>([]);
   const [projecoes, setProjecoes] = useState<ProjecaoMunicipio[]>([]);
   const [dadosEleicoes2022, setDadosEleicoes2022] = useState<ResultadoEleicao[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isClient, setIsClient] = useState(false);
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const markerRefs = useRef<{[key: string]: L.Marker}>({});
+  const [filteredMunicipios, setFilteredMunicipios] = useState<string[]>([]);
+  const [showSummaryModal, setShowSummaryModal] = useState(false);
+  const [selectedTerritorioSummary, setSelectedTerritorioSummary] = useState<{
+    territorio: string;
+    municipios: string[];
+  } | null>(null);
 
-  useEffect(() => {
-    setIsClient(true);
+  // Função para registrar referência do marcador usando useCallback
+  const registerMarker = useCallback((municipio: string, marker: L.Marker) => {
+    markerRefs.current[municipio] = marker;
   }, []);
 
   useEffect(() => {
-    if (!isClient) return;
-    
     const carregarDados = async () => {
       try {
         // Carregar coordenadas dos municípios
@@ -137,6 +140,25 @@ export default function MapaPiaui({ className }: MapaPiauiProps) {
         const responseEleicoes = await fetch('/api/resultado-eleicoes?tipo=deputado_federal_2022');
         const dataEleicoes = await responseEleicoes.json();
         setDadosEleicoes2022(dataEleicoes.resultados || []);
+
+        // Após carregar os dados, abrir tooltips relevantes
+        setTimeout(() => {
+          if (mapRef.current) {
+            // Encontrar municípios com crescimento relevante
+            const municipiosRelevantes = dataProjecoes.filter((p: ProjecaoMunicipio) => p.crescimento > 15);
+            
+            // Abrir tooltips para cada município relevante
+            Object.entries(markerRefs.current).forEach(([municipio, marker]) => {
+              const projecao = municipiosRelevantes.find((p: ProjecaoMunicipio) => 
+                p.municipio.toUpperCase() === municipio.toUpperCase()
+              );
+              if (projecao) {
+                marker.openTooltip();
+              }
+            });
+          }
+        }, 1000);
+
       } catch (error) {
         console.error('Erro ao carregar dados:', error);
       } finally {
@@ -145,7 +167,7 @@ export default function MapaPiaui({ className }: MapaPiauiProps) {
     };
 
     carregarDados();
-  }, [isClient]);
+  }, []);
 
   // Detectar mudanças no estado de tela cheia
   useEffect(() => {
@@ -172,12 +194,93 @@ export default function MapaPiaui({ className }: MapaPiauiProps) {
     };
   }, []);
 
-  if (!isClient) {
-    return <div className="flex justify-center items-center h-96">Carregando mapa...</div>;
-  }
+  const handleFilterChange = useCallback((territorio: string | null, municipiosNomes: string[]) => {
+    console.log('handleFilterChange chamado:', { territorio, municipiosNomes, projecoes: projecoes.length, eleicoes: dadosEleicoes2022.length });
+    setFilteredMunicipios(territorio ? municipiosNomes : []);
+    
+    // Auto-zoom para a área filtrada
+    if (mapRef.current && territorio && municipiosNomes.length > 0) {
+      // Encontrar coordenadas dos municípios filtrados
+      const municipiosFiltrados = municipiosNomes
+        .map(nomeMunicipio => {
+          const municipio = municipios.find(m => 
+            normalizeString(m.nome) === normalizeString(nomeMunicipio)
+          );
+          return municipio;
+        })
+        .filter(m => m && m.latitude && m.longitude);
+
+      if (municipiosFiltrados.length > 0) {
+        // Calcular bounds (limites) da área
+        const lats = municipiosFiltrados.map(m => m!.latitude);
+        const lngs = municipiosFiltrados.map(m => m!.longitude);
+        
+        const minLat = Math.min(...lats);
+        const maxLat = Math.max(...lats);
+        const minLng = Math.min(...lngs);
+        const maxLng = Math.max(...lngs);
+
+        // Adicionar margem de 10% para não ficar muito apertado
+        const latMargin = (maxLat - minLat) * 0.1;
+        const lngMargin = (maxLng - minLng) * 0.1;
+
+        // Criar bounds do Leaflet
+        const bounds = L.latLngBounds([
+          [minLat - latMargin, minLng - lngMargin],
+          [maxLat + latMargin, maxLng + lngMargin]
+        ]);
+
+        // Fazer zoom para a área com animação
+        setTimeout(() => {
+          mapRef.current?.fitBounds(bounds, {
+            padding: [20, 20],
+            maxZoom: 10,
+            animate: true,
+            duration: 1.5
+          });
+        }, 300);
+      }
+    } else if (mapRef.current && !territorio) {
+      // Voltar ao zoom padrão quando limpar filtro
+      setTimeout(() => {
+        mapRef.current?.setView([-5.5, -42.5], 7, {
+          animate: true,
+          duration: 1.5
+        });
+      }, 300);
+    }
+  }, [projecoes, dadosEleicoes2022, municipios]);
+
+  const handleShowSummary = useCallback((territorio: string, municipios: string[]) => {
+    console.log('handleShowSummary chamado:', { territorio, municipios, projecoes: projecoes.length, eleicoes: dadosEleicoes2022.length });
+    setSelectedTerritorioSummary({ territorio, municipios });
+    setShowSummaryModal(true);
+  }, [projecoes, dadosEleicoes2022]);
+
+  const handleCloseSummary = useCallback(() => {
+    console.log('Fechando modal');
+    setShowSummaryModal(false);
+    setSelectedTerritorioSummary(null);
+  }, []);
+
+  // Função para normalizar nomes de municípios para comparação
+  const normalizeString = (str: string): string => {
+    return str
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+      .toUpperCase()
+      .trim();
+  };
+
+  const shouldShowMarker = useCallback((municipioNome: string) => {
+    if (filteredMunicipios.length === 0) return true;
+    
+    const nomeNormalizado = normalizeString(municipioNome);
+    return filteredMunicipios.some(m => normalizeString(m) === nomeNormalizado);
+  }, [filteredMunicipios]);
 
   if (loading) {
-    return <div className="flex justify-center items-center h-96">Carregando dados do mapa...</div>;
+    return <div className="flex justify-center items-center h-96">Carregando mapa...</div>;
   }
 
   const toggleFullScreen = () => {
@@ -210,7 +313,7 @@ export default function MapaPiaui({ className }: MapaPiauiProps) {
   };
 
   return (
-    <div className={`relative ${className || ''}`} ref={containerRef}>
+    <div className="relative" ref={containerRef}>
       <MapContainer
         center={[-5.5, -42.5]}
         zoom={7}
@@ -220,9 +323,12 @@ export default function MapaPiaui({ className }: MapaPiauiProps) {
           position: isFullscreen ? 'fixed' : 'relative',
           top: isFullscreen ? '0' : 'auto',
           left: isFullscreen ? '0' : 'auto',
-          zIndex: isFullscreen ? '9999' : '10'
+          right: isFullscreen ? '0' : 'auto',
+          bottom: isFullscreen ? '0' : 'auto',
+          zIndex: isFullscreen ? '9999' : '10',
+          margin: isFullscreen ? '0' : 'auto'
         }}
-        className={isFullscreen ? '' : 'rounded-lg'}
+        className={`${isFullscreen ? 'fullscreen-map' : 'rounded-lg'}`}
         ref={mapRef}
       >
         <TileLayer
@@ -230,12 +336,15 @@ export default function MapaPiaui({ className }: MapaPiauiProps) {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
         
-        {municipios.map(municipio => {
-          const projecao = projecoes.find(p => 
-            p.municipio.toUpperCase() === municipio.nome.toUpperCase()
+        {projecoes.map((projecao) => {
+          const municipio = municipios.find(
+            m => m.nome.toUpperCase() === projecao.municipio.toUpperCase()
           );
           
-          const crescimento = projecao?.crescimento || 0;
+          if (!municipio || !municipio.latitude || !municipio.longitude) return null;
+          if (!shouldShowMarker(municipio.nome)) return null;
+
+          const crescimento = projecao.crescimento || 0;
           const cor = obterCorCrescimento(crescimento);
           
           // Criar ícone personalizado baseado no crescimento
@@ -246,80 +355,89 @@ export default function MapaPiaui({ className }: MapaPiauiProps) {
               key={municipio.id}
               position={[municipio.latitude, municipio.longitude]}
               icon={iconoCrescimento}
+              ref={(ref) => {
+                if (ref) {
+                  registerMarker(municipio.nome, ref);
+                }
+              }}
             >
+              {/* Tooltip que aparece ao passar o mouse */}
+              {crescimento > 20 && (
+                <Tooltip permanent direction="top" className="bg-[#4CAF50] text-white border-[#4CAF50] px-1">
+                  +{crescimento.toFixed(0)}%
+                </Tooltip>
+              )}
+
+              {/* Popup completo que aparece ao clicar */}
               <Popup>
-                <div style={{ textAlign: 'center', minWidth: '200px' }}>
-                  <strong style={{ fontSize: '14px', color: '#333' }}>
-                    {municipio.nome}
-                  </strong>
-                  <br />
-                  {projecao ? (
-                    <>
-                      <div style={{
-                        fontSize: '12px',
-                        color: cor,
-                        fontWeight: 'bold',
-                        marginTop: '4px'
-                      }}>
-                        {obterDescricaoCrescimento(crescimento)}
-                      </div>
-                      <div style={{
-                        fontSize: '11px',
-                        color: '#666',
-                        marginTop: '4px'
-                      }}>
-                        Votação 2022: {projecao.votacao2022.toLocaleString('pt-BR')}
-                        <br />
-                        Expectativa 2026: {projecao.expectativa2026.toLocaleString('pt-BR')}
-                        <br />
-                        {(() => {
-                          const top5Candidatos2022 = obterTop5Candidatos2022(municipio.nome, dadosEleicoes2022);
-                          const votosMelhor2022 = parseInt(top5Candidatos2022[0]?.quantidadeVotosNominais) || 0;
-                          const percentualComparacao = votosMelhor2022 > 0 ? (projecao.expectativa2026 / votosMelhor2022) * 100 : 0;
-                          
-                          return (
-                            <>
-                              <strong>Top 5 Deputado Federal 2022:</strong>
-                              <ul style={{ padding: 0, margin: '6px 0 0 0', listStyle: 'none' }}>
-                                {top5Candidatos2022.map((candidato, index) => {
-                                  const votos = parseInt(candidato.quantidadeVotosNominais) || 0;
-                                  const isMaior = projecao.expectativa2026 > votos;
-                                  return (
-                                    <li key={index} style={{ display: 'flex', alignItems: 'center', fontSize: '12px', marginBottom: 2 }}>
-                                      <span style={{ minWidth: 18, color: '#888', fontWeight: 500 }}>{index + 1}.</span>
-                                      <span style={{ flex: 1 }}>
-                                        {candidato.nomeUrnaCandidato} <span style={{ color: '#888' }}>({candidato.partido})</span>
-                                      </span>
-                                      <span style={{ minWidth: 70, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{votos.toLocaleString('pt-BR')} votos</span>
-                                      <span style={{ marginLeft: 8, fontSize: '16px', color: isMaior ? '#22c55e' : '#ef4444', fontWeight: 700 }}>
-                                        {isMaior ? '↑' : '↓'}
-                                      </span>
-                                    </li>
-                                  );
-                                })}
-                              </ul>
-                              <br />
-                              <strong>Comparação geral:</strong> {percentualComparacao.toFixed(0)}% do melhor de 2022
-                            </>
-                          );
-                        })()}
-                      </div>
-                    </>
-                  ) : (
-                    <div style={{
-                      fontSize: '12px',
-                      color: '#999',
-                      fontStyle: 'italic',
-                      marginTop: '4px'
-                    }}>
-                      Dados não disponíveis
+                <div className="w-[400px] px-4 py-3">
+                  {/* Cabeçalho */}
+                  <h3 className="text-lg font-medium text-center mb-3 pb-2 border-b">{municipio.nome.toUpperCase()}</h3>
+                  
+                  {/* Grid de informações */}
+                  <div className="grid grid-cols-2 gap-y-2">
+                    <div className="flex justify-between pr-4">
+                      <span className="text-gray-600">Crescimento:</span>
+                      <span>Cresceu {crescimento.toFixed(0)}%</span>
                     </div>
-                  )}
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Lideranças:</span>
+                      <span>{formatNumber(projecao.liderancasAtuais)}</span>
+                    </div>
+                    <div className="flex justify-between pr-4">
+                      <span className="text-gray-600">Votação 2022:</span>
+                      <span>{formatNumber(projecao.votacao2022)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Expectativa 2026:</span>
+                      <span>{formatNumber(projecao.expectativa2026)}</span>
+                    </div>
+                  </div>
+
+                  {/* Top 5 */}
+                  <div className="mt-3 pt-2 border-t">
+                    <div className="text-gray-600 mb-1">Top 5 Candidatos em 2022:</div>
+                    <div className="space-y-1">
+                      {obterTop5Candidatos2022(municipio.nome, dadosEleicoes2022).map((candidato, index) => (
+                        <div key={index} className="flex justify-between items-center">
+                          <div className="flex-1">
+                            {candidato.nomeUrnaCandidato} <span className="text-gray-500">({candidato.partido})</span>
+                          </div>
+                          <div className="text-right ml-2">{formatNumber(parseInt(candidato.quantidadeVotosNominais))}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </Popup>
             </Marker>
           );
         })}
+
+        {/* Filtro de Territórios - agora dentro do MapContainer */}
+        <div className="leaflet-top leaflet-left" style={{ zIndex: 1000 }}>
+          <div className="leaflet-control">
+            <TerritoriosFilter 
+              onFilterChange={handleFilterChange} 
+              onShowSummary={handleShowSummary}
+            />
+          </div>
+        </div>
+
+        {/* Modal de Resumo do Território - também dentro do MapContainer */}
+        {showSummaryModal && selectedTerritorioSummary && (
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10000, pointerEvents: 'none' }}>
+            <div style={{ pointerEvents: 'auto' }}>
+              <TerritorioSummaryModal
+                territorio={selectedTerritorioSummary.territorio}
+                municipios={selectedTerritorioSummary.municipios}
+                dadosProjecao={projecoes}
+                dadosEleicoes2022={dadosEleicoes2022}
+                onClose={handleCloseSummary}
+              />
+            </div>
+          </div>
+        )}
       </MapContainer>
 
       {/* Botão de tela cheia */}
@@ -340,7 +458,6 @@ export default function MapaPiaui({ className }: MapaPiauiProps) {
           <Maximize2 className="h-6 w-6 text-gray-600" />
         )}
       </button>
-
     </div>
   );
 }
