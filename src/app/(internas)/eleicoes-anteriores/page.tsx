@@ -623,7 +623,7 @@ export default function EleicoesAnterioresPage() {
     return parseFloat(valor);
   };
 
-  // Função para buscar notícias do município
+  // Função para buscar notícias específicas do município
   const buscarNoticiasModal = async (forceRefresh: boolean = false) => {
     if (!cidade) return;
     
@@ -631,7 +631,7 @@ export default function EleicoesAnterioresPage() {
     try {
       const timestamp = new Date().getTime();
       const refreshParam = forceRefresh ? `&refresh=true` : '';
-      const response = await fetch(`/api/noticias?t=${timestamp}${refreshParam}`, {
+      const response = await fetch(`/api/noticias-municipio?municipio=${encodeURIComponent(cidade)}&t=${timestamp}${refreshParam}`, {
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -642,22 +642,21 @@ export default function EleicoesAnterioresPage() {
       if (response.ok) {
         const data = await response.json();
         
-        // Filtrar notícias que mencionam o município
-        const noticiasDoMunicipio = data.filter((noticia: any) => 
-          noticia.title?.toLowerCase().includes(cidade.toLowerCase()) ||
-          noticia.description?.toLowerCase().includes(cidade.toLowerCase())
-        );
-        
-        setNoticias(data); // Manter todas as notícias
+        setNoticias(data);
         aplicarFiltroNoticias(data, filtroNoticias);
         setLastUpdateNoticias(new Date());
         setModalNoticiasOpen(true);
+        
+        if (data.length === 0) {
+          toast.error(`Nenhuma notícia encontrada para ${cidade}`);
+        }
       } else {
-        toast.error('Erro ao carregar notícias');
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Erro ao carregar notícias');
       }
     } catch (error) {
       console.error('Erro ao buscar notícias:', error);
-      toast.error('Erro ao buscar notícias');
+      toast.error('Erro ao buscar notícias específicas do município');
     } finally {
       setLoadingNoticiasModal(false);
     }
