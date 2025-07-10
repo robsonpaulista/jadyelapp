@@ -72,8 +72,8 @@ export default function TerritorioSummaryModal({
     const totalVotacao2022 = projecoesTerritorio.reduce((sum, p) => sum + p.votacao2022, 0);
     const totalExpectativa2026 = projecoesTerritorio.reduce((sum, p) => sum + p.expectativa2026, 0);
     const totalLiderancas = projecoesTerritorio.reduce((sum, p) => sum + p.liderancasAtuais, 0);
-    const crescimentoMedio = projecoesTerritorio.length > 0 
-      ? projecoesTerritorio.reduce((sum, p) => sum + p.crescimento, 0) / projecoesTerritorio.length 
+    const crescimentoMedio = totalVotacao2022 > 0 
+      ? ((totalExpectativa2026 - totalVotacao2022) / totalVotacao2022) * 100
       : 0;
 
     // Agregar candidatos por nome e partido
