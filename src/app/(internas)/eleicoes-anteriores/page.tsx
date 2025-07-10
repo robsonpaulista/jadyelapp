@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 
 import { useRouter } from "next/navigation";
-import { X, RefreshCw, Building, ArrowUpDown, CheckCircle2, Clock, AlertCircle, XCircle, HelpCircle, ChevronDown } from "lucide-react";
+import { X, RefreshCw, Building, ArrowUpDown, CheckCircle2, Clock, AlertCircle, XCircle, HelpCircle, ChevronDown, Newspaper } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -224,6 +224,7 @@ export default function EleicoesAnterioresPage() {
   const [modalDemandasOpen, setModalDemandasOpen] = useState(false);
   const [demandas, setDemandas] = useState<ObraDemanda[]>([]);
   const [loadingDemandas, setLoadingDemandas] = useState(false);
+  const [loadingNoticias, setLoadingNoticias] = useState(false);
 
   // Função para formatar valor em moeda brasileira
   const formatCurrency = (value: number) => {
@@ -382,6 +383,22 @@ export default function EleicoesAnterioresPage() {
       // Silencioso por segurança
     } finally {
       setLoadingDemandas(false);
+    }
+  };
+
+  // Função para buscar notícias do município
+  const buscarNoticias = async () => {
+    if (!cidade) return;
+    
+    setLoadingNoticias(true);
+    try {
+      // Redirecionar para a página de monitoramento de notícias com o município selecionado
+      router.push(`/monitoramento-noticias?municipio=${encodeURIComponent(cidade)}`);
+    } catch (error) {
+      console.error('Erro ao buscar notícias:', error);
+      // Silencioso por segurança
+    } finally {
+      setLoadingNoticias(false);
     }
   };
 
@@ -657,18 +674,33 @@ export default function EleicoesAnterioresPage() {
                   </select>
                 </div>
                 
-                <button
-                  onClick={buscarDemandasLideranca}
-                  disabled={!liderancaSelecionada || loadingDemandas}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-blue-600 hover:bg-blue-700 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto justify-center"
-                >
-                  {loadingDemandas ? (
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Building className="h-4 w-4" />
-                  )}
-                  Demandas
-                </button>
+                <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+                  <button
+                    onClick={buscarDemandasLideranca}
+                    disabled={!liderancaSelecionada || loadingDemandas}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-blue-600 hover:bg-blue-700 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto justify-center"
+                  >
+                    {loadingDemandas ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Building className="h-4 w-4" />
+                    )}
+                    Demandas
+                  </button>
+
+                  <button
+                    onClick={buscarNoticias}
+                    disabled={!cidade || loadingNoticias}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-green-600 hover:bg-green-700 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto justify-center"
+                  >
+                    {loadingNoticias ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Newspaper className="h-4 w-4" />
+                    )}
+                    Notícias
+                  </button>
+                </div>
               </div>
             )}
           </div>
