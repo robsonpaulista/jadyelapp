@@ -206,6 +206,7 @@ export default function EleicoesAnterioresPage() {
   const [selectedLideranca, setSelectedLideranca] = useState<any>(null);
   const [imagemExpandidaUrl, setImagemExpandidaUrl] = useState<string | null>(null);
   const [imagemExpandidaNome, setImagemExpandidaNome] = useState<string>('');
+  const [loadingLiderancasModal, setLoadingLiderancasModal] = useState(false);
 
   const [populacaoSUAS, setPopulacaoSUAS] = useState<number | null>(null);
   const [porteSUAS, setPorteSUAS] = useState<string>('-');
@@ -549,6 +550,44 @@ export default function EleicoesAnterioresPage() {
   const closeModal = () => {
     setModalOpen(false);
     setSelectedLideranca(null);
+  };
+
+  // Função para atualizar as lideranças do modal
+  const atualizarLiderancasModal = async () => {
+    if (!selectedLideranca?.municipio) return;
+    
+    setLoadingLiderancasModal(true);
+    try {
+      // Buscar dados de lideranças atualizados
+      const resLiderancas = await fetch('/api/liderancas-votacao');
+      const jsonLiderancas = await resLiderancas.json();
+      
+      if (resLiderancas.ok && jsonLiderancas.data) {
+        // Atualizar os dados gerais de lideranças
+        setDadosLiderancas(jsonLiderancas.data);
+        
+        // Filtrar e atualizar as lideranças do município atual no modal
+        const liderancasMunicipioAtualizadas = jsonLiderancas.data.filter((lideranca: any) => 
+          normalizeString(lideranca.municipio) === normalizeString(selectedLideranca.municipio)
+        );
+        
+        // Atualizar o selectedLideranca com os novos dados
+        setSelectedLideranca({ 
+          ...selectedLideranca, 
+          todasLiderancas: liderancasMunicipioAtualizadas 
+        });
+
+        // Também atualizar as lideranças do município selecionado se for o mesmo
+        if (cidade && normalizeString(cidade) === normalizeString(selectedLideranca.municipio)) {
+          setLiderancasSelecionadas(liderancasMunicipioAtualizadas);
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar lideranças:', error);
+      // Silencioso por segurança
+    } finally {
+      setLoadingLiderancasModal(false);
+    }
   };
 
   // Função para extrair o valor numérico do formato "R$ X.XXX.XXX,XX"
@@ -1077,21 +1116,43 @@ export default function EleicoesAnterioresPage() {
         <Dialog open={modalOpen} onOpenChange={setModalOpen}>
           <DialogContent className="max-w-2xl max-h-[70vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="text-lg">Lideranças de {selectedLideranca?.municipio}</DialogTitle>
+              <DialogTitle className="flex items-center justify-between">
+                <span className="text-lg">Lideranças de {selectedLideranca?.municipio}</span>
+                <button
+                  onClick={atualizarLiderancasModal}
+                  disabled={loadingLiderancasModal}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded text-sm transition-colors border bg-blue-600 hover:bg-blue-700 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Atualizar dados das lideranças"
+                >
+                  {loadingLiderancasModal ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4" />
+                  )}
+                  Atualizar
+                </button>
+              </DialogTitle>
             </DialogHeader>
             
             {selectedLideranca && (
               <div className="mt-2">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="py-2">Liderança</TableHead>
-                      <TableHead className="py-2">Status</TableHead>
-                      <TableHead className="py-2">Cargo 2024</TableHead>
-                      <TableHead className="py-2 text-right">Expectativa 2026</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                {loadingLiderancasModal && (
+                  <div className="flex justify-center items-center py-8">
+                    <RefreshCw className="h-6 w-6 animate-spin text-blue-600 mr-2" />
+                    <span className="text-sm text-gray-600">Atualizando lideranças...</span>
+                  </div>
+                )}
+                <div className={loadingLiderancasModal ? 'opacity-50' : ''}>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="py-2">Liderança</TableHead>
+                        <TableHead className="py-2">Status</TableHead>
+                        <TableHead className="py-2">Cargo 2024</TableHead>
+                        <TableHead className="py-2 text-right">Expectativa 2026</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                     {[...selectedLideranca.todasLiderancas]
                       .filter((lideranca: Lideranca) => lideranca.liderancaAtual === 'SIM')
                       .sort((a: Lideranca, b: Lideranca) => {
@@ -1135,9 +1196,10 @@ export default function EleicoesAnterioresPage() {
                           </TableRow>
                         );
                       })}
-                  </TableBody>
-                </Table>
-        </div>
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
             )}
           </DialogContent>
         </Dialog>
