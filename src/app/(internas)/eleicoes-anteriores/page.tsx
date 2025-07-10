@@ -667,7 +667,7 @@ export default function EleicoesAnterioresPage() {
                   ) : (
                     <Building className="h-4 w-4" />
                   )}
-                  Ver demandas lideranças
+                  Demandas
                 </button>
               </div>
             )}
