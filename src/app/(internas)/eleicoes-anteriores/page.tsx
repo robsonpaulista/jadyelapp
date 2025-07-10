@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 
 import { useRouter } from "next/navigation";
-import { X, RefreshCw, Building, ArrowUpDown, CheckCircle2, Clock, AlertCircle, XCircle, HelpCircle, ChevronDown } from "lucide-react";
+import { X, RefreshCw, Building, ArrowUpDown, CheckCircle2, Clock, AlertCircle, XCircle, HelpCircle, ChevronDown, Filter, Newspaper } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -207,6 +207,11 @@ export default function EleicoesAnterioresPage() {
   const [imagemExpandidaUrl, setImagemExpandidaUrl] = useState<string | null>(null);
   const [imagemExpandidaNome, setImagemExpandidaNome] = useState<string>('');
   const [loadingLiderancasModal, setLoadingLiderancasModal] = useState(false);
+  const [modalNoticiasOpen, setModalNoticiasOpen] = useState(false);
+  const [noticias, setNoticias] = useState<any[]>([]);
+  const [loadingNoticias, setLoadingNoticias] = useState(false);
+  const [filterNoticias, setFilterNoticias] = useState<string>('todos');
+  const [filteredNoticias, setFilteredNoticias] = useState<any[]>([]);
 
   const [populacaoSUAS, setPopulacaoSUAS] = useState<number | null>(null);
   const [porteSUAS, setPorteSUAS] = useState<string>('-');
@@ -601,6 +606,57 @@ export default function EleicoesAnterioresPage() {
     return parseFloat(valor);
   };
 
+  // Função para buscar notícias da cidade
+  const buscarNoticiasCidade = async () => {
+    if (!cidade) return;
+    
+    setLoadingNoticias(true);
+    try {
+      const res = await fetch(`/api/noticias-cidade?cidade=${encodeURIComponent(cidade)}`);
+      if (!res.ok) throw new Error('Falha ao carregar notícias');
+      
+      const data = await res.json();
+      setNoticias(data);
+      applyFilterNoticias(data, filterNoticias);
+    } catch (error) {
+      console.error('Erro ao buscar notícias:', error);
+      // toast.error('Erro ao carregar notícias. Tente novamente.'); // Assuming toast is available
+    } finally {
+      setLoadingNoticias(false);
+    }
+  };
+
+  // Função para aplicar filtro nas notícias
+  const applyFilterNoticias = (newsData: any[], filterValue: string) => {
+    if (filterValue === 'todos') {
+      setFilteredNoticias(newsData);
+    } else {
+      setFilteredNoticias(newsData.filter(item => item.source === filterValue));
+    }
+  };
+
+  // Efeito para atualizar filtro de notícias
+  useEffect(() => {
+    applyFilterNoticias(noticias, filterNoticias);
+  }, [filterNoticias, noticias]);
+
+  // Função para gerar cor do avatar baseado no título
+  const getAvatarColor = (title: string) => {
+    const colors = [
+      'from-blue-500 to-purple-600',
+      'from-green-500 to-teal-600',
+      'from-red-500 to-pink-600',
+      'from-yellow-500 to-orange-600',
+      'from-indigo-500 to-blue-600',
+      'from-purple-500 to-indigo-600',
+      'from-pink-500 to-rose-600',
+      'from-teal-500 to-cyan-600'
+    ];
+    
+    const charCode = title.charCodeAt(0);
+    return colors[charCode % colors.length];
+  };
+
   return (
     <div className="flex-1 flex flex-col min-h-screen">
       {/* Navbar interna do conteúdo */}
@@ -657,18 +713,35 @@ export default function EleicoesAnterioresPage() {
                   </select>
                 </div>
                 
-                <button
-                  onClick={buscarDemandasLideranca}
-                  disabled={!liderancaSelecionada || loadingDemandas}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-blue-600 hover:bg-blue-700 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto justify-center"
-                >
-                  {loadingDemandas ? (
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Building className="h-4 w-4" />
-                  )}
-                  Demandas
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={buscarDemandasLideranca}
+                    disabled={!liderancaSelecionada || loadingDemandas}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-blue-600 hover:bg-blue-700 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto justify-center"
+                  >
+                    {loadingDemandas ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Building className="h-4 w-4" />
+                    )}
+                    Demandas
+                  </button>
+                  <button
+                    onClick={() => {
+                      setModalNoticiasOpen(true);
+                      buscarNoticiasCidade();
+                    }}
+                    disabled={!cidade}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-blue-600 hover:bg-blue-700 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto justify-center"
+                  >
+                    {loadingNoticias ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Newspaper className="h-4 w-4" />
+                    )}
+                    Notícias
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -1353,6 +1426,142 @@ export default function EleicoesAnterioresPage() {
                 {imagemExpandidaNome}
               </div>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de Notícias */}
+        <Dialog open={modalNoticiasOpen} onOpenChange={setModalNoticiasOpen}>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center justify-between">
+                <div className="flex flex-col items-start">
+                  <span className="text-lg">Notícias de {cidade}</span>
+                  <span className="text-xs text-gray-500 font-light">
+                    Última atualização: {new Date().toLocaleTimeString()}
+                  </span>
+                </div>
+                <button
+                  onClick={buscarNoticiasCidade}
+                  disabled={loadingNoticias}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-white hover:bg-gray-50 text-gray-700 cursor-pointer border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <RefreshCw className={`h-4 w-4 ${loadingNoticias ? 'animate-spin' : ''}`} />
+                  {loadingNoticias ? 'Atualizando...' : 'Atualizar'}
+                </button>
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="py-4 flex flex-col md:flex-row items-start md:items-center justify-between space-y-2 md:space-y-0">
+              <div className="flex items-center gap-2 w-full md:w-auto">
+                <Filter className="h-4 w-4 text-gray-500" />
+                <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Filtrar por:</span>
+                <select 
+                  className="text-sm border border-gray-200 rounded px-2 py-1 flex-1 md:flex-none"
+                  value={filterNoticias}
+                  onChange={(e) => setFilterNoticias(e.target.value)}
+                >
+                  <option value="todos">Todas as fontes</option>
+                  <option value="Google Alertas">Google Alertas</option>
+                  <option value="Talkwalker Alerts">Talkwalker Alerts</option>
+                </select>
+              </div>
+              <div className="text-xs text-gray-500">
+                Total: {filteredNoticias.length} notícia(s)
+                {filterNoticias !== 'todos' && ` de ${filterNoticias}`}
+              </div>
+            </div>
+            
+            {loadingNoticias && (
+              <div className="flex-1 flex items-center justify-center min-h-[400px]">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+                  <p>Carregando notícias...</p>
+                </div>
+              </div>
+            )}
+            
+            {!loadingNoticias && filteredNoticias.length === 0 ? (
+              <div className="text-center text-gray-500 py-16">
+                {filterNoticias !== 'todos' 
+                  ? `Nenhuma notícia encontrada de ${filterNoticias}.` 
+                  : 'Nenhuma notícia encontrada ainda. Aguarde alguns minutos ou ajuste seus alertas.'}
+              </div>
+            ) : !loadingNoticias && (
+              <div className="md:overflow-x-auto">
+                <div className="block md:hidden">
+                  <div className="divide-y divide-gray-200">
+                    {filteredNoticias.map((item, idx) => (
+                      <div key={idx} className="p-4 hover:bg-gray-50 transition-colors flex gap-3">
+                        <div className={`flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-gradient-to-br ${getAvatarColor(item.title)} flex items-center justify-center text-white text-xs font-bold`}>
+                          {item.title.substring(0, 2).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <a
+                            href={item.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-gray-800 hover:underline font-medium leading-snug block mb-1"
+                          >
+                            {item.title}
+                          </a>
+                          <div className="text-xs text-gray-500">
+                            {item.pubDate && (
+                              new Date(item.pubDate).toLocaleDateString('pt-BR', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })
+                            )}
+                            <span className="mx-1">•</span>
+                            {item.source}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="hidden md:block">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="py-3 px-4 text-left font-medium text-gray-700">Notícia</th>
+                        <th className="py-3 px-4 text-left font-medium text-gray-700 w-48">Data</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {filteredNoticias.map((item, idx) => (
+                        <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                          <td className="py-3 px-4">
+                            <a
+                              href={item.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-gray-800 hover:underline font-medium"
+                            >
+                              {item.title}
+                            </a>
+                          </td>
+                          <td className="py-3 px-4 text-sm text-gray-500">
+                            {item.pubDate && (
+                              new Date(item.pubDate).toLocaleDateString('pt-BR', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
 
