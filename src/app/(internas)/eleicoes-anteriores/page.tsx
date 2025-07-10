@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 
 import { useRouter } from "next/navigation";
-import { X, RefreshCw, Building, ArrowUpDown, CheckCircle2, Clock, AlertCircle, XCircle, HelpCircle, ChevronDown, Newspaper, Filter } from "lucide-react";
+import { X, RefreshCw, Building, ArrowUpDown, CheckCircle2, Clock, AlertCircle, XCircle, HelpCircle, ChevronDown } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +25,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { toast } from 'react-hot-toast';
 
 // Interface para os dados de obras e demandas
 interface ObraDemanda {
@@ -225,15 +224,6 @@ export default function EleicoesAnterioresPage() {
   const [modalDemandasOpen, setModalDemandasOpen] = useState(false);
   const [demandas, setDemandas] = useState<ObraDemanda[]>([]);
   const [loadingDemandas, setLoadingDemandas] = useState(false);
-  const [loadingNoticias, setLoadingNoticias] = useState(false);
-
-  // Estados para o modal de notícias
-  const [modalNoticiasOpen, setModalNoticiasOpen] = useState(false);
-  const [noticias, setNoticias] = useState<any[]>([]);
-  const [noticiasFiltered, setNoticiasFiltered] = useState<any[]>([]);
-  const [loadingNoticiasModal, setLoadingNoticiasModal] = useState(false);
-  const [filtroNoticias, setFiltroNoticias] = useState("todos");
-  const [lastUpdateNoticias, setLastUpdateNoticias] = useState<Date>(new Date());
 
   // Função para formatar valor em moeda brasileira
   const formatCurrency = (value: number) => {
@@ -395,11 +385,6 @@ export default function EleicoesAnterioresPage() {
     }
   };
 
-  // Função para buscar notícias do município
-  const buscarNoticias = async () => {
-    await buscarNoticiasModal();
-  };
-
   // Função para buscar dados do Google Sheets
   const buscarDados = async () => {
     if (!cidade || cidade === "selecionar") return;
@@ -495,13 +480,6 @@ export default function EleicoesAnterioresPage() {
   useEffect(() => {
     loadEmendasSUAS();
   }, []);
-
-  // Aplicar filtros nas notícias quando filtro mudar
-  useEffect(() => {
-    if (noticias.length > 0) {
-      aplicarFiltroNoticias(noticias, filtroNoticias);
-    }
-  }, [filtroNoticias, noticias]);
 
   // Fechar modal com tecla ESC
   useEffect(() => {
@@ -623,71 +601,6 @@ export default function EleicoesAnterioresPage() {
     return parseFloat(valor);
   };
 
-  // Função para buscar notícias específicas do município
-  const buscarNoticiasModal = async (forceRefresh: boolean = false) => {
-    if (!cidade) return;
-    
-    setLoadingNoticiasModal(true);
-    try {
-      const timestamp = new Date().getTime();
-      const refreshParam = forceRefresh ? `&refresh=true` : '';
-      const response = await fetch(`/api/noticias-municipio?municipio=${encodeURIComponent(cidade)}&t=${timestamp}${refreshParam}`, {
-        cache: 'no-store',
-        headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache'
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        
-        setNoticias(data);
-        aplicarFiltroNoticias(data, filtroNoticias);
-        setLastUpdateNoticias(new Date());
-        setModalNoticiasOpen(true);
-        
-        if (data.length === 0) {
-          toast.error(`Nenhuma notícia encontrada para ${cidade}`);
-        }
-      } else {
-        const errorData = await response.json();
-        toast.error(errorData.error || 'Erro ao carregar notícias');
-      }
-    } catch (error) {
-      console.error('Erro ao buscar notícias:', error);
-      toast.error('Erro ao buscar notícias específicas do município');
-    } finally {
-      setLoadingNoticiasModal(false);
-    }
-  };
-
-  // Função para aplicar filtros nas notícias
-  const aplicarFiltroNoticias = (dadosNoticias: any[], filtro: string) => {
-    if (filtro === 'todos') {
-      setNoticiasFiltered(dadosNoticias);
-    } else {
-      setNoticiasFiltered(dadosNoticias.filter(item => item.source === filtro));
-    }
-  };
-
-  // Função para obter cor do avatar das notícias
-  const getAvatarColor = (title: string) => {
-    const colors = [
-      'from-blue-500 to-purple-600',
-      'from-green-500 to-teal-600',
-      'from-red-500 to-pink-600',
-      'from-yellow-500 to-orange-600',
-      'from-indigo-500 to-blue-600',
-      'from-purple-500 to-indigo-600',
-      'from-pink-500 to-rose-600',
-      'from-teal-500 to-cyan-600'
-    ];
-    
-    const charCode = title.charCodeAt(0);
-    return colors[charCode % colors.length];
-  };
-
   return (
     <div className="flex-1 flex flex-col min-h-screen">
       {/* Navbar interna do conteúdo */}
@@ -744,33 +657,18 @@ export default function EleicoesAnterioresPage() {
                   </select>
                 </div>
                 
-                <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
-                  <button
-                    onClick={buscarDemandasLideranca}
-                    disabled={!liderancaSelecionada || loadingDemandas}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-blue-600 hover:bg-blue-700 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto justify-center"
-                  >
-                    {loadingDemandas ? (
-                      <RefreshCw className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Building className="h-4 w-4" />
-                    )}
-                    Demandas
-                  </button>
-
-                  <button
-                    onClick={buscarNoticias}
-                    disabled={!cidade || loadingNoticias}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-green-600 hover:bg-green-700 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto justify-center"
-                  >
-                    {loadingNoticias ? (
-                      <RefreshCw className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Newspaper className="h-4 w-4" />
-                    )}
-                    Notícias
-                  </button>
-                </div>
+                <button
+                  onClick={buscarDemandasLideranca}
+                  disabled={!liderancaSelecionada || loadingDemandas}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-blue-600 hover:bg-blue-700 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto justify-center"
+                >
+                  {loadingDemandas ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Building className="h-4 w-4" />
+                  )}
+                  Demandas
+                </button>
               </div>
             )}
           </div>
@@ -1245,16 +1143,16 @@ export default function EleicoesAnterioresPage() {
                   </div>
                 )}
                 <div className={loadingLiderancasModal ? 'opacity-50' : ''}>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="py-2">Liderança</TableHead>
-                        <TableHead className="py-2">Status</TableHead>
-                        <TableHead className="py-2">Cargo 2024</TableHead>
-                        <TableHead className="py-2 text-right">Expectativa 2026</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="py-2">Liderança</TableHead>
+                      <TableHead className="py-2">Status</TableHead>
+                      <TableHead className="py-2">Cargo 2024</TableHead>
+                      <TableHead className="py-2 text-right">Expectativa 2026</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {[...selectedLideranca.todasLiderancas]
                       .filter((lideranca: Lideranca) => lideranca.liderancaAtual === 'SIM')
                       .sort((a: Lideranca, b: Lideranca) => {
@@ -1298,10 +1196,10 @@ export default function EleicoesAnterioresPage() {
                           </TableRow>
                         );
                       })}
-                    </TableBody>
-                  </Table>
+                  </TableBody>
+                </Table>
                 </div>
-              </div>
+        </div>
             )}
           </DialogContent>
         </Dialog>
@@ -1454,115 +1352,6 @@ export default function EleicoesAnterioresPage() {
               <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white p-3 text-center">
                 {imagemExpandidaNome}
               </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Modal de Notícias */}
-        <Dialog open={modalNoticiasOpen} onOpenChange={setModalNoticiasOpen}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Newspaper className="h-5 w-5" />
-                  <span>Notícias - {cidade}</span>
-                  <Badge variant="outline" className="text-xs">
-                    {lastUpdateNoticias.toLocaleTimeString()}
-                  </Badge>
-                </div>
-                <button
-                  onClick={() => buscarNoticiasModal(true)}
-                  disabled={loadingNoticiasModal}
-                  className="flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors border bg-blue-600 hover:bg-blue-700 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loadingNoticiasModal ? (
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <RefreshCw className="h-4 w-4" />
-                  )}
-                  Atualizar
-                </button>
-              </DialogTitle>
-            </DialogHeader>
-            
-            <div className="mt-4">
-              {/* Filtros */}
-              <div className="flex items-center gap-2 mb-4 pb-4 border-b">
-                <Filter className="h-4 w-4 text-gray-500" />
-                <span className="text-sm font-medium text-gray-700">Filtrar por:</span>
-                <select 
-                  className="text-sm border border-gray-200 rounded px-2 py-1"
-                  value={filtroNoticias}
-                  onChange={(e) => setFiltroNoticias(e.target.value)}
-                >
-                  <option value="todos">Todas as fontes</option>
-                  <option value="Google Alertas">Google Alertas</option>
-                  <option value="Talkwalker Alerts">Talkwalker Alerts</option>
-                </select>
-                <div className="ml-auto text-xs text-gray-500">
-                  Total: {noticiasFiltered.length} notícia(s)
-                  {filtroNoticias !== 'todos' && ` de ${filtroNoticias}`}
-                </div>
-              </div>
-
-              {/* Loading */}
-              {loadingNoticiasModal && (
-                <div className="flex justify-center items-center py-8">
-                  <RefreshCw className="h-6 w-6 animate-spin text-blue-600 mr-2" />
-                  <span className="text-gray-600">Carregando notícias...</span>
-                </div>
-              )}
-
-              {/* Lista de Notícias */}
-              {!loadingNoticiasModal && noticiasFiltered.length === 0 ? (
-                <div className="text-center text-gray-500 py-8">
-                  <Newspaper className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                  <p>
-                    {filtroNoticias !== 'todos' 
-                      ? `Nenhuma notícia encontrada de ${filtroNoticias}.` 
-                      : `Nenhuma notícia encontrada para ${cidade}.`
-                    }
-                  </p>
-                </div>
-              ) : !loadingNoticiasModal && (
-                <div className="space-y-4 max-h-96 overflow-y-auto">
-                  {noticiasFiltered.map((noticia, idx) => (
-                    <div key={idx} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                      <div className="flex gap-3">
-                        <div className={`flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-gradient-to-br ${getAvatarColor(noticia.title)} flex items-center justify-center text-white text-xs font-bold`}>
-                          {noticia.title.substring(0, 2).toUpperCase()}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <a
-                            href={noticia.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-gray-800 hover:underline font-medium leading-snug block mb-2"
-                          >
-                            {noticia.title}
-                          </a>
-                          <div className="flex items-center justify-between text-xs text-gray-500">
-                            <span className="px-2 py-1 bg-gray-100 rounded text-xs">
-                              {noticia.source}
-                            </span>
-                            {noticia.pubDate && (
-                              <span>
-                                {new Date(noticia.pubDate).toLocaleDateString('pt-BR', {
-                                  day: '2-digit',
-                                  month: 'short',
-                                  year: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           </DialogContent>
         </Dialog>
