@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Tooltip } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { Maximize2, Minimize2 } from 'lucide-react';
+import { Maximize2, Minimize2, X } from 'lucide-react';
 import { createRoot } from 'react-dom/client';
 import TerritoriosFilter from './TerritoriosFilter';
 import TerritorioSummaryModal from './TerritorioSummaryModal';
@@ -31,6 +31,16 @@ interface ResultadoEleicao {
   nomeUrnaCandidato: string;
   quantidadeVotosNominais: string;
   partido: string;
+}
+
+interface Lideranca {
+  municipio: string;
+  lideranca: string;
+  liderancaAtual: string;
+  cargo2024: string;
+  votacao2022: string;
+  expectativa2026: string;
+  urlImagem: string;
 }
 
 // Função para obter cor baseada no crescimento da votação
@@ -157,6 +167,10 @@ export default function MapaPiaui({ onFilterChange }: MapaPiauiProps) {
     territorio: string;
     municipios: string[];
   } | null>(null);
+  const [showLiderancasModal, setShowLiderancasModal] = useState(false);
+  const [selectedMunicipioLiderancas, setSelectedMunicipioLiderancas] = useState<string>('');
+  const [liderancasMunicipio, setLiderancasMunicipio] = useState<Lideranca[]>([]);
+  const [loadingLiderancas, setLoadingLiderancas] = useState(false);
 
   // Função para registrar referência do marcador usando useCallback
   const registerMarker = useCallback((municipio: string, marker: L.Marker) => {
@@ -316,6 +330,37 @@ export default function MapaPiaui({ onFilterChange }: MapaPiauiProps) {
     setSelectedTerritorioSummary(null);
   }, []);
 
+  const handleShowLiderancas = useCallback(async (municipio: string) => {
+    setSelectedMunicipioLiderancas(municipio);
+    setLoadingLiderancas(true);
+    setShowLiderancasModal(true);
+    
+    try {
+      const response = await fetch('/api/liderancas-votacao');
+      const result = await response.json();
+      
+      if (result.data && Array.isArray(result.data)) {
+        const liderancasFiltradas = result.data.filter((l: Lideranca) => 
+          l.municipio?.toUpperCase() === municipio.toUpperCase()
+        );
+        setLiderancasMunicipio(liderancasFiltradas);
+      } else {
+        setLiderancasMunicipio([]);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar lideranças:', error);
+      setLiderancasMunicipio([]);
+    } finally {
+      setLoadingLiderancas(false);
+    }
+  }, []);
+
+  const handleCloseLiderancas = useCallback(() => {
+    setShowLiderancasModal(false);
+    setSelectedMunicipioLiderancas('');
+    setLiderancasMunicipio([]);
+  }, []);
+
   // Função para normalizar nomes de municípios para comparação
   const normalizeString = (str: string): string => {
     return str
@@ -443,7 +488,12 @@ export default function MapaPiaui({ onFilterChange }: MapaPiauiProps) {
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Lideranças:</span>
-                      <span className="font-semibold">{formatNumber(projecao.liderancasAtuais)}</span>
+                      <button 
+                        onClick={() => handleShowLiderancas(municipio.nome)}
+                        className="font-semibold text-blue-600 hover:text-blue-800 underline cursor-pointer"
+                      >
+                        {formatNumber(projecao.liderancasAtuais)}
+                      </button>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Votação 2022:</span>
@@ -535,6 +585,62 @@ export default function MapaPiaui({ onFilterChange }: MapaPiauiProps) {
                 dadosEleicoesEstaduais2022={dadosEleicoesEstaduais2022}
                 onClose={handleCloseSummary}
               />
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Lideranças - também dentro do MapContainer */}
+        {showLiderancasModal && selectedMunicipioLiderancas && (
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10000, pointerEvents: 'none' }}>
+            <div style={{ pointerEvents: 'auto' }}>
+              <div className="w-[600px] max-h-[500px] bg-white rounded-lg shadow-xl p-4 overflow-y-auto">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-lg font-semibold text-gray-800">Lideranças de {selectedMunicipioLiderancas}</h3>
+                  <button onClick={handleCloseLiderancas} className="text-gray-600 hover:text-gray-800">
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+                
+                {loadingLiderancas ? (
+                  <div className="flex justify-center items-center py-8">
+                    <div className="text-gray-600">Carregando lideranças...</div>
+                  </div>
+                ) : liderancasMunicipio.length > 0 ? (
+                  <div className="space-y-3">
+                    {liderancasMunicipio.map((lideranca, index) => (
+                      <div key={index} className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <p className="text-sm font-medium text-gray-700">Liderança:</p>
+                            <p className="text-base font-bold text-gray-900">{lideranca.lideranca}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-700">Cargo 2024:</p>
+                            <p className="text-base font-bold text-gray-900">{lideranca.cargo2024}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-700">Votação 2022:</p>
+                            <p className="text-base font-bold text-gray-900">{formatNumber(parseInt(lideranca.votacao2022))}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-700">Expectativa 2026:</p>
+                            <p className="text-base font-bold text-gray-900">{formatNumber(parseInt(lideranca.expectativa2026))}</p>
+                          </div>
+                        </div>
+                        {lideranca.urlImagem && (
+                          <div className="mt-3">
+                            <img src={lideranca.urlImagem} alt={`Liderança ${lideranca.lideranca}`} className="w-full h-auto rounded-md max-h-32 object-cover" />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-600">
+                    Nenhuma liderança encontrada para este município.
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
