@@ -377,27 +377,6 @@ export default function MapaPiaui({ onFilterChange }: MapaPiauiProps) {
     setLiderancasTooltipTarget(null);
   }, []);
 
-  // Fechar tooltip de lideranças ao clicar fora
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (showLiderancasModal && liderancasTooltipTarget) {
-        const target = event.target as HTMLElement;
-        const tooltip = document.querySelector('[data-tooltip-liderancas]') as HTMLElement;
-        
-        if (tooltip && !tooltip.contains(target) && !liderancasTooltipTarget.contains(target)) {
-          handleCloseLiderancas();
-        }
-      }
-    };
-
-    if (showLiderancasModal) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
-      };
-    }
-  }, [showLiderancasModal, liderancasTooltipTarget, handleCloseLiderancas]);
-
   // Função para normalizar nomes de municípios para comparação
   const normalizeString = (str: string): string => {
     return str
