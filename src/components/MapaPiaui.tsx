@@ -173,6 +173,8 @@ export default function MapaPiaui({ onFilterChange }: MapaPiauiProps) {
   const [loadingLiderancas, setLoadingLiderancas] = useState(false);
   const [liderancasModalPosition, setLiderancasModalPosition] = useState<{lat: number, lng: number} | null>(null);
   const liderancasPopupRef = useRef<L.Popup | null>(null);
+  const [liderancasTooltipPosition, setLiderancasTooltipPosition] = useState<{x: number, y: number} | null>(null);
+  const [liderancasTooltipTarget, setLiderancasTooltipTarget] = useState<HTMLElement | null>(null);
 
   // Função para registrar referência do marcador usando useCallback
   const registerMarker = useCallback((municipio: string, marker: L.Marker) => {
@@ -332,16 +334,24 @@ export default function MapaPiaui({ onFilterChange }: MapaPiauiProps) {
     setSelectedTerritorioSummary(null);
   }, []);
 
-  const handleShowLiderancas = useCallback(async (municipio: string, lat: number, lng: number) => {
+  const handleShowLiderancas = useCallback(async (municipio: string, lat: number, lng: number, event: React.MouseEvent) => {
     setSelectedMunicipioLiderancas(municipio);
     setLiderancasModalPosition({lat, lng});
     setLoadingLiderancas(true);
     setShowLiderancasModal(true);
     
-    // Fechar popup anterior se existir
-    if (liderancasPopupRef.current) {
-      liderancasPopupRef.current.remove();
-      liderancasPopupRef.current = null;
+    // Capturar posição do botão clicado
+    const button = event.currentTarget as HTMLElement;
+    const rect = button.getBoundingClientRect();
+    const mapContainer = mapRef.current?.getContainer();
+    
+    if (mapContainer) {
+      const mapRect = mapContainer.getBoundingClientRect();
+      setLiderancasTooltipPosition({
+        x: rect.left - mapRect.left + rect.width / 2,
+        y: rect.top - mapRect.top - 10
+      });
+      setLiderancasTooltipTarget(button);
     }
     
     try {
@@ -353,62 +363,6 @@ export default function MapaPiaui({ onFilterChange }: MapaPiauiProps) {
           l.municipio?.toUpperCase() === municipio.toUpperCase()
         );
         setLiderancasMunicipio(liderancasFiltradas);
-        
-        // Criar popup do Leaflet que se move com o mapa
-        if (mapRef.current && liderancasFiltradas.length > 0) {
-          const popupContent = document.createElement('div');
-          popupContent.className = 'w-[400px] max-h-[300px] bg-white rounded-lg shadow-xl p-3 overflow-y-auto';
-          
-          const header = document.createElement('div');
-          header.className = 'flex justify-between items-center mb-2';
-          header.innerHTML = `
-            <h3 class="text-sm font-semibold text-gray-800">Lideranças de ${municipio}</h3>
-            <button id="close-liderancas-popup" class="text-gray-600 hover:text-gray-800">
-              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-              </svg>
-            </button>
-          `;
-          
-          const content = document.createElement('div');
-          content.className = 'space-y-1';
-          
-          liderancasFiltradas.forEach((lideranca: Lideranca) => {
-            const row = document.createElement('div');
-            row.className = 'flex justify-between items-center py-1 px-2 hover:bg-gray-50 rounded text-xs';
-            row.innerHTML = `
-              <div class="flex-1 font-medium text-gray-900 truncate mr-2">${lideranca.lideranca}</div>
-              <div class="text-gray-600 mr-2 min-w-0">${lideranca.cargo2024}</div>
-              <div class="font-bold text-gray-900 whitespace-nowrap">${formatNumber(parseInt(lideranca.expectativa2026))}</div>
-            `;
-            content.appendChild(row);
-          });
-          
-          popupContent.appendChild(header);
-          popupContent.appendChild(content);
-          
-          const popup = L.popup({
-            className: 'liderancas-popup',
-            closeButton: false,
-            autoClose: false,
-            closeOnClick: false
-          })
-          .setLatLng([lat, lng])
-          .setContent(popupContent)
-          .openOn(mapRef.current);
-          
-          liderancasPopupRef.current = popup;
-          
-          // Adicionar evento de fechar
-          setTimeout(() => {
-            const closeBtn = document.getElementById('close-liderancas-popup');
-            if (closeBtn) {
-              closeBtn.addEventListener('click', () => {
-                handleCloseLiderancas();
-              });
-            }
-          }, 100);
-        }
       } else {
         setLiderancasMunicipio([]);
       }
@@ -425,12 +379,8 @@ export default function MapaPiaui({ onFilterChange }: MapaPiauiProps) {
     setSelectedMunicipioLiderancas('');
     setLiderancasMunicipio([]);
     setLiderancasModalPosition(null);
-    
-    // Fechar popup do Leaflet
-    if (liderancasPopupRef.current) {
-      liderancasPopupRef.current.remove();
-      liderancasPopupRef.current = null;
-    }
+    setLiderancasTooltipPosition(null);
+    setLiderancasTooltipTarget(null);
   }, []);
 
   // Função para normalizar nomes de municípios para comparação
@@ -561,7 +511,7 @@ export default function MapaPiaui({ onFilterChange }: MapaPiauiProps) {
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Lideranças:</span>
                       <button 
-                        onClick={() => handleShowLiderancas(municipio.nome, municipio.latitude, municipio.longitude)}
+                        onClick={(e) => handleShowLiderancas(municipio.nome, municipio.latitude, municipio.longitude, e)}
                         className="font-semibold text-blue-600 hover:text-blue-800 underline cursor-pointer"
                       >
                         {formatNumber(projecao.liderancasAtuais)}
@@ -661,6 +611,58 @@ export default function MapaPiaui({ onFilterChange }: MapaPiauiProps) {
           </div>
         )}
 
+        {/* Tooltip de Lideranças conectado ao botão */}
+        {showLiderancasModal && liderancasTooltipPosition && (
+          <div 
+            className="absolute z-[10000] pointer-events-none"
+            style={{
+              left: `${liderancasTooltipPosition.x}px`,
+              top: `${liderancasTooltipPosition.y}px`,
+              transform: 'translateX(-50%)'
+            }}
+          >
+            <div className="pointer-events-auto">
+              {/* Seta do tooltip */}
+              <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-white mx-auto mb-0"></div>
+              
+              {/* Conteúdo do tooltip */}
+              <div className="w-[350px] max-h-[250px] bg-white rounded-lg shadow-xl p-3 overflow-y-auto border border-gray-200">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="text-sm font-semibold text-gray-800">Lideranças de {selectedMunicipioLiderancas}</h3>
+                  <button onClick={handleCloseLiderancas} className="text-gray-600 hover:text-gray-800">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                
+                {loadingLiderancas ? (
+                  <div className="flex justify-center items-center py-4">
+                    <div className="text-gray-600 text-sm">Carregando...</div>
+                  </div>
+                ) : liderancasMunicipio.length > 0 ? (
+                  <div className="space-y-1">
+                    {liderancasMunicipio.map((lideranca, index) => (
+                      <div key={index} className="flex justify-between items-center py-1 px-2 hover:bg-gray-50 rounded text-xs">
+                        <div className="flex-1 font-medium text-gray-900 truncate mr-2">
+                          {lideranca.lideranca}
+                        </div>
+                        <div className="text-gray-600 mr-2 min-w-0">
+                          {lideranca.cargo2024}
+                        </div>
+                        <div className="font-bold text-gray-900 whitespace-nowrap">
+                          {formatNumber(parseInt(lideranca.expectativa2026))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-gray-600 text-sm">
+                    Nenhuma liderança encontrada.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
       </MapContainer>
 
