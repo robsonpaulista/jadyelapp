@@ -593,51 +593,42 @@ export default function MapaPiaui({ onFilterChange }: MapaPiauiProps) {
         {showLiderancasModal && selectedMunicipioLiderancas && (
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10000, pointerEvents: 'none' }}>
             <div style={{ pointerEvents: 'auto' }}>
-              <div className="w-[600px] max-h-[500px] bg-white rounded-lg shadow-xl p-4 overflow-y-auto">
-                <div className="flex justify-between items-center mb-3">
-                  <h3 className="text-lg font-semibold text-gray-800">Lideranças de {selectedMunicipioLiderancas}</h3>
+              <div className="w-[400px] max-h-[300px] bg-white rounded-lg shadow-xl p-3 overflow-y-auto" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="text-sm font-semibold text-gray-800">Lideranças de {selectedMunicipioLiderancas}</h3>
                   <button onClick={handleCloseLiderancas} className="text-gray-600 hover:text-gray-800">
-                    <X className="h-5 w-5" />
+                    <X className="h-4 w-4" />
                   </button>
                 </div>
                 
                 {loadingLiderancas ? (
-                  <div className="flex justify-center items-center py-8">
-                    <div className="text-gray-600">Carregando lideranças...</div>
+                  <div className="flex justify-center items-center py-4">
+                    <div className="text-gray-600 text-sm">Carregando...</div>
                   </div>
                 ) : liderancasMunicipio.length > 0 ? (
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {liderancasMunicipio.map((lideranca, index) => (
-                      <div key={index} className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50">
-                        <div className="grid grid-cols-2 gap-3">
+                      <div key={index} className="border border-gray-200 rounded p-2 hover:bg-gray-50">
+                        <div className="space-y-1">
                           <div>
-                            <p className="text-sm font-medium text-gray-700">Liderança:</p>
-                            <p className="text-base font-bold text-gray-900">{lideranca.lideranca}</p>
+                            <p className="text-xs font-medium text-gray-700">Liderança:</p>
+                            <p className="text-sm font-bold text-gray-900">{lideranca.lideranca}</p>
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-gray-700">Cargo 2024:</p>
-                            <p className="text-base font-bold text-gray-900">{lideranca.cargo2024}</p>
+                            <p className="text-xs font-medium text-gray-700">Cargo:</p>
+                            <p className="text-sm font-bold text-gray-900">{lideranca.cargo2024}</p>
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-gray-700">Votação 2022:</p>
-                            <p className="text-base font-bold text-gray-900">{formatNumber(parseInt(lideranca.votacao2022))}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-700">Expectativa 2026:</p>
-                            <p className="text-base font-bold text-gray-900">{formatNumber(parseInt(lideranca.expectativa2026))}</p>
+                            <p className="text-xs font-medium text-gray-700">Expectativa 2026:</p>
+                            <p className="text-sm font-bold text-gray-900">{formatNumber(parseInt(lideranca.expectativa2026))}</p>
                           </div>
                         </div>
-                        {lideranca.urlImagem && (
-                          <div className="mt-3">
-                            <img src={lideranca.urlImagem} alt={`Liderança ${lideranca.lideranca}`} className="w-full h-auto rounded-md max-h-32 object-cover" />
-                          </div>
-                        )}
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-8 text-gray-600">
-                    Nenhuma liderança encontrada para este município.
+                  <div className="text-center py-4 text-gray-600 text-sm">
+                    Nenhuma liderança encontrada.
                   </div>
                 )}
               </div>
