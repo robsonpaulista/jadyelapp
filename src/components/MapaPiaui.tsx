@@ -377,6 +377,27 @@ export default function MapaPiaui({ onFilterChange }: MapaPiauiProps) {
     setLiderancasTooltipTarget(null);
   }, []);
 
+  // Fechar tooltip de lideranças ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showLiderancasModal && liderancasTooltipTarget) {
+        const target = event.target as HTMLElement;
+        const tooltip = document.querySelector('[data-tooltip-liderancas]') as HTMLElement;
+        
+        if (tooltip && !tooltip.contains(target) && !liderancasTooltipTarget.contains(target)) {
+          handleCloseLiderancas();
+        }
+      }
+    };
+
+    if (showLiderancasModal) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [showLiderancasModal, liderancasTooltipTarget, handleCloseLiderancas]);
+
   // Função para normalizar nomes de municípios para comparação
   const normalizeString = (str: string): string => {
     return str
@@ -615,15 +636,27 @@ export default function MapaPiaui({ onFilterChange }: MapaPiauiProps) {
               transform: 'translateX(-50%)'
             }}
           >
-            <div className="pointer-events-auto">
+            <div 
+              className="pointer-events-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
               {/* Seta do tooltip */}
               <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-white mx-auto mb-0"></div>
               
               {/* Conteúdo do tooltip */}
-              <div className="w-[350px] max-h-[250px] bg-white rounded-lg shadow-xl p-3 overflow-y-auto border border-gray-200">
+              <div 
+                className="w-[350px] max-h-[250px] bg-white rounded-lg shadow-xl p-3 overflow-y-auto border border-gray-200"
+                data-tooltip-liderancas
+              >
                 <div className="flex justify-between items-center mb-2">
                   <h3 className="text-sm font-semibold text-gray-800">Lideranças de {selectedMunicipioLiderancas}</h3>
-                  <button onClick={handleCloseLiderancas} className="text-gray-600 hover:text-gray-800">
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCloseLiderancas();
+                    }} 
+                    className="text-gray-600 hover:text-gray-800"
+                  >
                     <X className="h-4 w-4" />
                   </button>
                 </div>
