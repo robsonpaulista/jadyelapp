@@ -175,6 +175,7 @@ export default function MapaPiaui({ onFilterChange }: MapaPiauiProps) {
   const liderancasPopupRef = useRef<L.Popup | null>(null);
   const [liderancasTooltipPosition, setLiderancasTooltipPosition] = useState<{x: number, y: number} | null>(null);
   const [liderancasTooltipTarget, setLiderancasTooltipTarget] = useState<HTMLElement | null>(null);
+  const [todasLiderancas, setTodasLiderancas] = useState<Lideranca[]>([]);
 
   // Função para registrar referência do marcador usando useCallback
   const registerMarker = useCallback((municipio: string, marker: L.Marker) => {
@@ -203,6 +204,11 @@ export default function MapaPiaui({ onFilterChange }: MapaPiauiProps) {
         const responseEleicoesEstaduais = await fetch('/api/resultado-eleicoes?tipo=deputado_estadual_2022');
         const dataEleicoesEstaduais = await responseEleicoesEstaduais.json();
         setDadosEleicoesEstaduais2022(dataEleicoesEstaduais.resultados || []);
+
+        // Carregar dados de lideranças
+        const responseLiderancas = await fetch('/api/liderancas-votacao');
+        const dataLiderancas = await responseLiderancas.json();
+        setTodasLiderancas(dataLiderancas.data || []);
 
         // Após carregar os dados, abrir tooltips relevantes
         setTimeout(() => {
@@ -334,10 +340,9 @@ export default function MapaPiaui({ onFilterChange }: MapaPiauiProps) {
     setSelectedTerritorioSummary(null);
   }, []);
 
-  const handleShowLiderancas = useCallback(async (municipio: string, lat: number, lng: number, event: React.MouseEvent) => {
+  const handleShowLiderancas = useCallback((municipio: string, lat: number, lng: number, event: React.MouseEvent) => {
     setSelectedMunicipioLiderancas(municipio);
     setLiderancasModalPosition({lat, lng});
-    setLoadingLiderancas(true);
     setShowLiderancasModal(true);
     
     // Capturar posição do botão clicado
@@ -354,25 +359,12 @@ export default function MapaPiaui({ onFilterChange }: MapaPiauiProps) {
       setLiderancasTooltipTarget(button);
     }
     
-    try {
-      const response = await fetch('/api/liderancas-votacao');
-      const result = await response.json();
-      
-      if (result.data && Array.isArray(result.data)) {
-        const liderancasFiltradas = result.data.filter((l: Lideranca) => 
-          l.municipio?.toUpperCase() === municipio.toUpperCase()
-        );
-        setLiderancasMunicipio(liderancasFiltradas);
-      } else {
-        setLiderancasMunicipio([]);
-      }
-    } catch (error) {
-      console.error('Erro ao buscar lideranças:', error);
-      setLiderancasMunicipio([]);
-    } finally {
-      setLoadingLiderancas(false);
-    }
-  }, []);
+    // Filtrar lideranças do município usando dados já carregados
+    const liderancasFiltradas = todasLiderancas.filter((l: Lideranca) => 
+      l.municipio?.toUpperCase() === municipio.toUpperCase()
+    );
+    setLiderancasMunicipio(liderancasFiltradas);
+  }, [todasLiderancas]);
 
   const handleCloseLiderancas = useCallback(() => {
     setShowLiderancasModal(false);
@@ -634,11 +626,7 @@ export default function MapaPiaui({ onFilterChange }: MapaPiauiProps) {
                   </button>
                 </div>
                 
-                {loadingLiderancas ? (
-                  <div className="flex justify-center items-center py-4">
-                    <div className="text-gray-600 text-sm">Carregando...</div>
-                  </div>
-                ) : liderancasMunicipio.length > 0 ? (
+                {liderancasMunicipio.length > 0 ? (
                   <div className="space-y-1">
                     {liderancasMunicipio.map((lideranca, index) => (
                       <div key={index} className="flex justify-between items-center py-1 px-2 hover:bg-gray-50 rounded text-xs">
