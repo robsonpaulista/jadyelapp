@@ -638,7 +638,10 @@ export default function MapaPiaui({ onFilterChange }: MapaPiauiProps) {
           >
             <div 
               className="pointer-events-auto"
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
             >
               {/* Seta do tooltip */}
               <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-white mx-auto mb-0"></div>
@@ -652,6 +655,7 @@ export default function MapaPiaui({ onFilterChange }: MapaPiauiProps) {
                   <h3 className="text-sm font-semibold text-gray-800">Lideranças de {selectedMunicipioLiderancas}</h3>
                   <button 
                     onClick={(e) => {
+                      e.preventDefault();
                       e.stopPropagation();
                       handleCloseLiderancas();
                     }} 
