@@ -682,12 +682,12 @@ export default function EleicoesAnterioresPage() {
               <button
                 onClick={buscarDados}
                 disabled={loading || !cidade}
-                className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-white hover:bg-blue-50 text-blue-700 cursor-pointer border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-white hover:bg-orange-50 text-orange-500 cursor-pointer border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
               >
                 {loading ? (
-                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  <RefreshCw className="h-4 w-4 animate-spin text-orange-500" />
                 ) : (
-                  <RefreshCw className="h-4 w-4" />
+                  <RefreshCw className="h-4 w-4 text-orange-500" />
                 )}
                 Buscar
               </button>
@@ -717,7 +717,7 @@ export default function EleicoesAnterioresPage() {
                   <button
                     onClick={buscarDemandasLideranca}
                     disabled={!liderancaSelecionada || loadingDemandas}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-blue-600 hover:bg-blue-700 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto justify-center"
+                    className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-orange-500 hover:bg-orange-600 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto justify-center"
                   >
                     {loadingDemandas ? (
                       <RefreshCw className="h-4 w-4 animate-spin" />
@@ -732,7 +732,7 @@ export default function EleicoesAnterioresPage() {
                       buscarNoticiasCidade();
                     }}
                     disabled={!cidade}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-blue-600 hover:bg-blue-700 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto justify-center"
+                    className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-orange-500 hover:bg-orange-600 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto justify-center"
                   >
                     {loadingNoticias ? (
                       <RefreshCw className="h-4 w-4 animate-spin" />

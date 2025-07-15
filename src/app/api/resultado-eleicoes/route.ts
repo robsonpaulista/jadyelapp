@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { buscarResultadosPorCidade, buscarResultadosDeputadoFederal2022 } from '@/services/resultadoEleicoesService';
+import { buscarResultadosPorCidade, buscarResultadosDeputadoFederal2022, buscarResultadosDeputadoEstadual2022 } from '@/services/resultadoEleicoesService';
 
 // Força runtime dinâmico para permitir uso de nextUrl.searchParams
 export const dynamic = 'force-dynamic';
@@ -60,6 +60,16 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ resultados });
     } catch (error) {
       return NextResponse.json({ error: 'Erro ao buscar dados de Deputado Federal 2022.' }, { status: 500 });
+    }
+  }
+
+  // Endpoint para buscar dados de Deputado Estadual 2022 para todos os municípios
+  if (tipo === 'deputado_estadual_2022') {
+    try {
+      const resultados = await buscarResultadosDeputadoEstadual2022();
+      return NextResponse.json({ resultados });
+    } catch (error) {
+      return NextResponse.json({ error: 'Erro ao buscar dados de Deputado Estadual 2022.' }, { status: 500 });
     }
   }
   

@@ -35,6 +35,9 @@ interface ResultadoEleicao {
 
 // Função para obter cor baseada no crescimento da votação
 const obterCorCrescimento = (crescimento: number): string => {
+  if (crescimento >= 100) {
+    return '#059669'; // Verde escuro - Novo município
+  }
   if (crescimento > 5) {
     return '#22c55e'; // Verde - Cresceu
   }
@@ -46,6 +49,9 @@ const obterCorCrescimento = (crescimento: number): string => {
 
 // Função para obter descrição do crescimento
 const obterDescricaoCrescimento = (crescimento: number): string => {
+  if (crescimento >= 100) {
+    return `Novo (${crescimento.toFixed(0)}%)`;
+  }
   if (crescimento > 5) {
     return `Cresceu ${crescimento.toFixed(0)}%`;
   }
@@ -62,6 +68,20 @@ const obterTop5Candidatos2022 = (municipio: string, dadosEleicoes2022: Resultado
   );
   
   return dadosMunicipio2022
+    .sort((a, b) => {
+      const votosA = parseInt(a.quantidadeVotosNominais) || 0;
+      const votosB = parseInt(b.quantidadeVotosNominais) || 0;
+      return votosB - votosA;
+    })
+    .slice(0, 5);
+};
+
+const obterTop5Estaduais2022 = (municipio: string, dadosEleicoesEstaduais2022: ResultadoEleicao[]): ResultadoEleicao[] => {
+  const dadosMunicipioEstaduais2022 = dadosEleicoesEstaduais2022.filter(d => 
+    d.municipio.toUpperCase() === municipio.toUpperCase()
+  );
+  
+  return dadosMunicipioEstaduais2022
     .sort((a, b) => {
       const votosA = parseInt(a.quantidadeVotosNominais) || 0;
       const votosB = parseInt(b.quantidadeVotosNominais) || 0;
@@ -125,6 +145,7 @@ export default function MapaPiaui({ onFilterChange }: MapaPiauiProps) {
   const [municipios, setMunicipios] = useState<Municipio[]>([]);
   const [projecoes, setProjecoes] = useState<ProjecaoMunicipio[]>([]);
   const [dadosEleicoes2022, setDadosEleicoes2022] = useState<ResultadoEleicao[]>([]);
+  const [dadosEleicoesEstaduais2022, setDadosEleicoesEstaduais2022] = useState<ResultadoEleicao[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const mapRef = useRef<L.Map | null>(null);
@@ -159,6 +180,11 @@ export default function MapaPiaui({ onFilterChange }: MapaPiauiProps) {
         const responseEleicoes = await fetch('/api/resultado-eleicoes?tipo=deputado_federal_2022');
         const dataEleicoes = await responseEleicoes.json();
         setDadosEleicoes2022(dataEleicoes.resultados || []);
+
+        // Carregar dados de Deputado Estadual 2022
+        const responseEleicoesEstaduais = await fetch('/api/resultado-eleicoes?tipo=deputado_estadual_2022');
+        const dataEleicoesEstaduais = await responseEleicoesEstaduais.json();
+        setDadosEleicoesEstaduais2022(dataEleicoesEstaduais.resultados || []);
 
         // Após carregar os dados, abrir tooltips relevantes
         setTimeout(() => {
@@ -397,42 +423,88 @@ export default function MapaPiaui({ onFilterChange }: MapaPiauiProps) {
 
               {/* Popup completo que aparece ao clicar */}
               <Popup>
-                <div className="w-[400px] px-4 py-3">
+                <div 
+                  className="w-[580px] max-h-[380px] px-3 py-2 overflow-y-auto bg-white" 
+                  style={{ 
+                    minHeight: '300px',
+                    backgroundColor: 'white',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+                  }}
+                >
                   {/* Cabeçalho */}
-                  <h3 className="text-lg font-medium text-center mb-3 pb-2 border-b">{municipio.nome.toUpperCase()}</h3>
+                  <h3 className="text-sm font-semibold text-center mb-2 pb-1 border-b text-gray-800">{municipio.nome.toUpperCase()}</h3>
                   
                   {/* Grid de informações */}
-                  <div className="grid grid-cols-2 gap-y-2">
-                    <div className="flex justify-between pr-4">
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-1 mb-2 text-xs">
+                    <div className="flex justify-between items-center">
                       <span className="text-gray-600">Crescimento:</span>
-                      <span>Cresceu {crescimento.toFixed(0)}%</span>
+                      <span className="font-semibold text-green-600">+{crescimento.toFixed(0)}%</span>
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                       <span className="text-gray-600">Lideranças:</span>
-                      <span>{formatNumber(projecao.liderancasAtuais)}</span>
+                      <span className="font-semibold">{formatNumber(projecao.liderancasAtuais)}</span>
                     </div>
-                    <div className="flex justify-between pr-4">
+                    <div className="flex justify-between items-center">
                       <span className="text-gray-600">Votação 2022:</span>
-                      <span>{formatNumber(projecao.votacao2022)}</span>
+                      <span className="font-semibold">{formatNumber(projecao.votacao2022)}</span>
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                       <span className="text-gray-600">Expectativa 2026:</span>
-                      <span>{formatNumber(projecao.expectativa2026)}</span>
+                      <span className="font-semibold">{formatNumber(projecao.expectativa2026)}</span>
                     </div>
                   </div>
 
-                  {/* Top 5 */}
-                  <div className="mt-3 pt-2 border-t">
-                    <div className="text-gray-600 mb-1">Top 5 Candidatos em 2022:</div>
-                    <div className="space-y-1">
-                      {obterTop5Candidatos2022(municipio.nome, dadosEleicoes2022).map((candidato, index) => (
-                        <div key={index} className="flex justify-between items-center">
-                          <div className="flex-1">
-                            {candidato.nomeUrnaCandidato} <span className="text-gray-500">({candidato.partido})</span>
+                  {/* Top 5 - Grid com Federais e Estaduais lado a lado */}
+                  <div className="grid grid-cols-2 gap-3 pt-2 border-t">
+                    {/* Deputados Federais */}
+                    <div>
+                      <div className="text-gray-700 mb-1 text-xs font-bold border-b border-gray-200 pb-1">Top 5 Deputados Federais:</div>
+                      <div className="space-y-0.5">
+                        {obterTop5Candidatos2022(municipio.nome, dadosEleicoes2022).map((candidato, index) => (
+                          <div key={index} className="flex justify-between items-center text-xs py-0.5 hover:bg-gray-50 rounded px-1">
+                            <div className="flex-1 min-w-0 mr-1">
+                              <div className="truncate font-medium text-gray-800">
+                                {index + 1}º {candidato.nomeUrnaCandidato}
+                              </div>
+                            </div>
+                            <div className="text-gray-500 text-xs whitespace-nowrap mr-1">
+                              ({candidato.partido})
+                            </div>
+                            <div className="text-right font-bold text-xs text-gray-700 whitespace-nowrap">
+                              {formatNumber(parseInt(candidato.quantidadeVotosNominais))}
+                            </div>
                           </div>
-                          <div className="text-right ml-2">{formatNumber(parseInt(candidato.quantidadeVotosNominais))}</div>
-                        </div>
-                      ))}
+                        ))}
+                        {obterTop5Candidatos2022(municipio.nome, dadosEleicoes2022).length === 0 && (
+                          <div className="text-xs text-gray-500 italic py-1 text-center">Nenhum candidato encontrado</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Deputados Estaduais */}
+                    <div>
+                      <div className="text-gray-700 mb-1 text-xs font-bold border-b border-gray-200 pb-1">Top 5 Deputados Estaduais:</div>
+                      <div className="space-y-0.5">
+                        {obterTop5Estaduais2022(municipio.nome, dadosEleicoesEstaduais2022).map((candidato, index) => (
+                          <div key={index} className="flex justify-between items-center text-xs py-0.5 hover:bg-gray-50 rounded px-1">
+                            <div className="flex-1 min-w-0 mr-1">
+                              <div className="truncate font-medium text-gray-800">
+                                {index + 1}º {candidato.nomeUrnaCandidato}
+                              </div>
+                            </div>
+                            <div className="text-gray-500 text-xs whitespace-nowrap mr-1">
+                              ({candidato.partido})
+                            </div>
+                            <div className="text-right font-bold text-xs text-gray-700 whitespace-nowrap">
+                              {formatNumber(parseInt(candidato.quantidadeVotosNominais))}
+                            </div>
+                          </div>
+                        ))}
+                        {obterTop5Estaduais2022(municipio.nome, dadosEleicoesEstaduais2022).length === 0 && (
+                          <div className="text-xs text-gray-500 italic py-1 text-center">Nenhum candidato encontrado</div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -460,6 +532,7 @@ export default function MapaPiaui({ onFilterChange }: MapaPiauiProps) {
                 municipios={selectedTerritorioSummary.municipios}
                 dadosProjecao={projecoes}
                 dadosEleicoes2022={dadosEleicoes2022}
+                dadosEleicoesEstaduais2022={dadosEleicoesEstaduais2022}
                 onClose={handleCloseSummary}
               />
             </div>

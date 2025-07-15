@@ -6,6 +6,42 @@
 @tailwind components;
 @tailwind utilities;
 
+/* CSS personalizado para o Leaflet Popup */
+.leaflet-popup-content-wrapper {
+  background: white !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+  padding: 0 !important;
+  background: white !important;
+  border-radius: 8px !important;
+  min-height: 300px !important;
+}
+
+.leaflet-popup-tip {
+  background: white !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+.leaflet-popup-close-button {
+  color: #6b7280 !important;
+  font-size: 18px !important;
+  font-weight: bold !important;
+  padding: 8px !important;
+  z-index: 1000 !important;
+}
+
+.leaflet-popup-close-button:hover {
+  color: #374151 !important;
+  background: rgba(0, 0, 0, 0.05) !important;
+  border-radius: 4px !important;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

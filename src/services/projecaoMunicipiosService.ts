@@ -108,9 +108,21 @@ export async function buscarProjecoesMunicipios() {
 
     // Calcular crescimento e alcance para cada município consolidado
     const projecoes = Array.from(municipiosMap.values()).map(municipio => {
-      const crescimento = municipio.votacao2022 > 0 
-        ? ((municipio.expectativa2026 - municipio.votacao2022) / municipio.votacao2022) * 100 
-        : 0;
+      let crescimento = 0;
+      
+      // Se não há votação em 2022 mas há expectativa para 2026, considerar como crescimento de 100%
+      if (municipio.votacao2022 === 0 && municipio.expectativa2026 > 0) {
+        crescimento = 100; // Crescimento de 100% quando vai de 0 para algum valor
+      }
+      // Se há votação em 2022, calcular o crescimento percentual normal
+      else if (municipio.votacao2022 > 0) {
+        crescimento = ((municipio.expectativa2026 - municipio.votacao2022) / municipio.votacao2022) * 100;
+      }
+      // Se não há expectativa para 2026, crescimento é 0
+      else {
+        crescimento = 0;
+      }
+      
       const alcance = municipio.eleitores > 0 
         ? (municipio.expectativa2026 / municipio.eleitores) * 100 
         : 0;

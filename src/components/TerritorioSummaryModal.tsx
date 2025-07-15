@@ -25,6 +25,7 @@ interface TerritorioSummaryModalProps {
   municipios: string[];
   dadosProjecao: ProjecaoMunicipio[];
   dadosEleicoes2022: ResultadoEleicao[];
+  dadosEleicoesEstaduais2022: ResultadoEleicao[];
   onClose: () => void;
 }
 
@@ -33,6 +34,7 @@ export default function TerritorioSummaryModal({
   municipios, 
   dadosProjecao, 
   dadosEleicoes2022, 
+  dadosEleicoesEstaduais2022,
   onClose 
 }: TerritorioSummaryModalProps) {
   console.log('TerritorioSummaryModal renderizado:', { territorio, municipios: municipios.length, dadosProjecao: dadosProjecao.length, dadosEleicoes2022: dadosEleicoes2022.length });
