@@ -359,14 +359,16 @@ export default function MapaPiaui({ onFilterChange }: MapaPiauiProps) {
       setLiderancasTooltipTarget(button);
     }
     
-    // Filtrar lideranças do município usando dados já carregados
+    // Filtrar lideranças atuais do município usando dados já carregados
     const liderancasFiltradas = todasLiderancas.filter((l: Lideranca) => 
-      l.municipio?.toUpperCase() === municipio.toUpperCase()
+      l.municipio?.toUpperCase() === municipio.toUpperCase() &&
+      l.liderancaAtual?.toLowerCase() === 'sim'
     );
     setLiderancasMunicipio(liderancasFiltradas);
   }, [todasLiderancas]);
 
   const handleCloseLiderancas = useCallback(() => {
+    console.log('Fechando tooltip de lideranças');
     setShowLiderancasModal(false);
     setSelectedMunicipioLiderancas('');
     setLiderancasMunicipio([]);
