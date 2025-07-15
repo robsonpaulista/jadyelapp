@@ -606,22 +606,17 @@ export default function MapaPiaui({ onFilterChange }: MapaPiauiProps) {
                     <div className="text-gray-600 text-sm">Carregando...</div>
                   </div>
                 ) : liderancasMunicipio.length > 0 ? (
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     {liderancasMunicipio.map((lideranca, index) => (
-                      <div key={index} className="border border-gray-200 rounded p-2 hover:bg-gray-50">
-                        <div className="space-y-1">
-                          <div>
-                            <p className="text-xs font-medium text-gray-700">Liderança:</p>
-                            <p className="text-sm font-bold text-gray-900">{lideranca.lideranca}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs font-medium text-gray-700">Cargo:</p>
-                            <p className="text-sm font-bold text-gray-900">{lideranca.cargo2024}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs font-medium text-gray-700">Expectativa 2026:</p>
-                            <p className="text-sm font-bold text-gray-900">{formatNumber(parseInt(lideranca.expectativa2026))}</p>
-                          </div>
+                      <div key={index} className="flex justify-between items-center py-1 px-2 hover:bg-gray-50 rounded text-xs">
+                        <div className="flex-1 font-medium text-gray-900 truncate mr-2">
+                          {lideranca.lideranca}
+                        </div>
+                        <div className="text-gray-600 mr-2 min-w-0">
+                          {lideranca.cargo2024}
+                        </div>
+                        <div className="font-bold text-gray-900 whitespace-nowrap">
+                          {formatNumber(parseInt(lideranca.expectativa2026))}
                         </div>
                       </div>
                     ))}
