@@ -372,7 +372,17 @@ export default function CenariosManager({
                 </div>
                 
                 <div className="flex items-center gap-2 pt-2">
-                  {!cenario.ativo && (
+                  {cenario.ativo ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={loading}
+                      className="flex-1 bg-green-50 border-green-200 text-green-700"
+                    >
+                      <Check className="h-4 w-4 mr-1" />
+                      Ativo
+                    </Button>
+                  ) : (
                     <Button
                       variant="outline"
                       size="sm"
