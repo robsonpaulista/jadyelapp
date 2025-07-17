@@ -484,15 +484,25 @@ export default function ChapasPage() {
   };
 
   const calcularMaiorSobra2 = () => {
-    const sobras2 = partidos.map(partido => {
+    // Encontrar o partido com a maior Sobra 1
+    const sobras1 = partidos.map(partido => {
       const votosTotal = getVotosProjetados(partido.candidatos, partido.nome);
-      if (partido.nome === "PT" || partido.nome === "PSD/MDB") {
-        return votosTotal / 4; // ÷4 para PT e PSD/MDB
-      } else {
-        return votosTotal; // Mesmo valor da Sobra 1 para PP e REPUBLICANOS
-      }
+      return {
+        partido: partido.nome,
+        sobra1: getSobra1Partido(partido.nome, votosTotal),
+        votosTotal
+      };
     });
-    return Math.max(...sobras2);
+    
+    const maiorSobra1 = Math.max(...sobras1.map(s => s.sobra1));
+    const vencedor = sobras1.find(s => s.sobra1 === maiorSobra1);
+    const perdedor = sobras1.find(s => s.sobra1 !== maiorSobra1);
+    
+    if (!vencedor || !perdedor) return maiorSobra1;
+    
+    // Sobra 2 = Sobra 1 do perdedor + conta do vencedor
+    const sobra2Vencedor = getSobra2Partido(vencedor.partido, vencedor.votosTotal);
+    return perdedor.sobra1 + sobra2Vencedor;
   };
 
   const getSobra1Partido = (partidoNome: string, votosTotal: number) => {
@@ -509,6 +519,38 @@ export default function ChapasPage() {
     } else {
       return votosTotal; // Mesmo valor da Sobra 1 para PP e REPUBLICANOS
     }
+  };
+
+  const getSobra2Calculada = (partidoNome: string, votosTotal: number) => {
+    // Encontrar o partido com a maior Sobra 1
+    const sobras1 = partidos.map(partido => {
+      const votosTotalPartido = getVotosProjetados(partido.candidatos, partido.nome);
+      return {
+        partido: partido.nome,
+        sobra1: getSobra1Partido(partido.nome, votosTotalPartido),
+        votosTotal: votosTotalPartido
+      };
+    });
+    
+    const maiorSobra1 = Math.max(...sobras1.map(s => s.sobra1));
+    const vencedor = sobras1.find(s => s.sobra1 === maiorSobra1);
+    const perdedor = sobras1.find(s => s.sobra1 !== maiorSobra1);
+    
+    if (!vencedor || !perdedor) return getSobra2Partido(partidoNome, votosTotal);
+    
+    // Se este partido é o vencedor, calcular Sobra 2 = Sobra 1 do perdedor + conta do vencedor
+    if (partidoNome === vencedor.partido) {
+      const sobra2Vencedor = getSobra2Partido(vencedor.partido, vencedor.votosTotal);
+      return perdedor.sobra1 + sobra2Vencedor;
+    }
+    
+    // Se este partido é o perdedor, repetir sua Sobra 1
+    if (partidoNome === perdedor.partido) {
+      return perdedor.sobra1;
+    }
+    
+    // Para outros partidos, usar cálculo normal
+    return getSobra2Partido(partidoNome, votosTotal);
   };
 
   // Função para separar candidatos homens e mulheres do PT
@@ -1434,12 +1476,12 @@ export default function ChapasPage() {
 
               <div className="flex flex-col gap-1 mt-2">
                 <div className="flex flex-col gap-1">
-                  {(() => {
-                    const votosTotal = getVotosProjetados(partido.candidatos, partido.nome);
-                    const sobra1 = getSobra1Partido(partido.nome, votosTotal);
-                    const sobra2 = getSobra2Partido(partido.nome, votosTotal);
-                    const maiorSobra1 = calcularMaiorSobra1();
-                    const maiorSobra2 = calcularMaiorSobra2();
+                                     {(() => {
+                     const votosTotal = getVotosProjetados(partido.candidatos, partido.nome);
+                     const sobra1 = getSobra1Partido(partido.nome, votosTotal);
+                     const sobra2 = getSobra2Calculada(partido.nome, votosTotal);
+                     const maiorSobra1 = calcularMaiorSobra1();
+                     const maiorSobra2 = calcularMaiorSobra2();
                     
                     return (
                       <>
