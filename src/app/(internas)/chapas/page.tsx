@@ -271,7 +271,8 @@ export default function ChapasPage() {
         const cenarioAtivo = await obterCenarioAtivo();
         if (cenarioAtivo) {
           setCenarioAtivo(cenarioAtivo);
-          setPartidos(cenarioAtivo.partidos);
+          const partidosOrdenados = ordenarPartidos(cenarioAtivo.partidos);
+          setPartidos(partidosOrdenados);
           setQuociente(cenarioAtivo.quocienteEleitoral);
         } else {
           // Fallback para o sistema antigo
@@ -291,11 +292,9 @@ export default function ChapasPage() {
               partidosMap[chapa.partido].candidatos.push({ nome: chapa.nome, votos: chapa.votos });
             });
 
-            // Definir a ordem dos partidos
-            const ordemPartidos = ["PT", "PSD/MDB", "PP", "REPUBLICANOS"];
-            const partidosOrdenados = ordemPartidos
-              .map(partidoNome => partidosMap[partidoNome])
-              .filter(Boolean);
+            // Converter para array e ordenar
+            const partidosArray = Object.values(partidosMap);
+            const partidosOrdenados = ordenarPartidos(partidosArray);
 
             setPartidos(partidosOrdenados);
           }
@@ -655,7 +654,8 @@ export default function ChapasPage() {
   const handleCenarioChange = (cenario: CenarioCompleto) => {
     console.log('Mudando para cenário:', cenario.nome, cenario.tipo);
     setCenarioAtivo(cenario);
-    setPartidos(cenario.partidos);
+    const partidosOrdenados = ordenarPartidos(cenario.partidos);
+    setPartidos(partidosOrdenados);
     setQuociente(cenario.quocienteEleitoral);
   };
 
@@ -664,7 +664,8 @@ export default function ChapasPage() {
     obterCenarioAtivo().then(cenario => {
       if (cenario) {
         setCenarioAtivo(cenario);
-        setPartidos(cenario.partidos);
+        const partidosOrdenados = ordenarPartidos(cenario.partidos);
+        setPartidos(partidosOrdenados);
         setQuociente(cenario.quocienteEleitoral);
       }
     });
@@ -677,15 +678,25 @@ export default function ChapasPage() {
       if (cenario) {
         console.log('Novo cenário ativo carregado:', cenario.nome);
         setCenarioAtivo(cenario);
-        setPartidos(cenario.partidos);
+        const partidosOrdenados = ordenarPartidos(cenario.partidos);
+        setPartidos(partidosOrdenados);
         setQuociente(cenario.quocienteEleitoral);
       }
     });
   };
 
+  // Função para ordenar partidos na ordem fixa
+  const ordenarPartidos = <T extends { nome: string }>(partidosParaOrdenar: T[]): T[] => {
+    const ordemPartidos = ["PT", "PSD/MDB", "PP", "REPUBLICANOS"];
+    return ordemPartidos
+      .map(nomePartido => partidosParaOrdenar.find(p => p.nome === nomePartido))
+      .filter(Boolean) as T[];
+  };
+
   // Função para converter partidos para o formato do cenário
   const converterPartidosParaCenario = (): PartidoCenario[] => {
-    return partidos.map(partido => ({
+    const partidosOrdenados = ordenarPartidos(partidos);
+    return partidosOrdenados.map(partido => ({
       nome: partido.nome,
       cor: partido.cor,
       corTexto: partido.corTexto,
@@ -840,7 +851,10 @@ export default function ChapasPage() {
 
         {/* Grid de partidos */}
         <div className="w-full grid grid-cols-1 md:grid-cols-4 gap-6">
-          {partidos.map((partido, pIdx) => (
+          {ordenarPartidos(partidos).map((partido, pIdx) => {
+            // Encontrar o índice real do partido no array original
+            const partidoIdx = partidos.findIndex(p => p.nome === partido.nome);
+            return (
             <div key={partido.nome} className="flex flex-col items-center bg-white rounded-lg shadow-sm border border-gray-100 p-3 h-full min-h-[420px]">
               <div className="w-full text-center py-1 font-bold text-base mb-2 rounded bg-gray-200 text-gray-800">{partido.nome}</div>
               
@@ -1438,7 +1452,8 @@ export default function ChapasPage() {
                 )}
               </div>
             </div>
-          ))}
+          );
+          })}
         </div>
 
         {/* Container para as simulações */}
