@@ -1474,6 +1474,7 @@ export default function ChapasPage() {
                               sobra1 === maiorSobra1 ? 'text-green-600' : 'text-gray-600'
                             }`}>
                               Sobra 1: {sobra1.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              {sobra1 === maiorSobra1 && <Check className="h-3 w-3 ml-1 text-green-600" />}
                             </div>
                           </div>
                           <div className="text-center">
@@ -1481,6 +1482,7 @@ export default function ChapasPage() {
                               sobra2 === maiorSobra2 ? 'text-green-600' : 'text-gray-600'
                             }`}>
                               Sobra 2: {sobra2.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              {sobra2 === maiorSobra2 && <Check className="h-3 w-3 ml-1 text-green-600" />}
                             </div>
                           </div>
                         </div>
