@@ -470,6 +470,47 @@ export default function ChapasPage() {
   const getDivisaoPorQuatro = (votosTotal: number) => (votosTotal / 4).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const getDivisaoPorCinco = (votosTotal: number) => (votosTotal / 5).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+  // Funções para calcular as maiores sobras entre todos os partidos
+  const calcularMaiorSobra1 = () => {
+    const sobras1 = partidos.map(partido => {
+      const votosTotal = getVotosProjetados(partido.candidatos, partido.nome);
+      if (partido.nome === "PT" || partido.nome === "PSD/MDB") {
+        return votosTotal / 3; // ÷3 para PT e PSD/MDB
+      } else {
+        return votosTotal; // Votos totais para PP e REPUBLICANOS
+      }
+    });
+    return Math.max(...sobras1);
+  };
+
+  const calcularMaiorSobra2 = () => {
+    const sobras2 = partidos.map(partido => {
+      const votosTotal = getVotosProjetados(partido.candidatos, partido.nome);
+      if (partido.nome === "PT" || partido.nome === "PSD/MDB") {
+        return votosTotal / 4; // ÷4 para PT e PSD/MDB
+      } else {
+        return votosTotal; // Mesmo valor da Sobra 1 para PP e REPUBLICANOS
+      }
+    });
+    return Math.max(...sobras2);
+  };
+
+  const getSobra1Partido = (partidoNome: string, votosTotal: number) => {
+    if (partidoNome === "PT" || partidoNome === "PSD/MDB") {
+      return votosTotal / 3;
+    } else {
+      return votosTotal; // PP e REPUBLICANOS
+    }
+  };
+
+  const getSobra2Partido = (partidoNome: string, votosTotal: number) => {
+    if (partidoNome === "PT" || partidoNome === "PSD/MDB") {
+      return votosTotal / 4;
+    } else {
+      return votosTotal; // Mesmo valor da Sobra 1 para PP e REPUBLICANOS
+    }
+  };
+
   // Função para separar candidatos homens e mulheres do PT
   const separarCandidatosPT = (candidatos: { nome: string; votos: number }[]) => {
     const candidatosFiltrados = candidatos.filter(c => c.nome !== "VOTOS LEGENDA");
@@ -1393,63 +1434,60 @@ export default function ChapasPage() {
 
               <div className="flex flex-col gap-1 mt-2">
                 <div className="flex flex-col gap-1">
-                  {partido.nome === "PT" || partido.nome === "PSD/MDB" ? (
-                    <>
-                      <div className="grid grid-cols-3 gap-2 text-xs items-center justify-start">
-                        <div className="whitespace-nowrap flex items-center">
-                          ÷3: {getDivisaoPorTres(getVotosProjetados(partido.candidatos, partido.nome))}
-                        </div>
-                        <div className="whitespace-nowrap flex items-center">
-                          ÷4: {getDivisaoPorQuatro(getVotosProjetados(partido.candidatos, partido.nome))}
-                        </div>
-                        <div className="whitespace-nowrap flex items-center">
-                          ÷5: {getDivisaoPorCinco(getVotosProjetados(partido.candidatos, partido.nome))}
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <div className="text-center">
-                          <div className="whitespace-nowrap flex items-center justify-center font-semibold text-green-600 text-xs">
-                            Sobra 1: {getDivisaoPorTres(getVotosProjetados(partido.candidatos, partido.nome))}
+                  {(() => {
+                    const votosTotal = getVotosProjetados(partido.candidatos, partido.nome);
+                    const sobra1 = getSobra1Partido(partido.nome, votosTotal);
+                    const sobra2 = getSobra2Partido(partido.nome, votosTotal);
+                    const maiorSobra1 = calcularMaiorSobra1();
+                    const maiorSobra2 = calcularMaiorSobra2();
+                    
+                    return (
+                      <>
+                        {/* Divisões específicas por partido */}
+                        {partido.nome === "PT" || partido.nome === "PSD/MDB" ? (
+                          <div className="grid grid-cols-3 gap-2 text-xs items-center justify-start">
+                            <div className="whitespace-nowrap flex items-center">
+                              ÷3: {getDivisaoPorTres(votosTotal)}
+                            </div>
+                            <div className="whitespace-nowrap flex items-center">
+                              ÷4: {getDivisaoPorQuatro(votosTotal)}
+                            </div>
+                            <div className="whitespace-nowrap flex items-center">
+                              ÷5: {getDivisaoPorCinco(votosTotal)}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-2 gap-2 text-xs items-center justify-start">
+                            <div className="whitespace-nowrap flex items-center">
+                              ÷2: {getDivisaoPorDois(votosTotal)}
+                            </div>
+                            <div className="whitespace-nowrap flex items-center">
+                              ÷3: {getDivisaoPorTres(votosTotal)}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Sobras - todos os partidos têm Sobra 1 e Sobra 2 */}
+                        <div className="flex flex-col gap-1">
+                          <div className="text-center">
+                            <div className={`whitespace-nowrap flex items-center justify-center font-semibold text-xs ${
+                              sobra1 === maiorSobra1 ? 'text-green-600' : 'text-gray-600'
+                            }`}>
+                              Sobra 1: {sobra1.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </div>
+                          </div>
+                          <div className="text-center">
+                            <div className={`whitespace-nowrap flex items-center justify-center font-semibold text-xs ${
+                              sobra2 === maiorSobra2 ? 'text-green-600' : 'text-gray-600'
+                            }`}>
+                              Sobra 2: {sobra2.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </div>
                           </div>
                         </div>
-                        <div className="text-center">
-                          <div className="whitespace-nowrap flex items-center justify-center font-semibold text-orange-500 text-xs">
-                            Sobra 2: {getDivisaoPorQuatro(getVotosProjetados(partido.candidatos, partido.nome))}
-                          </div>
-                        </div>
-                      </div>
-                    </>
-                  ) : partido.nome === "PP" || partido.nome === "REPUBLICANOS" ? (
-                    <>
-                      <div className="grid grid-cols-2 gap-2 text-xs items-center justify-start">
-                        <div className="whitespace-nowrap flex items-center">
-                          ÷2: {getDivisaoPorDois(getVotosProjetados(partido.candidatos, partido.nome))}
-                        </div>
-                        <div className="whitespace-nowrap flex items-center">
-                          ÷3: {getDivisaoPorTres(getVotosProjetados(partido.candidatos, partido.nome))}
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="grid grid-cols-2 gap-2 text-xs items-center justify-start">
-                        <div className="whitespace-nowrap flex items-center">
-                          ÷3: {getDivisaoPorTres(getVotosProjetados(partido.candidatos, partido.nome))}
-                        </div>
-                        <div className="whitespace-nowrap flex items-center">
-                          ÷4: {getDivisaoPorQuatro(getVotosProjetados(partido.candidatos, partido.nome))}
-                        </div>
-                      </div>
-                    </>
-                  )}
+                      </>
+                    );
+                  })()}
                 </div>
-                {(partido.nome === "PP" || partido.nome === "REPUBLICANOS") && (
-                  <div className="text-center">
-                    <div className="whitespace-nowrap flex items-center justify-center font-semibold text-green-600 text-xs">
-                      Sobra 1: {getVotosProjetados(partido.candidatos, partido.nome).toLocaleString('pt-BR')}
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           );
