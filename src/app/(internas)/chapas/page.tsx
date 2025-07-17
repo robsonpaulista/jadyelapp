@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Trash2, Plus, Pencil, RefreshCw, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { carregarChapas, atualizarChapa, excluirChapa, carregarQuocienteEleitoral, salvarQuocienteEleitoral, Chapa, CenarioCompleto, PartidoCenario, obterCenarioAtivo, atualizarCenario } from "@/services/chapasService";
+import { carregarChapas, atualizarChapa, excluirChapa, carregarQuocienteEleitoral, salvarQuocienteEleitoral, Chapa, CenarioCompleto, PartidoCenario, obterCenarioAtivo, atualizarCenario, carregarCenario } from "@/services/chapasService";
 import CenariosManager from "@/components/CenariosManager";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -474,42 +474,40 @@ export default function ChapasPage() {
   const calcularMaiorSobra1 = () => {
     const sobras1 = partidos.map(partido => {
       const votosTotal = getVotosProjetados(partido.candidatos, partido.nome);
-      if (partido.nome === "PT" || partido.nome === "PSD/MDB") {
-        return votosTotal / 3; // ÷3 para PT e PSD/MDB
-      } else {
-        return votosTotal; // Votos totais para PP e REPUBLICANOS
-      }
+      return getSobra1Partido(partido.nome, votosTotal);
     });
     return Math.max(...sobras1);
   };
 
   const calcularMaiorSobra2 = () => {
-    // Encontrar o partido com a maior Sobra 1
-    const sobras1 = partidos.map(partido => {
+    // Calcular todas as Sobras 2
+    const sobras2 = partidos.map(partido => {
       const votosTotal = getVotosProjetados(partido.candidatos, partido.nome);
-      return {
-        partido: partido.nome,
-        sobra1: getSobra1Partido(partido.nome, votosTotal),
-        votosTotal
-      };
+      return getSobra2Calculada(partido.nome, votosTotal);
     });
     
-    const maiorSobra1 = Math.max(...sobras1.map(s => s.sobra1));
-    const vencedor = sobras1.find(s => s.sobra1 === maiorSobra1);
-    const perdedor = sobras1.find(s => s.sobra1 !== maiorSobra1);
-    
-    if (!vencedor || !perdedor) return maiorSobra1;
-    
-    // Sobra 2 = Sobra 1 do perdedor + conta do vencedor
-    const sobra2Vencedor = getSobra2Partido(vencedor.partido, vencedor.votosTotal);
-    return perdedor.sobra1 + sobra2Vencedor;
+    // Retornar a maior Sobra 2
+    return Math.max(...sobras2);
   };
 
   const getSobra1Partido = (partidoNome: string, votosTotal: number) => {
-    if (partidoNome === "PT" || partidoNome === "PSD/MDB") {
+    const projecaoEleitos = votosTotal / quociente;
+    
+    // Regra geral para todos os partidos:
+    // Se projeção < N eleitos: Sobra 1 = votos totais ÷ N
+    if (projecaoEleitos < 1) {
+      return votosTotal; // ÷1 = votos totais
+    } else if (projecaoEleitos < 2) {
+      return votosTotal / 2;
+    } else if (projecaoEleitos < 3) {
       return votosTotal / 3;
+    } else if (projecaoEleitos < 4) {
+      return votosTotal / 4;
+    } else if (projecaoEleitos < 5) {
+      return votosTotal / 5;
     } else {
-      return votosTotal; // PP e REPUBLICANOS
+      // Para projeções muito altas, continuar a sequência
+      return votosTotal / Math.ceil(projecaoEleitos);
     }
   };
 
@@ -534,23 +532,31 @@ export default function ChapasPage() {
     
     const maiorSobra1 = Math.max(...sobras1.map(s => s.sobra1));
     const vencedor = sobras1.find(s => s.sobra1 === maiorSobra1);
-    const perdedor = sobras1.find(s => s.sobra1 !== maiorSobra1);
     
-    if (!vencedor || !perdedor) return getSobra2Partido(partidoNome, votosTotal);
+    if (!vencedor) return getSobra2Partido(partidoNome, votosTotal);
     
-    // Se este partido é o vencedor, calcular Sobra 2 = Sobra 1 do perdedor + conta do vencedor
+    // Se este partido é o ganhador da Sobra 1, "andar uma casa" no cálculo
     if (partidoNome === vencedor.partido) {
-      const sobra2Vencedor = getSobra2Partido(vencedor.partido, vencedor.votosTotal);
-      return perdedor.sobra1 + sobra2Vencedor;
+      const projecaoEleitos = votosTotal / quociente;
+      
+      // "Andar uma casa": se Sobra 1 era ÷N, Sobra 2 será ÷(N+1)
+      if (projecaoEleitos < 1) {
+        return votosTotal / 2; // Era votos totais, agora ÷2
+      } else if (projecaoEleitos < 2) {
+        return votosTotal / 3; // Era ÷2, agora ÷3
+      } else if (projecaoEleitos < 3) {
+        return votosTotal / 4; // Era ÷3, agora ÷4
+      } else if (projecaoEleitos < 4) {
+        return votosTotal / 5; // Era ÷4, agora ÷5
+      } else if (projecaoEleitos < 5) {
+        return votosTotal / 6; // Era ÷5, agora ÷6
+      } else {
+        return votosTotal / (Math.ceil(projecaoEleitos) + 1);
+      }
     }
     
-    // Se este partido é o perdedor, repetir sua Sobra 1
-    if (partidoNome === perdedor.partido) {
-      return perdedor.sobra1;
-    }
-    
-    // Para outros partidos, usar cálculo normal
-    return getSobra2Partido(partidoNome, votosTotal);
+    // Se este partido é um perdedor da Sobra 1, repetir sua própria Sobra 1
+    return getSobra1Partido(partidoNome, votosTotal);
   };
 
   // Função para separar candidatos homens e mulheres do PT
@@ -757,13 +763,17 @@ export default function ChapasPage() {
   const handleCenarioDeleted = () => {
     // Recarregar cenário ativo após exclusão
     console.log('Cenário excluído, recarregando cenário ativo...');
-    obterCenarioAtivo().then(cenario => {
+    
+    // Forçar recarregamento do cenário base do Firestore
+    carregarCenario('base').then((cenario: CenarioCompleto | null) => {
       if (cenario) {
-        console.log('Novo cenário ativo carregado:', cenario.nome);
+        console.log('Cenário base recarregado:', cenario.nome);
         setCenarioAtivo(cenario);
         const partidosOrdenados = ordenarPartidos(cenario.partidos);
         setPartidos(partidosOrdenados);
         setQuociente(cenario.quocienteEleitoral);
+      } else {
+        console.error('Erro: não foi possível carregar o cenário base');
       }
     });
   };
@@ -1539,43 +1549,9 @@ export default function ChapasPage() {
         </div>
 
         {/* Container para as simulações */}
-        <div className="mt-8 grid grid-cols-2 gap-4">
-          {/* Seção independente para soma PSD/MDB + JADYEL */}
-          <div className="p-4 bg-gray-100 rounded-lg">
-            <div className="text-base font-semibold mb-2">
-              Simulação de Fusão - PSD/MDB + JADYEL
-            </div>
-            {(() => {
-              const psdmdb = partidos.find(p => p.nome === "PSD/MDB");
-              const republicanos = partidos.find(p => p.nome === "REPUBLICANOS");
-              const jadyel = republicanos?.candidatos.find(c => c.nome === "JADYEL");
-              
-              if (!psdmdb || !jadyel) return null;
-
-              const votosPSDMDB = getVotosProjetados(psdmdb.candidatos, "PSD/MDB");
-              const votosTotal = votosPSDMDB + jadyel.votos;
-
-              return (
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2 text-sm">
-                    <span>PSD/MDB ({votosPSDMDB.toLocaleString('pt-BR')})</span>
-                    <span>+</span>
-                    <span>JADYEL ({jadyel.votos.toLocaleString('pt-BR')})</span>
-                    <span>=</span>
-                    <span className="font-bold">{votosTotal.toLocaleString('pt-BR')}</span>
-                  </div>
-                  <div className="flex flex-col gap-2 text-sm text-gray-600">
-                    <div>Eleitos pelo Quociente ({quociente.toLocaleString('pt-BR')}): {(votosTotal / quociente).toFixed(2)}</div>
-                    <div>÷3: {getDivisaoPorTres(votosTotal)}</div>
-                    <div>÷4: {getDivisaoPorQuatro(votosTotal)}</div>
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
-
+        <div className="mt-8">
           {/* Seção independente para soma PP + IGREJA */}
-          <div className="p-4 bg-gray-100 rounded-lg">
+          <div className="p-4 bg-gray-100 rounded-lg max-w-md">
             <div className="text-base font-semibold mb-2">
               Simulação de Fusão - PP + IGREJA
             </div>
@@ -1612,8 +1588,6 @@ export default function ChapasPage() {
               );
             })()}
           </div>
-
-
         </div>
       </div>
     </div>
