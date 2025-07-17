@@ -372,7 +372,7 @@ export default function CenariosManager({
                 </div>
                 
                 <div className="flex items-center gap-2 pt-2">
-                  {!cenario.ativo && cenario.tipo !== 'base' && (
+                  {!cenario.ativo && (
                     <Button
                       variant="outline"
                       size="sm"
