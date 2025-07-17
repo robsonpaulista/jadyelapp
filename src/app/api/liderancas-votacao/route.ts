@@ -1,6 +1,11 @@
 import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 
+// Cache em memória para os dados de lideranças
+let liderancasCache: any = null;
+let cacheTimestamp: number = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+
 // Função para converter número com vírgula para inteiro
 function converterNumero(valor: string): number {
   if (!valor) return 0;
@@ -23,10 +28,26 @@ function converterNumero(valor: string): number {
   return Math.round(numero);
 }
 
+// Função para verificar se o cache ainda é válido
+function isCacheValid(): boolean {
+  return liderancasCache !== null && (Date.now() - cacheTimestamp) < CACHE_DURATION;
+}
+
 export async function GET(req: any) {
   const debug = req.nextUrl?.searchParams?.get('debug');
+  const forceRefresh = req.nextUrl?.searchParams?.get('refresh') === 'true';
   
   try {
+    // Verificar cache primeiro (exceto se for debug ou refresh forçado)
+    if (!debug && !forceRefresh && isCacheValid()) {
+      console.log('=== Retornando dados do cache ===');
+      return NextResponse.json({ 
+        data: liderancasCache,
+        fromCache: true,
+        cacheAge: Math.round((Date.now() - cacheTimestamp) / 1000) + 's'
+      });
+    }
+
     console.log('=== DEBUG - Iniciando busca de dados de lideranças ===');
     
     // Usar as mesmas credenciais da API que funciona
@@ -155,10 +176,15 @@ export async function GET(req: any) {
     console.log('Exemplo de registro processado:', JSON.stringify(data[0], null, 2));
     console.log('Processados', data.length, 'registros');
 
+    // Atualizar cache
+    liderancasCache = data;
+    cacheTimestamp = Date.now();
+
     return NextResponse.json({ 
       data,
       sheetUsed: usedSheetName,
-      totalRecords: data.length
+      totalRecords: data.length,
+      fromCache: false
     });
   } catch (error: any) {
     console.error('=== ERRO DETALHADO ===');

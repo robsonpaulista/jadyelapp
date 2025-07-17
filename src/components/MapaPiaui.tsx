@@ -185,29 +185,48 @@ export default function MapaPiaui({ onFilterChange }: MapaPiauiProps) {
   useEffect(() => {
     const carregarDados = async () => {
       try {
-        // Carregar coordenadas dos municípios
-        const responseMunicipios = await fetch('/coordenadas_municipios.json');
-        const dataMunicipios = await responseMunicipios.json();
+        console.log('=== Iniciando carregamento de dados ===');
+        
+        // Carregar todos os dados em paralelo para melhor performance
+        const [
+          responseMunicipios,
+          responseProjecoes,
+          responseEleicoes,
+          responseEleicoesEstaduais,
+          responseLiderancas
+        ] = await Promise.all([
+          fetch('/coordenadas_municipios.json'),
+          fetch('/api/projecao-municipios'),
+          fetch('/api/resultado-eleicoes?tipo=deputado_federal_2022'),
+          fetch('/api/resultado-eleicoes?tipo=deputado_estadual_2022'),
+          fetch('/api/liderancas-votacao')
+        ]);
+
+        const [
+          dataMunicipios,
+          dataProjecoes,
+          dataEleicoes,
+          dataEleicoesEstaduais,
+          dataLiderancas
+        ] = await Promise.all([
+          responseMunicipios.json(),
+          responseProjecoes.json(),
+          responseEleicoes.json(),
+          responseEleicoesEstaduais.json(),
+          responseLiderancas.json()
+        ]);
+
+        console.log('=== Dados carregados com sucesso ===');
+        console.log('Municípios:', dataMunicipios.municipios?.length || 0);
+        console.log('Projeções:', dataProjecoes.length || 0);
+        console.log('Eleições Federais:', dataEleicoes.resultados?.length || 0);
+        console.log('Eleições Estaduais:', dataEleicoesEstaduais.resultados?.length || 0);
+        console.log('Lideranças:', dataLiderancas.data?.length || 0);
+
         setMunicipios(dataMunicipios.municipios || []);
-
-        // Carregar dados de projeção
-        const responseProjecoes = await fetch('/api/projecao-municipios');
-        const dataProjecoes = await responseProjecoes.json();
         setProjecoes(dataProjecoes);
-
-        // Carregar dados de Deputado Federal 2022
-        const responseEleicoes = await fetch('/api/resultado-eleicoes?tipo=deputado_federal_2022');
-        const dataEleicoes = await responseEleicoes.json();
         setDadosEleicoes2022(dataEleicoes.resultados || []);
-
-        // Carregar dados de Deputado Estadual 2022
-        const responseEleicoesEstaduais = await fetch('/api/resultado-eleicoes?tipo=deputado_estadual_2022');
-        const dataEleicoesEstaduais = await responseEleicoesEstaduais.json();
         setDadosEleicoesEstaduais2022(dataEleicoesEstaduais.resultados || []);
-
-        // Carregar dados de lideranças
-        const responseLiderancas = await fetch('/api/liderancas-votacao');
-        const dataLiderancas = await responseLiderancas.json();
         setTodasLiderancas(dataLiderancas.data || []);
 
         // Após carregar os dados, abrir tooltips relevantes
@@ -341,6 +360,10 @@ export default function MapaPiaui({ onFilterChange }: MapaPiauiProps) {
   }, []);
 
   const handleShowLiderancas = useCallback((municipio: string, lat: number, lng: number, event: React.MouseEvent) => {
+    // Prevenir propagação do evento para não fechar o popup da cidade
+    event.preventDefault();
+    event.stopPropagation();
+    
     setSelectedMunicipioLiderancas(municipio);
     setLiderancasModalPosition({lat, lng});
     setShowLiderancasModal(true);
@@ -376,6 +399,23 @@ export default function MapaPiaui({ onFilterChange }: MapaPiauiProps) {
     setLiderancasTooltipPosition(null);
     setLiderancasTooltipTarget(null);
   }, []);
+
+  // Adicionar listener para tecla ESC
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && showLiderancasModal) {
+        handleCloseLiderancas();
+      }
+    };
+
+    if (showLiderancasModal) {
+      document.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showLiderancasModal, handleCloseLiderancas]);
 
   // Função para normalizar nomes de municípios para comparação
   const normalizeString = (str: string): string => {
@@ -505,6 +545,7 @@ export default function MapaPiaui({ onFilterChange }: MapaPiauiProps) {
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Lideranças:</span>
                       <button 
+                        data-liderancas-button
                         onClick={(e) => handleShowLiderancas(municipio.nome, municipio.latitude, municipio.longitude, e)}
                         className="font-semibold text-blue-600 hover:text-blue-800 underline cursor-pointer"
                       >
@@ -638,7 +679,8 @@ export default function MapaPiaui({ onFilterChange }: MapaPiauiProps) {
                       e.stopPropagation();
                       handleCloseLiderancas();
                     }} 
-                    className="text-gray-600 hover:text-gray-800"
+                    className="text-gray-600 hover:text-gray-800 p-1 rounded hover:bg-gray-100"
+                    title="Fechar (ESC)"
                   >
                     <X className="h-4 w-4" />
                   </button>

@@ -123,7 +123,7 @@ const nextConfig = {
                       throwIfNamespace: false,
                     },
                   ],
-                ],
+              ],
               },
             },
           },

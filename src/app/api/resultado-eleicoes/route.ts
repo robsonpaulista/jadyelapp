@@ -4,10 +4,23 @@ import { buscarResultadosPorCidade, buscarResultadosDeputadoFederal2022, buscarR
 // Força runtime dinâmico para permitir uso de nextUrl.searchParams
 export const dynamic = 'force-dynamic';
 
+// Cache em memória para os dados de eleições
+let cacheFederal2022: any = null;
+let cacheEstadual2022: any = null;
+let cacheTimestampFederal: number = 0;
+let cacheTimestampEstadual: number = 0;
+const CACHE_DURATION = 10 * 60 * 1000; // 10 minutos
+
+// Função para verificar se o cache ainda é válido
+function isCacheValid(timestamp: number): boolean {
+  return timestamp !== 0 && (Date.now() - timestamp) < CACHE_DURATION;
+}
+
 export async function GET(req: NextRequest) {
   const cidade = req.nextUrl.searchParams.get('cidade');
   const debug = req.nextUrl.searchParams.get('debug');
   const tipo = req.nextUrl.searchParams.get('tipo');
+  const forceRefresh = req.nextUrl.searchParams.get('refresh') === 'true';
   
   if (debug === 'true') {
     // Endpoint de debug para ver a estrutura da planilha
@@ -56,8 +69,27 @@ export async function GET(req: NextRequest) {
   // Endpoint para buscar dados de Deputado Federal 2022 para todos os municípios
   if (tipo === 'deputado_federal_2022') {
     try {
+      // Verificar cache primeiro
+      if (!forceRefresh && isCacheValid(cacheTimestampFederal)) {
+        console.log('=== Retornando dados federais do cache ===');
+        return NextResponse.json({ 
+          resultados: cacheFederal2022,
+          fromCache: true,
+          cacheAge: Math.round((Date.now() - cacheTimestampFederal) / 1000) + 's'
+        });
+      }
+
+      console.log('=== Buscando dados federais da API ===');
       const resultados = await buscarResultadosDeputadoFederal2022();
-      return NextResponse.json({ resultados });
+      
+      // Atualizar cache
+      cacheFederal2022 = resultados;
+      cacheTimestampFederal = Date.now();
+      
+      return NextResponse.json({ 
+        resultados,
+        fromCache: false
+      });
     } catch (error) {
       return NextResponse.json({ error: 'Erro ao buscar dados de Deputado Federal 2022.' }, { status: 500 });
     }
@@ -66,8 +98,27 @@ export async function GET(req: NextRequest) {
   // Endpoint para buscar dados de Deputado Estadual 2022 para todos os municípios
   if (tipo === 'deputado_estadual_2022') {
     try {
+      // Verificar cache primeiro
+      if (!forceRefresh && isCacheValid(cacheTimestampEstadual)) {
+        console.log('=== Retornando dados estaduais do cache ===');
+        return NextResponse.json({ 
+          resultados: cacheEstadual2022,
+          fromCache: true,
+          cacheAge: Math.round((Date.now() - cacheTimestampEstadual) / 1000) + 's'
+        });
+      }
+
+      console.log('=== Buscando dados estaduais da API ===');
       const resultados = await buscarResultadosDeputadoEstadual2022();
-      return NextResponse.json({ resultados });
+      
+      // Atualizar cache
+      cacheEstadual2022 = resultados;
+      cacheTimestampEstadual = Date.now();
+      
+      return NextResponse.json({ 
+        resultados,
+        fromCache: false
+      });
     } catch (error) {
       return NextResponse.json({ error: 'Erro ao buscar dados de Deputado Estadual 2022.' }, { status: 500 });
     }

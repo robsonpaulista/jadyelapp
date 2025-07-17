@@ -153,7 +153,7 @@ export default function Navbar() {
                         href={menu.href} 
                         className="flex items-center gap-2 text-sm font-medium hover:bg-orange-600 px-3 py-2 rounded-lg transition-colors"
                       >
-                        {menu.icon}
+                      {menu.icon}
                         <span>{menu.label || 'Configurações'}</span>
                       </Link>
                     )}
@@ -161,16 +161,16 @@ export default function Navbar() {
                     {visibleSubmenus.length > 0 && (
                       <div className="absolute top-full left-0 mt-1 w-64 bg-white text-gray-700 shadow-lg rounded-lg border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                         <div className="p-2">
-                          {visibleSubmenus.map(sub => (
-                            <Link 
-                              key={sub.href} 
-                              href={sub.href} 
+                        {visibleSubmenus.map(sub => (
+                          <Link 
+                            key={sub.href} 
+                            href={sub.href} 
                               className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors text-sm"
-                            >
-                              {sub.icon}
-                              {sub.label}
-                            </Link>
-                          ))}
+                          >
+                            {sub.icon}
+                            {sub.label}
+                          </Link>
+                        ))}
                         </div>
                       </div>
                     )}

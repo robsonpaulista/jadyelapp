@@ -104,7 +104,7 @@ export default function ApplicationsDashboard() {
         <div className="absolute top-10 left-2 sm:left-10 w-32 h-32 sm:w-72 sm:h-72 bg-blue-500/5 rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute top-32 right-2 sm:right-20 w-40 h-40 sm:w-96 sm:h-96 bg-purple-500/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
         <div className="absolute bottom-20 left-1/3 w-32 h-32 sm:w-80 sm:h-80 bg-pink-500/5 rounded-full blur-3xl animate-pulse delay-2000"></div>
-      </div>
+          </div>
 
       {/* Main Content Area */}
       <main className="relative z-10 min-h-screen flex flex-col">
@@ -134,7 +134,7 @@ export default function ApplicationsDashboard() {
                       onMouseLeave={() => setIsPaused(false)}
                     >
                       {/* Main Content */}
-                      <div className="flex-1">
+              <div className="flex-1">
                         <div className="max-w-none mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 w-full">
                           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 xl:gap-10 items-start max-w-7xl mx-auto w-full">
                             {/* Text Content */}
@@ -151,13 +151,13 @@ export default function ApplicationsDashboard() {
                                   <h2 className={`text-base sm:text-lg md:text-xl font-bold text-gray-700 transform transition-all duration-700 delay-200 ${isActive ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
                                     {slide.subtitle}
                                   </h2>
-                                </div>
+              </div>
                                 
                                 <p className={`text-sm sm:text-base md:text-lg lg:text-xl text-gray-600 leading-relaxed transform transition-all duration-700 delay-300 ${isActive ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
                                   {slide.description}
                                 </p>
-                              </div>
-                              
+          </div>
+
                               {/* Features List with staggered animation */}
                               <div className="space-y-1 sm:space-y-2">
                                 {slide.features.map((feature, featureIndex) => (
@@ -170,13 +170,13 @@ export default function ApplicationsDashboard() {
                                   >
                                     <div className={`relative w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-gradient-to-r ${slide.gradient} shadow-lg group-hover:scale-125 transition-transform duration-300 flex-shrink-0`}>
                                       <div className="absolute inset-0 rounded-full bg-white/30 animate-ping group-hover:animate-none"></div>
-                                    </div>
+              </div>
                                     <span className="text-sm sm:text-base font-semibold text-gray-700 group-hover:text-gray-900 transition-colors duration-300 leading-snug">{feature}</span>
-                                  </div>
+              </div>
                                 ))}
-                              </div>
-                            </div>
-                            
+            </div>
+          </div>
+
                             {/* Visual Element */}
                             <div className="flex justify-center items-start pt-2 sm:pt-4 relative lg:order-2 order-1">
                               {/* Conditional rendering for slides with images */}
@@ -194,8 +194,8 @@ export default function ApplicationsDashboard() {
                                     />
                                     {/* Overlay with gradient */}
                                     <div className={`absolute inset-0 bg-gradient-to-br ${slide.gradient} opacity-20`}></div>
-                                  </div>
-                                </div>
+              </div>
+            </div>
                               ) : index === 1 ? (
                                 // Second slide with image
                                 <div className={`relative transform transition-all duration-1000 ${isActive ? 'scale-100 rotate-0' : 'scale-90 rotate-12'}`}>
@@ -209,8 +209,8 @@ export default function ApplicationsDashboard() {
                                     />
                                     {/* Overlay with gradient */}
                                     <div className={`absolute inset-0 bg-gradient-to-br ${slide.gradient} opacity-20`}></div>
-                                  </div>
-                                </div>
+            </div>
+          </div>
                               ) : index === 2 ? (
                                 // Third slide with original first image
                                 <div className={`relative transform transition-all duration-1000 ${isActive ? 'scale-100 rotate-0' : 'scale-90 rotate-12'}`}>
@@ -224,8 +224,8 @@ export default function ApplicationsDashboard() {
                                     />
                                     {/* Overlay with gradient */}
                                     <div className={`absolute inset-0 bg-gradient-to-br ${slide.gradient} opacity-20`}></div>
-                                  </div>
-                                </div>
+              </div>
+            </div>
                               ) : index === 3 ? (
                                 // Fourth slide with image
                                 <div className={`relative transform transition-all duration-1000 ${isActive ? 'scale-100 rotate-0' : 'scale-90 rotate-12'}`}>
@@ -239,8 +239,8 @@ export default function ApplicationsDashboard() {
                                     />
                                     {/* Overlay with gradient */}
                                     <div className={`absolute inset-0 bg-gradient-to-br ${slide.gradient} opacity-20`}></div>
-                                  </div>
-                                </div>
+            </div>
+          </div>
                               ) : (
                                 // Other slides with icon circles
                                 <>
@@ -249,9 +249,9 @@ export default function ApplicationsDashboard() {
                                     <div className={`w-32 h-32 sm:w-36 sm:h-36 md:w-48 md:h-48 lg:w-60 lg:h-60 rounded-full bg-gradient-to-br ${slide.gradient} opacity-20 flex items-center justify-center animate-pulse`}>
                                       <div className={`w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 lg:w-40 lg:h-40 rounded-full bg-gradient-to-br ${slide.gradient} opacity-30 flex items-center justify-center`}>
                                         <IconComponent className={`h-8 w-8 sm:h-10 sm:w-10 md:h-16 md:w-16 lg:h-20 lg:w-20 text-gray-500 transform transition-all duration-1000 ${isActive ? 'scale-110' : 'scale-100'}`} />
-                                      </div>
-                                    </div>
-                                  </div>
+              </div>
+              </div>
+            </div>
                                 </>
                               )}
                               
@@ -269,12 +269,12 @@ export default function ApplicationsDashboard() {
                                 >
                                   <div className={`p-2 rounded-lg bg-gradient-to-br ${slide.gradient} shadow-lg`}>
                                     <DecorativeIcon className="h-4 w-4 text-white" />
-                                  </div>
-                                </div>
+            </div>
+          </div>
                               ))}
-                            </div>
-                          </div>
-                        </div>
+              </div>
+            </div>
+          </div>
 
                         {/* Controls Area */}
                         <div className="w-full">
@@ -316,16 +316,16 @@ export default function ApplicationsDashboard() {
                                               }}
                                             ></div>
                                           )}
-                                        </div>
+              </div>
                                         {/* Slide preview on hover - only on larger screens */}
                                         <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none hidden sm:block">
                                           <div className="bg-black/80 backdrop-blur-sm text-white px-3 py-1 rounded-lg text-sm font-medium whitespace-nowrap">
                                             {slide.title}
-                                          </div>
-                                        </div>
+              </div>
+            </div>
                                       </button>
                                     ))}
-                                  </div>
+          </div>
 
                                   {/* Next Button */}
                                   <button
@@ -334,14 +334,14 @@ export default function ApplicationsDashboard() {
                                   >
                                     <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600 group-hover:text-white transition-colors duration-300" />
                                   </button>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+              </div>
+              </div>
+            </div>
+            </div>
+          </div>
+              </div>
+              </div>
+            </div>
                 );
               })}
             </div>
@@ -369,4 +369,4 @@ export default function ApplicationsDashboard() {
       `}</style>
     </div>
   );
-}
+} 
