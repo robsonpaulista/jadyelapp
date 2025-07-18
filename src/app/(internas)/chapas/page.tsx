@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Trash2, Plus, Pencil, RefreshCw, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { carregarChapas, atualizarChapa, excluirChapa, carregarQuocienteEleitoral, salvarQuocienteEleitoral, Chapa, CenarioCompleto, PartidoCenario, obterCenarioAtivo, atualizarCenario, carregarCenario, migrarDadosComGenero } from "@/services/chapasService";
+import { carregarChapas, atualizarChapa, excluirChapa, carregarQuocienteEleitoral, salvarQuocienteEleitoral, Chapa, CenarioCompleto, PartidoCenario, obterCenarioAtivo, atualizarCenario, carregarCenario, migrarDadosComGenero, criarCenarioBase } from "@/services/chapasService";
 import CenariosManager from "@/components/CenariosManager";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -105,89 +105,89 @@ export default function ChapasPage() {
   const handleSalvarVotosLegenda = async (partidoIdx: number, votos: number) => {
     const partido = partidos[partidoIdx];
     try {
-      // Salvar no Firestore como um candidato especial
-      await atualizarChapa(partido.nome, "VOTOS LEGENDA", votos);
-      
-      // Atualizar estado local
+      // Atualizar estado local primeiro
       setVotosLegenda(prev => ({
         ...prev,
         [partido.nome]: votos
       }));
 
-      // Se há um cenário ativo, salvar também nele
-      if (cenarioAtivo) {
-        const partidosConvertidos = converterPartidosParaCenario();
-        await atualizarCenario(cenarioAtivo.id, partidosConvertidos, quociente);
+      // Salvar no cenário base (fonte única de verdade)
+      if (!cenarioAtivo) {
+        throw new Error('Cenário base não encontrado');
       }
+      
+      const partidosConvertidos = converterPartidosParaCenario();
+      await atualizarCenario(cenarioAtivo.id, partidosConvertidos, quociente);
+
+      mostrarNotificacaoAutoSave(`Votos de legenda do ${partido.nome} salvos`);
     } catch (error) {
       console.error('Erro ao salvar votos de legenda:', error);
       alert('Erro ao salvar votos de legenda. Tente novamente.');
     }
   };
 
-  const handleAtualizar = async () => {
-    setLoading(true);
-    try {
-      console.log('Atualizando dados...');
-      
-      // Carregar dados do Firestore (inclui migração se necessário)
-      await carregarDadosFirestore();
-      
-      // Carregar votos de legenda
-      const novasChapas = await carregarChapas();
-      const votosLegendaTemp: { [partido: string]: number } = {};
-      for (const partido of partidos) {
-        const votosLegendaChapa = novasChapas.find(c => c.partido === partido.nome && c.nome === "VOTOS LEGENDA");
-        if (votosLegendaChapa) {
-          votosLegendaTemp[partido.nome] = votosLegendaChapa.votos;
-        }
-      }
-      setVotosLegenda(votosLegendaTemp);
-      
-      console.log('Atualização concluída');
-      mostrarNotificacaoAutoSave('Dados atualizados com sucesso');
-    } catch (error) {
-      console.error("Erro ao carregar dados:", error);
-      alert('Erro ao atualizar dados. Tente novamente.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  // Função para carregar dados do Firestore
+
+  // Função para carregar dados do cenário base (fonte única de verdade)
   const carregarDadosFirestore = async () => {
-    console.log('Carregando dados do Firestore...');
+    console.log('Carregando dados do cenário base...');
     
     try {
       // Primeiro, migrar dados se necessário
       await migrarDadosComGenero();
       
-      // Carregar dados do Firestore
-      const chapasFirestore = await carregarChapas();
-      console.log('Chapas carregadas do Firestore:', chapasFirestore.length);
+      // SEMPRE carregar do cenário base
+      const cenarioBase = await carregarCenario('base');
       
-      // LIMPAR COMPLETAMENTE o estado local e recriar baseado no Firestore
-      const partidosAtualizados = criarPartidosIniciais().map(partido => {
-        const candidatosFirestore = chapasFirestore
-          .filter(chapa => chapa.partido === partido.nome && chapa.nome !== "VOTOS LEGENDA")
-          .map(chapa => ({
-            nome: chapa.nome,
-            votos: chapa.votos,
-            genero: (chapa as any).genero || 'homem' // fallback para candidatos sem genero
-          }));
+      if (cenarioBase) {
+        console.log('Cenário base encontrado:', cenarioBase.nome);
+        setCenarioAtivo(cenarioBase);
+        const partidosOrdenados = ordenarPartidos(cenarioBase.partidos);
+        setPartidos(partidosOrdenados);
+        setQuociente(cenarioBase.quocienteEleitoral);
         
-        console.log(`Partido ${partido.nome}: ${candidatosFirestore.length} candidatos no Firestore`);
+        // Carregar votos de legenda do cenário
+        const votosLegendaTemp: { [partido: string]: number } = {};
+        cenarioBase.partidos.forEach(partido => {
+          if (partido.votosLegenda) {
+            votosLegendaTemp[partido.nome] = partido.votosLegenda;
+          }
+        });
+        setVotosLegenda(votosLegendaTemp);
         
-        return {
-          ...partido,
-          candidatos: candidatosFirestore
-        };
-      });
+        console.log('Dados carregados do cenário base com sucesso');
+      } else {
+        console.log('Cenário base não encontrado, criando...');
+        // Se não existe cenário base, criar com dados da coleção chapas2026
+        const chapasFirestore = await carregarChapas();
+        const partidosParaCenario = criarPartidosIniciais().map(partido => {
+          const candidatosFirestore = chapasFirestore
+            .filter(chapa => chapa.partido === partido.nome && chapa.nome !== "VOTOS LEGENDA")
+            .map(chapa => ({
+              nome: chapa.nome,
+              votos: chapa.votos,
+              genero: (chapa as any).genero || 'homem'
+            }));
+          
+          return {
+            ...partido,
+            candidatos: candidatosFirestore
+          };
+        });
+        
+        // Criar cenário base
+        await criarCenarioBase(partidosParaCenario, quociente);
+        
+        // Carregar o cenário recém-criado
+        const cenarioBaseCriado = await carregarCenario('base');
+        if (cenarioBaseCriado) {
+          setCenarioAtivo(cenarioBaseCriado);
+          const partidosOrdenados = ordenarPartidos(cenarioBaseCriado.partidos);
+          setPartidos(partidosOrdenados);
+          console.log('Cenário base criado e carregado com sucesso');
+        }
+      }
       
-      // Forçar atualização completa do estado
-      setPartidos(partidosAtualizados);
-      
-      console.log('Carregamento concluído com sucesso');
       mostrarNotificacaoAutoSave('Dados carregados com sucesso');
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
@@ -244,14 +244,12 @@ export default function ChapasPage() {
   const handleDeletarChapa = async (chapa: Chapa) => {
     if (!confirm("Tem certeza que deseja excluir esta chapa?")) return;
     
-    setLoading(true);
     try {
       await excluirChapa(chapa.partido, chapa.nome);
-      await handleAtualizar();
+      // Recarregar dados automaticamente
+      await carregarDadosFirestore();
     } catch (error) {
       console.error("Erro ao excluir chapa:", error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -265,7 +263,8 @@ export default function ChapasPage() {
       } else {
         // Implementar criação de nova chapa
       }
-      await handleAtualizar();
+      // Recarregar dados automaticamente
+      await carregarDadosFirestore();
       setModalAberto(false);
     } catch (error) {
       console.error("Erro ao salvar chapa:", error);
@@ -382,13 +381,7 @@ export default function ChapasPage() {
         // Permitir mudança de nome livremente - o gênero não é determinado pelo nome
         // mas sim pela posição na lista ou por outros critérios do sistema
 
-        // Primeiro, excluir o registro antigo do Firestore
-        await excluirChapa(partido.nome, oldNome);
-        
-        // Depois, criar o novo registro com o novo nome e manter o genero
-        await atualizarChapa(partido.nome, newNome, candidato.votos, candidato.genero);
-
-        // Atualizar estado local
+        // Atualizar estado local primeiro
         setPartidos(prev => prev.map((p, i) => {
           if (i !== partidoIdx) return p;
           return {
@@ -399,11 +392,13 @@ export default function ChapasPage() {
           };
         }));
 
-        // Se há um cenário ativo, salvar também nele
-        if (cenarioAtivo) {
-          const partidosConvertidos = converterPartidosParaCenario();
-          await atualizarCenario(cenarioAtivo.id, partidosConvertidos, quociente);
+        // Salvar no cenário base (fonte única de verdade)
+        if (!cenarioAtivo) {
+          throw new Error('Cenário base não encontrado');
         }
+        
+        const partidosConvertidos = converterPartidosParaCenario();
+        await atualizarCenario(cenarioAtivo.id, partidosConvertidos, quociente);
 
         console.log(`Nome alterado de "${oldNome}" para "${newNome}" no partido ${partidoIdx}`);
       } catch (error) {
@@ -426,20 +421,31 @@ export default function ChapasPage() {
     setHoveredRow(null);
   };
 
-  // Função para salvar votos no Firestore
+  // Função para salvar votos no cenário base
   const saveVotosChange = async (partidoIdx: number, candidatoNome: string, votos: number) => {
     const partido = partidos[partidoIdx];
     const candidato = partido.candidatos.find(c => c.nome === candidatoNome);
     if (!candidato) return;
     
     try {
-      await atualizarChapa(partido.nome, candidato.nome, votos, candidato.genero);
+      // Atualizar estado local primeiro
+      setPartidos(prev => prev.map((p, i) => {
+        if (i !== partidoIdx) return p;
+        return {
+          ...p,
+          candidatos: p.candidatos.map(c => 
+            c.nome === candidatoNome ? { ...c, votos } : c
+          )
+        };
+      }));
       
-      // Se há um cenário ativo, salvar também nele
-      if (cenarioAtivo) {
-        const partidosConvertidos = converterPartidosParaCenario();
-        await atualizarCenario(cenarioAtivo.id, partidosConvertidos, quociente);
+      // Salvar no cenário base (fonte única de verdade)
+      if (!cenarioAtivo) {
+        throw new Error('Cenário base não encontrado');
       }
+      
+      const partidosConvertidos = converterPartidosParaCenario();
+      await atualizarCenario(cenarioAtivo.id, partidosConvertidos, quociente);
     } catch (error) {
       console.error('Erro ao salvar votos:', error);
     }
@@ -610,13 +616,12 @@ export default function ChapasPage() {
     console.log(`Iniciando exclusão: partido=${partido.nome}, candidato=${candidatoNome}`);
     
     try {
-      // Primeiro, excluir do Firestore
-      await excluirChapa(partido.nome, candidato.nome);
+      // Excluir apenas do cenário base (fonte única de verdade)
+      if (!cenarioAtivo) {
+        throw new Error('Cenário base não encontrado');
+      }
       
-      // Se chegou até aqui, a exclusão foi bem-sucedida
-      console.log('Candidato excluído do Firestore com sucesso');
-      
-      // Atualizar estado local
+      // Atualizar estado local primeiro
       setPartidos(prev => prev.map((p, i) => {
         if (i !== partidoIdx) return p;
         return {
@@ -625,19 +630,11 @@ export default function ChapasPage() {
         };
       }));
 
-      // Salvar automaticamente no cenário ativo
-      if (cenarioAtivo) {
-        try {
-          const partidosConvertidos = converterPartidosParaCenario();
-          await atualizarCenario(cenarioAtivo.id, partidosConvertidos, quociente);
-          console.log('Candidato excluído e cenário atualizado:', cenarioAtivo.nome);
-          mostrarNotificacaoAutoSave(`Candidato excluído e cenário "${cenarioAtivo.nome}" atualizado automaticamente`);
-        } catch (cenarioError) {
-          console.error('Erro ao atualizar cenário após exclusão:', cenarioError);
-          // Não falhar a exclusão por erro no cenário
-          mostrarNotificacaoAutoSave(`Candidato excluído, mas erro ao atualizar cenário`);
-        }
-      }
+      // Salvar no cenário base
+      const partidosConvertidos = converterPartidosParaCenario();
+      await atualizarCenario(cenarioAtivo.id, partidosConvertidos, quociente);
+      console.log('Candidato excluído do cenário base com sucesso');
+      mostrarNotificacaoAutoSave(`Candidato excluído com sucesso`);
       
       console.log('Exclusão concluída com sucesso');
     } catch (error) {
@@ -664,8 +661,59 @@ export default function ChapasPage() {
     const partido = partidos[partidoIdx];
     
     try {
-      // Salvar no Firestore com campo genero
-      await atualizarChapa(partido.nome, novoCandidato.nome, novoCandidato.votos, novoCandidato.genero);
+      // Salvar apenas no cenário base (fonte única de verdade)
+      if (!cenarioAtivo) {
+        throw new Error('Cenário base não encontrado');
+      }
+      
+      // Atualizar estado local primeiro
+      setPartidos(prev => prev.map((p, i) => {
+        if (i !== partidoIdx) return p;
+        
+        // O gênero é determinado pela seleção do usuário no modal
+        // Inserir o candidato no local correto baseado no gênero selecionado
+        const candidatosAtuais = [...p.candidatos];
+        
+        // Adicionar o candidato com informação de gênero
+        const candidatoComGenero = { 
+          nome: novoCandidato.nome, 
+          votos: novoCandidato.votos,
+          genero: novoCandidato.genero 
+        };
+        
+        if (novoCandidato.genero === 'mulher') {
+          // Para mulheres, inserir após a última mulher existente
+          const ultimaMulherIndex = candidatosAtuais.findLastIndex(c => c.genero === 'mulher');
+          
+          if (ultimaMulherIndex === -1) {
+            // Não há mulheres na lista, inserir no final
+            candidatosAtuais.push(candidatoComGenero);
+          } else {
+            // Inserir após a última mulher
+            candidatosAtuais.splice(ultimaMulherIndex + 1, 0, candidatoComGenero);
+          }
+        } else {
+          // Para homens, inserir antes da primeira mulher
+          const primeiraMulherIndex = candidatosAtuais.findIndex(c => c.genero === 'mulher');
+          
+          if (primeiraMulherIndex === -1) {
+            // Não há mulheres na lista, inserir no final
+            candidatosAtuais.push(candidatoComGenero);
+          } else {
+            // Inserir antes da primeira mulher
+            candidatosAtuais.splice(primeiraMulherIndex, 0, candidatoComGenero);
+          }
+        }
+        
+        return {
+          ...p,
+          candidatos: candidatosAtuais
+        };
+      }));
+
+      // Salvar no cenário base
+      const partidosConvertidos = converterPartidosParaCenario();
+      await atualizarCenario(cenarioAtivo.id, partidosConvertidos, quociente);
       
       // Atualizar estado local respeitando a separação homens/mulheres
       setPartidos(prev => prev.map((p, i) => {
