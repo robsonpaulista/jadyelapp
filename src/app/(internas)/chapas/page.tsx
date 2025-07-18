@@ -128,6 +128,9 @@ export default function ChapasPage() {
   const handleAtualizar = async () => {
     setLoading(true);
     try {
+      console.log('Atualizando dados...');
+      
+      // Carregar dados do Firestore (inclui migração se necessário)
       await carregarDadosFirestore();
       
       // Carregar votos de legenda
@@ -140,8 +143,12 @@ export default function ChapasPage() {
         }
       }
       setVotosLegenda(votosLegendaTemp);
+      
+      console.log('Atualização concluída');
+      mostrarNotificacaoAutoSave('Dados atualizados com sucesso');
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
+      alert('Erro ao atualizar dados. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -271,8 +278,10 @@ export default function ChapasPage() {
 
   // Carregar dados do Firestore ao abrir a página
   useEffect(() => {
-    async function fetchChapasFirestore() {
+    async function carregarDadosIniciais() {
       try {
+        console.log('Carregando dados iniciais...');
+        
         // Carregar quociente eleitoral primeiro
         const quocienteSalvo = await carregarQuocienteEleitoral();
         setQuociente(quocienteSalvo);
@@ -281,40 +290,30 @@ export default function ChapasPage() {
         // Tentar carregar cenário ativo primeiro
         const cenarioAtivo = await obterCenarioAtivo();
         if (cenarioAtivo) {
+          console.log('Cenário ativo encontrado:', cenarioAtivo.nome);
           setCenarioAtivo(cenarioAtivo);
           const partidosOrdenados = ordenarPartidos(cenarioAtivo.partidos);
           setPartidos(partidosOrdenados);
           setQuociente(cenarioAtivo.quocienteEleitoral);
         } else {
-          // Fallback para o sistema antigo
-          const chapas: Chapa[] = await carregarChapas();
-          if (chapas && chapas.length > 0) {
-            // Agrupar por partido
-            const partidosMap: { [partido: string]: { nome: string; cor: string; corTexto: string; candidatos: { nome: string; votos: number }[] } } = {};
-            chapas.forEach((chapa) => {
-              if (!partidosMap[chapa.partido]) {
-                partidosMap[chapa.partido] = {
-                  nome: chapa.partido,
-                  cor: getPartidoCor(chapa.partido),
-                  corTexto: getPartidoCorTexto(chapa.partido),
-                  candidatos: []
-                };
-              }
-              partidosMap[chapa.partido].candidatos.push({ nome: chapa.nome, votos: chapa.votos });
-            });
-
-            // Converter para array e ordenar
-            const partidosArray = Object.values(partidosMap);
-            const partidosOrdenados = ordenarPartidos(partidosArray);
-
-            setPartidos(partidosOrdenados);
-          }
+          console.log('Nenhum cenário ativo encontrado, carregando dados do Firestore...');
+          // Carregar dados diretamente do Firestore usando a nova função
+          await carregarDadosFirestore();
         }
+        
+        console.log('Carregamento inicial concluído');
       } catch (error) {
         console.error('Erro ao carregar dados iniciais:', error);
+        // Em caso de erro, tentar carregar dados básicos
+        try {
+          await carregarDadosFirestore();
+        } catch (fallbackError) {
+          console.error('Erro no fallback:', fallbackError);
+        }
       }
     }
-    fetchChapasFirestore();
+    
+    carregarDadosIniciais();
   }, []);
 
   // Funções auxiliares para definir cores dos partidos
@@ -391,8 +390,8 @@ export default function ChapasPage() {
         // Primeiro, excluir o registro antigo do Firestore
         await excluirChapa(partido.nome, oldNome);
         
-        // Depois, criar o novo registro com o novo nome
-        await atualizarChapa(partido.nome, newNome, candidato.votos);
+        // Depois, criar o novo registro com o novo nome e manter o genero
+        await atualizarChapa(partido.nome, newNome, candidato.votos, candidato.genero);
 
         // Atualizar estado local
         setPartidos(prev => prev.map((p, i) => {
@@ -439,7 +438,7 @@ export default function ChapasPage() {
     if (!candidato) return;
     
     try {
-      await atualizarChapa(partido.nome, candidato.nome, votos);
+      await atualizarChapa(partido.nome, candidato.nome, votos, candidato.genero);
       
       // Se há um cenário ativo, salvar também nele
       if (cenarioAtivo) {
