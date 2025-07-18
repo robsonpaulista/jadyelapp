@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { Trash2, Plus, Pencil, RefreshCw, Check } from "lucide-react";
+import React, { useEffect, useState, useRef } from "react";
+import { Trash2, Plus, Pencil, RefreshCw, Check, Printer } from "lucide-react";
+import generatePDF from 'react-to-pdf';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { carregarQuocienteEleitoral, salvarQuocienteEleitoral, CenarioCompleto, PartidoCenario, obterCenarioAtivo, atualizarCenario, carregarCenario, criarCenarioBase, dadosIniciais } from "@/services/chapasService";
@@ -63,6 +64,7 @@ const getMulheresPartido = (nomePartido: string): string[] => {
 
 export default function ChapasPage() {
   const [loading, setLoading] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const [partidos, setPartidos] = useState<PartidoLocal[]>(criarPartidosIniciais());
   const [quociente, setQuociente] = useState(initialQuociente);
@@ -90,6 +92,19 @@ export default function ChapasPage() {
   const mostrarNotificacaoAutoSave = (mensagem: string) => {
     setNotificacaoAutoSave(mensagem);
     setTimeout(() => setNotificacaoAutoSave(null), 3000);
+  };
+
+  const handleImprimirPDF = async () => {
+    if (!contentRef.current) return;
+    
+    try {
+      await generatePDF(contentRef, {
+        filename: `chapas-eleitorais-${new Date().toISOString().split('T')[0]}.pdf`
+      });
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      alert('Erro ao gerar PDF. Tente novamente.');
+    }
   };
 
   const handleSalvarVotosLegenda = async (partidoIdx: number, votos: number) => {
@@ -927,10 +942,19 @@ export default function ChapasPage() {
         </div>
       )}
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full space-y-4 py-4">
+      <div ref={contentRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full space-y-4 py-4">
         {/* Header com controles de cenários e quociente */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleImprimirPDF}
+              className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+            >
+              <Printer className="h-4 w-4 mr-1" />
+              Imprimir PDF
+            </Button>
             <Button
               variant="outline"
               size="sm"
