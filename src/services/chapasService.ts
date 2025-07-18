@@ -1,14 +1,7 @@
 import { db } from '@/lib/firebase';
 import { collection, getDocs, setDoc, doc, writeBatch, deleteDoc, getDoc, query, where, orderBy } from 'firebase/firestore';
 
-export interface Chapa {
-  id?: string;
-  partido: string;
-  nome: string;
-  votos: number;
-  municipio?: string;
-  status?: string;
-}
+
 
 // Novos tipos para o sistema de cenários
 export interface Cenario {
@@ -42,7 +35,7 @@ export interface CandidatoCenario {
 }
 
 // Dados iniciais conforme o estado atual do app
-export const dadosIniciais: Chapa[] = [
+export const dadosIniciais: Array<{partido: string; nome: string; votos: number}> = [
   { partido: 'PT', nome: 'ZÉ', votos: 120000 },
   { partido: 'PT', nome: 'F COSTA', votos: 120000 },
   { partido: 'PT', nome: 'F NOGUEIRA', votos: 100000 },
@@ -93,13 +86,8 @@ export const dadosIniciais: Chapa[] = [
   { partido: 'REPUBLICANOS', nome: 'CAUSA ANIMAL', votos: 10000 },
 ];
 
-export async function carregarChapas() {
-  const snapshot = await getDocs(collection(db, 'chapas2026'));
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown)) as Chapa[];
-}
-
+// Função auxiliar para gerar IDs seguros
 function safeId(partido: string, nome: string) {
-  // Normalizar strings para evitar problemas de encoding
   const safePartido = partido
     .replaceAll('/', '_')
     .replaceAll('\\', '_')
@@ -166,50 +154,7 @@ function safeId(partido: string, nome: string) {
     .toUpperCase()
     .trim();
     
-  const id = `${safePartido}_${safeNome}`;
-  console.log(`safeId gerado: partido="${partido}" -> "${safePartido}", nome="${nome}" -> "${safeNome}", id="${id}"`);
-  return id;
-}
-
-export async function atualizarChapa(partido: string, nome: string, votos: number, genero?: string) {
-  const id = safeId(partido, nome);
-  const dados: any = { partido, nome, votos };
-  
-  if (genero) {
-    dados.genero = genero;
-  }
-  
-  await setDoc(doc(db, 'chapas2026', id), dados);
-}
-
-export async function popularChapasIniciais() {
-  const batch = writeBatch(db);
-  dadosIniciais.forEach((chapa) => {
-    const id = safeId(chapa.partido, chapa.nome);
-    batch.set(doc(db, 'chapas2026', id), chapa);
-  });
-  await batch.commit();
-}
-
-export async function excluirChapa(partido: string, nome: string) {
-  try {
-    const id = safeId(partido, nome);
-    console.log(`Tentando excluir chapa: partido=${partido}, nome=${nome}, id=${id}`);
-    
-    const docRef = doc(db, 'chapas2026', id);
-    const docSnap = await getDoc(docRef);
-    
-    if (!docSnap.exists()) {
-      console.warn(`Documento não encontrado para exclusão: ${id}`);
-      throw new Error(`Candidato ${nome} do partido ${partido} não encontrado`);
-    }
-    
-    await deleteDoc(docRef);
-    console.log(`Chapa excluída com sucesso: ${id}`);
-  } catch (error) {
-    console.error('Erro ao excluir chapa:', error);
-    throw error;
-  }
+  return `${safePartido}_${safeNome}`;
 }
 
 // Funções para gerenciar o quociente eleitoral
@@ -498,55 +443,4 @@ export async function obterCenarioAtivo(): Promise<CenarioCompleto | null> {
   }
 }
 
-// Função para migrar dados existentes e adicionar campo genero
-export async function migrarDadosComGenero() {
-  console.log('Iniciando migração de dados com campo genero...');
-  
-  try {
-    // Lista de mulheres por partido (usada apenas para migração)
-    const mulheresPorPartido: { [partido: string]: string[] } = {
-      "PT": ['MARINA SANTOS', 'RAISSA PROTETORA', 'MULHER'],
-      "PSD/MDB": ['MULHER 1', 'MULHER 2', 'MULHER 3', 'MULHER 4'],
-      "PP": ['SAMANTA CAVALCA', 'MULHER 2', 'MULHER 3', 'MULHER 4'],
-      "REPUBLICANOS": ['ANA FIDELIS', 'GABRIELA']
-    };
-
-    // Carregar todos os dados existentes
-    const snapshot = await getDocs(collection(db, 'chapas2026'));
-    const batch = writeBatch(db);
-    let atualizados = 0;
-
-    snapshot.docs.forEach(doc => {
-      const data = doc.data();
-      const partido = data.partido;
-      const nome = data.nome;
-      
-      // Pular se já tem campo genero
-      if (data.genero) {
-        return;
-      }
-
-      // Determinar genero baseado na lista de mulheres
-      const mulheresPartido = mulheresPorPartido[partido] || [];
-      const genero = mulheresPartido.includes(nome) ? 'mulher' : 'homem';
-      
-      // Atualizar documento com campo genero
-      batch.update(doc.ref, { genero });
-      atualizados++;
-      
-      console.log(`Migrando: ${partido} - ${nome} -> ${genero}`);
-    });
-
-    if (atualizados > 0) {
-      await batch.commit();
-      console.log(`Migração concluída: ${atualizados} candidatos atualizados`);
-    } else {
-      console.log('Nenhum candidato precisa ser migrado');
-    }
-
-    return atualizados;
-  } catch (error) {
-    console.error('Erro na migração:', error);
-    throw error;
-  }
-} 
+ 

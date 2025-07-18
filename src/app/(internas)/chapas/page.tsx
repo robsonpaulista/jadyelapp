@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Trash2, Plus, Pencil, RefreshCw, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { carregarChapas, atualizarChapa, excluirChapa, carregarQuocienteEleitoral, salvarQuocienteEleitoral, Chapa, CenarioCompleto, PartidoCenario, obterCenarioAtivo, atualizarCenario, carregarCenario, migrarDadosComGenero, criarCenarioBase } from "@/services/chapasService";
+import { carregarQuocienteEleitoral, salvarQuocienteEleitoral, CenarioCompleto, PartidoCenario, obterCenarioAtivo, atualizarCenario, carregarCenario, criarCenarioBase, dadosIniciais } from "@/services/chapasService";
 import CenariosManager from "@/components/CenariosManager";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -63,18 +63,6 @@ const getMulheresPartido = (nomePartido: string): string[] => {
 
 export default function ChapasPage() {
   const [loading, setLoading] = useState(false);
-  const [chapas, setChapas] = useState<Chapa[]>([]);
-  const [chapasFiltradas, setChapasFiltradas] = useState<Chapa[]>([]);
-  const [municipioSelecionado, setMunicipioSelecionado] = useState("TODOS_MUNICIPIOS");
-  const [statusSelecionado, setStatusSelecionado] = useState("TODOS_STATUS");
-  const [modalAberto, setModalAberto] = useState(false);
-  const [chapaEmEdicao, setChapaEmEdicao] = useState<Chapa | null>(null);
-  const [formData, setFormData] = useState<Partial<Chapa>>({
-    nome: "",
-    partido: "",
-    votos: 0,
-    status: "Em andamento"
-  });
 
   const [partidos, setPartidos] = useState<PartidoLocal[]>(criarPartidosIniciais());
   const [quociente, setQuociente] = useState(initialQuociente);
@@ -133,9 +121,6 @@ export default function ChapasPage() {
     console.log('Carregando dados do cenário base...');
     
     try {
-      // Primeiro, migrar dados se necessário
-      await migrarDadosComGenero();
-      
       // SEMPRE carregar do cenário base
       const cenarioBase = await carregarCenario('base');
       
@@ -158,20 +143,20 @@ export default function ChapasPage() {
         console.log('Dados carregados do cenário base com sucesso');
       } else {
         console.log('Cenário base não encontrado, criando...');
-        // Se não existe cenário base, criar com dados da coleção chapas2026
-        const chapasFirestore = await carregarChapas();
+        // Se não existe cenário base, criar com dados iniciais
         const partidosParaCenario = criarPartidosIniciais().map(partido => {
-          const candidatosFirestore = chapasFirestore
+          // Usar dados iniciais do arquivo de serviço
+          const candidatosIniciais = dadosIniciais
             .filter(chapa => chapa.partido === partido.nome && chapa.nome !== "VOTOS LEGENDA")
             .map(chapa => ({
               nome: chapa.nome,
               votos: chapa.votos,
-              genero: (chapa as any).genero || 'homem'
+              genero: 'homem' // valor padrão
             }));
           
           return {
             ...partido,
-            candidatos: candidatosFirestore
+            candidatos: candidatosIniciais
           };
         });
         
@@ -197,81 +182,9 @@ export default function ChapasPage() {
 
 
 
-  const filtrarChapas = (chapasParaFiltrar: Chapa[] = chapas) => {
-    let filtradas = [...chapasParaFiltrar];
-    
-    if (municipioSelecionado !== "TODOS_MUNICIPIOS") {
-      filtradas = filtradas.filter(chapa => chapa.municipio === municipioSelecionado);
-    }
-    
-    if (statusSelecionado !== "TODOS_STATUS") {
-      filtradas = filtradas.filter(chapa => chapa.status === statusSelecionado);
-    }
-    
-    setChapasFiltradas(filtradas);
-  };
 
-  // Removido useEffect conflitante - o carregamento será feito no useEffect principal
 
-  useEffect(() => {
-    filtrarChapas();
-  }, [municipioSelecionado, statusSelecionado, chapas]);
 
-  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" => {
-    switch (status) {
-      case "Concluída":
-        return "default";
-      case "Em andamento":
-        return "secondary";
-      case "Cancelada":
-        return "destructive";
-      default:
-        return "default";
-    }
-  };
-
-  const handleEditarChapa = (chapa: Chapa) => {
-    setChapaEmEdicao(chapa);
-    setFormData({
-      nome: chapa.nome,
-      partido: chapa.partido,
-      votos: chapa.votos,
-      status: chapa.status
-    });
-    setModalAberto(true);
-  };
-
-  const handleDeletarChapa = async (chapa: Chapa) => {
-    if (!confirm("Tem certeza que deseja excluir esta chapa?")) return;
-    
-    try {
-      await excluirChapa(chapa.partido, chapa.nome);
-      // Recarregar dados automaticamente
-      await carregarDadosFirestore();
-    } catch (error) {
-      console.error("Erro ao excluir chapa:", error);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    setLoading(true);
-    try {
-      if (chapaEmEdicao) {
-        await atualizarChapa(formData.partido!, formData.nome!, formData.votos!);
-      } else {
-        // Implementar criação de nova chapa
-      }
-      // Recarregar dados automaticamente
-      await carregarDadosFirestore();
-      setModalAberto(false);
-    } catch (error) {
-      console.error("Erro ao salvar chapa:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Carregar dados do Firestore ao abrir a página
   useEffect(() => {
