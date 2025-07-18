@@ -849,47 +849,66 @@ export default function ChapasPage() {
 
   // Função para calcular os candidatos eleitos baseado nos votos
   const calcularCandidatosEleitos = () => {
-    const simulacao = simularDistribuicaoCompleta();
-    const candidatosEleitos: Array<{
-      partido: string;
-      nome: string;
-      votos: number;
-      posicao: number;
-      tipoEleicao: 'direta' | 'sobra';
-    }> = [];
+    try {
+      const simulacao = simularDistribuicaoCompleta();
+      const candidatosEleitos: Array<{
+        partido: string;
+        nome: string;
+        votos: number;
+        posicao: number;
+        tipoEleicao: 'direta' | 'sobra';
+      }> = [];
 
-    simulacao.partidosComVagas.forEach(partidoInfo => {
-      const partido = partidos.find(p => p.nome === partidoInfo.partido);
-      if (!partido || partidoInfo.vagasObtidas === 0) return;
-
-      // Filtrar candidatos (excluir votos de legenda)
-      const candidatosValidos = partido.candidatos.filter(c => c.nome !== "VOTOS LEGENDA");
-      
-      // Ordenar candidatos por votos (maior para menor)
-      const candidatosOrdenados = [...candidatosValidos].sort((a, b) => b.votos - a.votos);
-      
-      // Pegar os candidatos com mais votos até o número de vagas
-      for (let i = 0; i < partidoInfo.vagasObtidas && i < candidatosOrdenados.length; i++) {
-        const candidato = candidatosOrdenados[i];
-        candidatosEleitos.push({
-          partido: partido.nome,
-          nome: candidato.nome,
-          votos: candidato.votos,
-          posicao: i + 1,
-          tipoEleicao: i < calcularVagasDiretas(partidoInfo.votosTotal) ? 'direta' : 'sobra'
-        });
+      // Verificar se simulacao e partidosComVagas existem
+      if (!simulacao || !simulacao.partidosComVagas) {
+        console.warn('Simulação não encontrada ou inválida');
+        return [];
       }
-    });
 
-    // Ordenar por partido e depois por votos (dentro do partido)
-    return candidatosEleitos.sort((a, b) => {
-      if (a.partido !== b.partido) {
-        // Ordenar partidos: PT, PSD/MDB, PP, REPUBLICANOS
-        const ordemPartidos = ['PT', 'PSD/MDB', 'PP', 'REPUBLICANOS'];
-        return ordemPartidos.indexOf(a.partido) - ordemPartidos.indexOf(b.partido);
-      }
-      return b.votos - a.votos;
-    });
+      simulacao.partidosComVagas.forEach(partidoInfo => {
+        // Verificar se partidoInfo tem as propriedades necessárias
+        if (!partidoInfo || !partidoInfo.partido || typeof partidoInfo.vagasObtidas !== 'number') {
+          console.warn('Dados do partido inválidos:', partidoInfo);
+          return;
+        }
+
+        const partido = partidos.find(p => p.nome === partidoInfo.partido);
+        if (!partido || partidoInfo.vagasObtidas === 0) return;
+
+        // Filtrar candidatos (excluir votos de legenda)
+        const candidatosValidos = partido.candidatos.filter(c => c.nome !== "VOTOS LEGENDA");
+        
+        // Ordenar candidatos por votos (maior para menor)
+        const candidatosOrdenados = [...candidatosValidos].sort((a, b) => b.votos - a.votos);
+        
+        // Pegar os candidatos com mais votos até o número de vagas
+        for (let i = 0; i < partidoInfo.vagasObtidas && i < candidatosOrdenados.length; i++) {
+          const candidato = candidatosOrdenados[i];
+          if (candidato && candidato.nome) {
+            candidatosEleitos.push({
+              partido: partido.nome,
+              nome: candidato.nome,
+              votos: candidato.votos || 0,
+              posicao: i + 1,
+              tipoEleicao: i < calcularVagasDiretas(partidoInfo.votosTotal || 0) ? 'direta' : 'sobra'
+            });
+          }
+        }
+      });
+
+      // Ordenar por partido e depois por votos (dentro do partido)
+      return candidatosEleitos.sort((a, b) => {
+        if (a.partido !== b.partido) {
+          // Ordenar partidos: PT, PSD/MDB, PP, REPUBLICANOS
+          const ordemPartidos = ['PT', 'PSD/MDB', 'PP', 'REPUBLICANOS'];
+          return ordemPartidos.indexOf(a.partido) - ordemPartidos.indexOf(b.partido);
+        }
+        return b.votos - a.votos;
+      });
+    } catch (error) {
+      console.error('Erro ao calcular candidatos eleitos:', error);
+      return [];
+    }
   }
 
   return (
@@ -1877,36 +1896,56 @@ export default function ChapasPage() {
                       <div className="text-sm font-semibold text-green-900 mb-3">🏆 Candidatos Eleitos</div>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         {(() => {
-                          const candidatosEleitos = calcularCandidatosEleitos();
-                          const candidatosPorPartido = candidatosEleitos.reduce((acc, candidato) => {
-                            if (!acc[candidato.partido]) {
-                              acc[candidato.partido] = [];
+                          try {
+                            const candidatosEleitos = calcularCandidatosEleitos();
+                            
+                            if (!candidatosEleitos || candidatosEleitos.length === 0) {
+                              return (
+                                <div className="col-span-full text-center text-gray-500 py-4">
+                                  Nenhum candidato eleito encontrado
+                                </div>
+                              );
                             }
-                            acc[candidato.partido].push(candidato);
-                            return acc;
-                          }, {} as { [partido: string]: typeof candidatosEleitos });
+                            
+                            const candidatosPorPartido = candidatosEleitos.reduce((acc, candidato) => {
+                              if (candidato && candidato.partido) {
+                                if (!acc[candidato.partido]) {
+                                  acc[candidato.partido] = [];
+                                }
+                                acc[candidato.partido].push(candidato);
+                              }
+                              return acc;
+                            }, {} as { [partido: string]: typeof candidatosEleitos });
 
-                          return Object.entries(candidatosPorPartido).map(([partido, candidatos]) => (
-                            <div key={partido} className="border rounded-lg p-3">
-                              <div className={`font-semibold text-sm mb-2 text-center ${coresPartidos[partido as keyof typeof coresPartidos]?.cor || 'bg-gray-200'} ${coresPartidos[partido as keyof typeof coresPartidos]?.corTexto || 'text-gray-800'}`}>{partido}</div>
-                              <div className="space-y-2">
-                                {candidatos.map((candidato, index) => (
-                                  <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded text-xs">
-                                    <div className="flex items-center gap-2">
-                                      <span className="font-bold text-blue-600">#{candidato.posicao}</span>
-                                      <span className="font-medium">{candidato.nome}</span>
-                                    </div>
-                                    <div className="text-right">
-                                      <div className="font-semibold">
-                                        {candidato.votos.toLocaleString('pt-BR')}
+                            return Object.entries(candidatosPorPartido).map(([partido, candidatos]) => (
+                              <div key={partido} className="border rounded-lg p-3">
+                                <div className={`font-semibold text-sm mb-2 text-center ${coresPartidos[partido as keyof typeof coresPartidos]?.cor || 'bg-gray-200'} ${coresPartidos[partido as keyof typeof coresPartidos]?.corTexto || 'text-gray-800'}`}>{partido}</div>
+                                <div className="space-y-2">
+                                  {candidatos.map((candidato, index) => (
+                                    <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded text-xs">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-bold text-blue-600">#{candidato.posicao}</span>
+                                        <span className="font-medium">{candidato.nome}</span>
                                       </div>
-                                      <div className={`text-xs ${candidato.tipoEleicao === 'direta' ? 'text-green-600' : 'text-orange-600'}`}>{candidato.tipoEleicao === 'direta' ? 'Direta' : 'Sobra'}</div>
+                                      <div className="text-right">
+                                        <div className="font-semibold">
+                                          {candidato.votos.toLocaleString('pt-BR')}
+                                        </div>
+                                        <div className={`text-xs ${candidato.tipoEleicao === 'direta' ? 'text-green-600' : 'text-orange-600'}`}>{candidato.tipoEleicao === 'direta' ? 'Direta' : 'Sobra'}</div>
+                                      </div>
                                     </div>
-                                  </div>
-                                ))}
+                                  ))}
+                                </div>
                               </div>
-                            </div>
-                          ));
+                            ));
+                          } catch (error) {
+                            console.error('Erro ao exibir candidatos eleitos:', error);
+                            return (
+                              <div className="col-span-full text-center text-red-500 py-4">
+                                Erro ao carregar candidatos eleitos
+                              </div>
+                            );
+                          }
                         })()}
                       </div>
                     </div>
