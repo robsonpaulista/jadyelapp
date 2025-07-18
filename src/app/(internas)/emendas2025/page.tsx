@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Loader2, RefreshCw, Search, Filter, ChevronDown, ChevronRight, ChevronUp, DollarSign, TrendingUp, CheckCircle, CreditCard } from 'lucide-react';
+import { Loader2, RefreshCw, Search, Filter, ChevronDown, ChevronRight, ChevronUp, DollarSign, TrendingUp, CheckCircle, CreditCard, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -506,6 +506,280 @@ export default function Emendas2025() {
     fetchEmendas();
   };
 
+  // Função para imprimir todas as emendas em PDF
+  const imprimirEmendasPDF = () => {
+    // Criar uma nova janela para impressão
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error('Erro ao abrir janela de impressão');
+      return;
+    }
+
+    // Gerar o HTML para impressão
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html lang="pt-BR">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Emendas 2025 - Relatório</title>
+        <style>
+          @media print {
+            @page {
+              margin: 1cm;
+              size: A4;
+            }
+          }
+          
+          body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: white;
+            color: black;
+          }
+          
+          .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 20px;
+          }
+          
+          .header h1 {
+            margin: 0;
+            font-size: 24px;
+            color: #333;
+          }
+          
+          .header .date {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #666;
+          }
+          
+          .resumo-geral {
+            margin-bottom: 30px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+          }
+          
+          .resumo-geral h2 {
+            margin: 0 0 15px 0;
+            font-size: 18px;
+            color: #333;
+          }
+          
+          .resumo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+          }
+          
+          .resumo-item {
+            padding: 10px;
+            background: white;
+            border-radius: 3px;
+            border: 1px solid #dee2e6;
+          }
+          
+          .resumo-item .label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+          }
+          
+          .resumo-item .value {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+          }
+          
+          .bloco {
+            margin-bottom: 30px;
+            page-break-inside: avoid;
+          }
+          
+          .bloco-header {
+            background: #e9ecef;
+            padding: 10px 15px;
+            border-radius: 5px 5px 0 0;
+            border: 1px solid #dee2e6;
+            border-bottom: none;
+          }
+          
+          .bloco-header h3 {
+            margin: 0;
+            font-size: 16px;
+            color: #333;
+          }
+          
+          .bloco-header .info {
+            margin-top: 5px;
+            font-size: 12px;
+            color: #666;
+          }
+          
+          .bloco-content {
+            border: 1px solid #dee2e6;
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+          }
+          
+          .emenda-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+          }
+          
+          .emenda-table th {
+            background: #f8f9fa;
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+            font-weight: bold;
+            color: #333;
+          }
+          
+          .emenda-table td {
+            padding: 6px 8px;
+            border-bottom: 1px solid #eee;
+            vertical-align: top;
+          }
+          
+          .emenda-table tr:nth-child(even) {
+            background: #f8f9fa;
+          }
+          
+          .valor {
+            text-align: right;
+            font-family: monospace;
+          }
+          
+          .objeto {
+            max-width: 200px;
+            word-wrap: break-word;
+          }
+          
+          .liderancas {
+            max-width: 150px;
+            word-wrap: break-word;
+          }
+          
+          .page-break {
+            page-break-before: always;
+          }
+          
+          @media print {
+            .no-print {
+              display: none;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Relatório de Emendas 2025</h1>
+          <div class="date">Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}</div>
+        </div>
+        
+        <div class="resumo-geral">
+          <h2>Resumo Geral</h2>
+          <div class="resumo-grid">
+            <div class="resumo-item">
+              <div class="label">Valor Total Indicado</div>
+              <div class="value">${formatarValor(totaisGerais.valorIndicado)}</div>
+            </div>
+            <div class="resumo-item">
+              <div class="label">Valor Total a Empenhar</div>
+              <div class="value">${formatarValor(totaisGerais.valorAEmpenhar)}</div>
+            </div>
+            <div class="resumo-item">
+              <div class="label">Valor Total Empenhado</div>
+              <div class="value">${formatarValor(totaisGerais.valorEmpenhado)}</div>
+            </div>
+            <div class="resumo-item">
+              <div class="label">Valor Total Pago</div>
+              <div class="value">${formatarValor(totaisGerais.valorPago)}</div>
+            </div>
+            <div class="resumo-item">
+              <div class="label">Total de Municípios</div>
+              <div class="value">${totaisGerais.totalMunicipios}</div>
+            </div>
+            <div class="resumo-item">
+              <div class="label">Total de Emendas</div>
+              <div class="value">${emendasFiltradas.length}</div>
+            </div>
+          </div>
+        </div>
+        
+        ${blocos.map((bloco, index) => `
+          <div class="bloco ${index > 0 ? 'page-break' : ''}">
+            <div class="bloco-header">
+              <h3>${bloco.bloco}</h3>
+              <div class="info">
+                ${bloco.emendas.length} emendas • ${bloco.totalMunicipios} municípios • 
+                Valor Indicado: ${formatarValor(bloco.totalValorIndicado)} • 
+                Valor Empenhado: ${formatarValor(bloco.totalValorEmpenhado)} • 
+                Valor Pago: ${formatarValor(bloco.totalValorPago)}
+              </div>
+            </div>
+            <div class="bloco-content">
+              <table class="emenda-table">
+                <thead>
+                  <tr>
+                    <th>Emenda</th>
+                    <th>Município/Beneficiário</th>
+                    <th>Valor Indicado</th>
+                    <th>Valor a Empenhar</th>
+                    <th>Valor Empenhado</th>
+                    <th>Valor Pago</th>
+                    <th>Lideranças</th>
+                    <th>Objeto</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${bloco.emendas.map(emenda => `
+                    <tr>
+                      <td>${emenda.emenda || 'N/A'}</td>
+                      <td>${emenda.municipioBeneficiario || 'N/A'}</td>
+                      <td class="valor">${formatarValor(emenda.valorIndicado)}</td>
+                      <td class="valor">${formatarValor(emenda.valorAEmpenhar)}</td>
+                      <td class="valor">${formatarValor(emenda.valorEmpenhado)}</td>
+                      <td class="valor">${formatarValor(emenda.valorPago)}</td>
+                      <td class="liderancas">${emenda.liderancas || 'N/A'}</td>
+                      <td class="objeto">${emenda.objeto || 'N/A'}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `).join('')}
+        
+        <div class="no-print" style="margin-top: 30px; text-align: center;">
+          <button onclick="window.print()" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">
+            Imprimir PDF
+          </button>
+          <button onclick="window.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-left: 10px;">
+            Fechar
+          </button>
+        </div>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    
+    // Aguardar o carregamento e mostrar a janela
+    printWindow.onload = () => {
+      printWindow.focus();
+    };
+  };
+
   if (isLoading) {
     return (
       <div className="max-w-7xl mx-auto">
@@ -609,6 +883,15 @@ export default function Emendas2025() {
                 >
                   <ChevronRight className="h-4 w-4" />
                   <span className="ml-2">Recolher Todos</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={imprimirEmendasPDF}
+                  disabled={isRefreshing}
+                  className="bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700"
+                >
+                  <Printer className="h-4 w-4" />
+                  <span className="ml-2">Imprimir PDF</span>
                 </Button>
               </div>
             </div>
