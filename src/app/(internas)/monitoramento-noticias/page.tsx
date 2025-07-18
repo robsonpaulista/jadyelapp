@@ -168,7 +168,7 @@ export default function MonitoramentoNoticiasPage() {
                   <div className="divide-y divide-gray-200">
                     {filteredNews.map((item, idx) => (
                       <div key={idx} className="p-4 hover:bg-gray-50 transition-colors flex gap-3">
-                        <div className="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white">
+                        <div className="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-600">
                           <Newspaper className="h-6 w-6" />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -210,7 +210,7 @@ export default function MonitoramentoNoticiasPage() {
                       {filteredNews.map((item, idx) => (
                         <tr key={idx} className="hover:bg-gray-50 transition-colors">
                           <td className="py-3 px-4 w-16">
-                            <div className="w-12 h-12 rounded-lg overflow-hidden bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white">
+                            <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-600">
                               <Newspaper className="h-6 w-6" />
                             </div>
                           </td>
