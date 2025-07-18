@@ -423,6 +423,64 @@ export default function ChapasPage() {
     };
   };
 
+  // Simular distribuição completa das vagas (8 vagas totais)
+  const simularDistribuicaoCompleta = () => {
+    const VAGAS_TOTAIS = 8;
+    
+    // Inicializar com vagas diretas
+    const partidosComVagas = partidos.map(partido => {
+      const votosTotal = getVotosProjetados(partido.candidatos, partido.nome);
+      const vagasDiretas = calcularVagasDiretas(votosTotal);
+      
+      return {
+        partido: partido.nome,
+        votosTotal,
+        vagasObtidas: vagasDiretas,
+        votosRestantes: votosTotal - (vagasDiretas * quociente)
+      };
+    });
+
+    // Calcular vagas já distribuídas
+    const vagasDistribuidas = partidosComVagas.reduce((total, p) => total + p.vagasObtidas, 0);
+    const vagasRestantes = VAGAS_TOTAIS - vagasDistribuidas;
+
+    // Distribuir vagas restantes por sobras
+    const historicoSobras = [];
+    
+    for (let i = 0; i < vagasRestantes; i++) {
+      // Calcular sobras atuais
+      const sobrasAtuais = partidosComVagas.map(p => ({
+        partido: p.partido,
+        sobra: p.votosRestantes
+      })).sort((a, b) => b.sobra - a.sobra);
+
+      const ganhador = sobrasAtuais[0];
+      
+      // Adicionar ao histórico
+      historicoSobras.push({
+        rodada: i + 1,
+        partido: ganhador.partido,
+        sobra: ganhador.sobra,
+        vaga: vagasDistribuidas + i + 1
+      });
+
+      // Atualizar o partido ganhador
+      const partidoGanhador = partidosComVagas.find(p => p.partido === ganhador.partido);
+      if (partidoGanhador) {
+        partidoGanhador.vagasObtidas++;
+        partidoGanhador.votosRestantes -= quociente;
+      }
+    }
+
+    return {
+      partidosComVagas,
+      vagasDistribuidas,
+      vagasRestantes,
+      historicoSobras,
+      totalVagas: VAGAS_TOTAIS
+    };
+  };
+
   // Funções mantidas para compatibilidade com o código existente
   const calcularMaiorSobra1 = () => {
     const { maiorSobra } = calcularSobras();
@@ -1646,6 +1704,77 @@ export default function ChapasPage() {
                   ));
                 })()}
               </div>
+            </div>
+
+            {/* Seção de distribuição completa das 8 vagas */}
+            <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
+              <div className="text-base font-semibold mb-3 text-green-900">
+                🎯 Distribuição Completa das 8 Vagas
+              </div>
+              
+              {(() => {
+                const simulacao = simularDistribuicaoCompleta();
+                
+                return (
+                  <div className="space-y-4">
+                    {/* Resumo das vagas */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-white p-3 rounded border">
+                        <div className="text-sm font-semibold text-green-900 mb-2">📊 Resumo das Vagas</div>
+                        <div className="text-xs space-y-1">
+                          <div className="flex justify-between">
+                            <span>Vagas Diretas:</span>
+                            <span className="font-medium">{simulacao.vagasDistribuidas}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Vagas por Sobras:</span>
+                            <span className="font-medium">{simulacao.vagasRestantes}</span>
+                          </div>
+                          <div className="flex justify-between font-bold">
+                            <span>Total de Vagas:</span>
+                            <span>{simulacao.totalVagas}</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-white p-3 rounded border">
+                        <div className="text-sm font-semibold text-green-900 mb-2">🏆 Vagas por Partido</div>
+                        <div className="text-xs space-y-1">
+                          {simulacao.partidosComVagas.map(partido => (
+                            <div key={partido.partido} className="flex justify-between">
+                              <span>{partido.partido}:</span>
+                              <span className="font-medium">{partido.vagasObtidas} vaga{partido.vagasObtidas !== 1 ? 's' : ''}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Histórico das sobras */}
+                    <div className="bg-white p-3 rounded border">
+                      <div className="text-sm font-semibold text-green-900 mb-2">📋 Histórico das Sobras</div>
+                      <div className="text-xs space-y-2">
+                        {simulacao.historicoSobras.map((sobra, index) => (
+                          <div key={index} className="flex items-center gap-3 p-2 bg-gray-50 rounded">
+                            <span className="font-bold text-green-700">Rodada {sobra.rodada}</span>
+                            <span className="text-gray-600">→</span>
+                            <span className="font-medium">{sobra.partido}</span>
+                            <span className="text-gray-600">ganha a</span>
+                            <span className="font-bold text-green-700">Vaga #{sobra.vaga}</span>
+                            <span className="text-gray-600">com</span>
+                            <span className="font-medium">
+                              {sobra.sobra.toLocaleString('pt-BR', { 
+                                minimumFractionDigits: 2, 
+                                maximumFractionDigits: 2 
+                              })} votos
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>
