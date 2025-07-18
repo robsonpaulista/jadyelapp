@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import { RefreshCw, Filter } from 'lucide-react';
+import { RefreshCw, Filter, Newspaper } from 'lucide-react';
 import { disableConsoleLogging } from '@/lib/logger';
 import { toast } from 'react-hot-toast';
 import { Loading } from '@/components/ui/loading';
@@ -79,21 +79,7 @@ export default function MonitoramentoNoticiasPage() {
     }
   };
 
-  const getAvatarColor = (title: string) => {
-    const colors = [
-      'from-blue-500 to-purple-600',
-      'from-green-500 to-teal-600',
-      'from-red-500 to-pink-600',
-      'from-yellow-500 to-orange-600',
-      'from-indigo-500 to-blue-600',
-      'from-purple-500 to-indigo-600',
-      'from-pink-500 to-rose-600',
-      'from-teal-500 to-cyan-600'
-    ];
-    
-    const charCode = title.charCodeAt(0);
-    return colors[charCode % colors.length];
-  };
+
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -182,8 +168,8 @@ export default function MonitoramentoNoticiasPage() {
                   <div className="divide-y divide-gray-200">
                     {filteredNews.map((item, idx) => (
                       <div key={idx} className="p-4 hover:bg-gray-50 transition-colors flex gap-3">
-                        <div className={`flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-gradient-to-br ${getAvatarColor(item.title)} flex items-center justify-center text-white text-xs font-bold`}>
-                          {item.title.substring(0, 2).toUpperCase()}
+                        <div className="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white">
+                          <Newspaper className="h-6 w-6" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <a
@@ -224,8 +210,8 @@ export default function MonitoramentoNoticiasPage() {
                       {filteredNews.map((item, idx) => (
                         <tr key={idx} className="hover:bg-gray-50 transition-colors">
                           <td className="py-3 px-4 w-16">
-                            <div className={`w-12 h-12 rounded-lg overflow-hidden bg-gradient-to-br ${getAvatarColor(item.title)} flex items-center justify-center text-white text-xs font-bold`}>
-                              {item.title.substring(0, 2).toUpperCase()}
+                            <div className="w-12 h-12 rounded-lg overflow-hidden bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white">
+                              <Newspaper className="h-6 w-6" />
                             </div>
                           </td>
                           <td className="py-3 px-4">
