@@ -452,18 +452,24 @@ export default function ChapasPage() {
       // O partido com maior quociente partidário ganha a vaga
       const ganhador = quocientesPartidarios[0];
       
-      // Adicionar ao histórico
-      historicoSobras.push({
-        rodada: i + 1,
-        partido: ganhador.partido,
-        quocientePartidario: ganhador.quocientePartidario,
-        vaga: vagasDistribuidas + i + 1
-      });
-      
-      // Atualizar o partido ganhador
-      const partidoGanhador = partidosComVagas.find(p => p.partido === ganhador.partido);
-      if (partidoGanhador) {
-        partidoGanhador.vagasObtidas++;
+      // Verificar se há um ganhador válido
+      if (ganhador && ganhador.partido) {
+        // Adicionar ao histórico
+        historicoSobras.push({
+          rodada: i + 1,
+          partido: ganhador.partido,
+          quocientePartidario: ganhador.quocientePartidario,
+          vaga: vagasDistribuidas + i + 1
+        });
+        
+        // Atualizar o partido ganhador
+        const partidoGanhador = partidosComVagas.find(p => p.partido === ganhador.partido);
+        if (partidoGanhador) {
+          partidoGanhador.vagasObtidas++;
+        }
+      } else {
+        console.warn('Nenhum partido elegível encontrado para a vaga', i + 1);
+        break; // Sair do loop se não há partidos elegíveis
       }
     }
     
@@ -504,8 +510,8 @@ export default function ChapasPage() {
 
     // Ordenar por quociente partidário (maior para menor) - apenas partidos elegíveis
     const ordenadosPorSobras = resultados
-      .filter(r => r.atingiuMinimo)
-      .sort((a, b) => b.quocientePartidario - a.quocientePartidario);
+      .filter(r => r.atingiuMinimo && r.quocientePartidario !== undefined)
+      .sort((a, b) => (b.quocientePartidario || 0) - (a.quocientePartidario || 0));
     
     return {
       resultados,
@@ -1827,7 +1833,19 @@ export default function ChapasPage() {
             {/* Seção de distribuição completa das 8 vagas */}
             <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
               <div className="text-base font-semibold mb-3 text-green-900">
-                🎯 Distribuição Completa das 8 Vagas
+                🎯 Distribuição Completa das 8 Vagas - Método D'Hondt
+              </div>
+              
+              {/* Explicação do Método D'Hondt */}
+              <div className="mb-4 p-3 bg-blue-100 rounded border border-blue-300">
+                <div className="text-sm font-semibold text-blue-900 mb-2">📚 Como funciona o Método D'Hondt:</div>
+                <div className="text-xs text-blue-800 space-y-1">
+                  <div>1️⃣ <strong>Vagas Diretas:</strong> Cada partido ganha vagas baseado na parte inteira da divisão (Votos ÷ QE)</div>
+                  <div>2️⃣ <strong>Vagas por Sobras:</strong> Para cada vaga restante, calcula-se o Quociente Partidário = Votos ÷ (Vagas Obtidas + 1)</div>
+                  <div>3️⃣ <strong>Ganhador:</strong> O partido com maior Quociente Partidário ganha a vaga</div>
+                  <div>4️⃣ <strong>Recálculo:</strong> Após cada vaga ganha, todos os quocientes partidários são recalculados</div>
+                  <div>5️⃣ <strong>Repetição:</strong> O processo se repete até distribuir todas as vagas</div>
+                </div>
               </div>
               
               {(() => {
@@ -1870,24 +1888,76 @@ export default function ChapasPage() {
 
                     {/* Histórico das sobras */}
                     <div className="bg-white p-3 rounded border">
-                      <div className="text-sm font-semibold text-green-900 mb-2">📋 Histórico das Sobras</div>
-                      <div className="text-xs space-y-2">
-                        {simulacao.historicoSobras.map((sobra, index) => (
-                          <div key={index} className="flex items-center gap-3 p-2 bg-gray-50 rounded">
-                            <span className="font-bold text-green-700">Rodada {sobra.rodada}</span>
-                            <span className="text-gray-600">→</span>
-                            <span className="font-medium">{sobra.partido}</span>
-                            <span className="text-gray-600">ganha a</span>
-                            <span className="font-bold text-green-700">Vaga #{sobra.vaga}</span>
-                            <span className="text-gray-600">com</span>
-                            <span className="font-medium">
-                              {sobra.quocientePartidario.toLocaleString('pt-BR', { 
-                                minimumFractionDigits: 2, 
-                                maximumFractionDigits: 2 
-                              })} votos
-                            </span>
-                          </div>
-                        ))}
+                      <div className="text-sm font-semibold text-green-900 mb-2">📋 Histórico das Sobras - Método D'Hondt</div>
+                      <div className="text-xs space-y-3">
+                        {simulacao.historicoSobras.map((sobra, index) => {
+                          // Calcular os quocientes partidários para esta rodada
+                          const quocientesRodada = simulacao.partidosComVagas
+                            .filter(p => p.vagasObtidas > 0 || index === 0) // Mostrar apenas partidos com vagas ou na primeira rodada
+                            .map(p => ({
+                              partido: p.partido,
+                              votos: p.votosTotal,
+                              vagasAntes: index === 0 ? p.vagasDiretas : p.vagasObtidas - (p.partido === sobra.partido ? 1 : 0),
+                              quocientePartidario: index === 0 
+                                ? p.votosTotal / (p.vagasDiretas + 1)
+                                : p.partido === sobra.partido 
+                                  ? p.votosTotal / p.vagasObtidas
+                                  : p.votosTotal / (p.vagasObtidas + 1)
+                            }))
+                            .sort((a, b) => b.quocientePartidario - a.quocientePartidario);
+
+                          return (
+                            <div key={index} className="border rounded-lg p-3 bg-blue-50">
+                              {/* Cabeçalho da rodada */}
+                              <div className="flex items-center gap-3 mb-2 p-2 bg-white rounded">
+                                <span className="font-bold text-green-700">🎯 Rodada {sobra.rodada}</span>
+                                <span className="text-gray-600">→</span>
+                                <span className="font-medium bg-green-100 px-2 py-1 rounded">{sobra.partido}</span>
+                                <span className="text-gray-600">ganha a</span>
+                                <span className="font-bold text-green-700 bg-green-100 px-2 py-1 rounded">Vaga #{sobra.vaga}</span>
+                              </div>
+
+                              {/* Explicação do cálculo */}
+                              <div className="mb-2 p-2 bg-white rounded">
+                                <div className="font-semibold text-blue-800 mb-1">📊 Cálculo dos Quocientes Partidários:</div>
+                                <div className="space-y-1">
+                                  {quocientesRodada.map((q, qIndex) => (
+                                    <div key={q.partido} className={`flex justify-between items-center p-1 rounded ${
+                                      q.partido === sobra.partido ? 'bg-green-100' : 'bg-gray-50'
+                                    }`}>
+                                      <span className="font-medium">{q.partido}:</span>
+                                      <span className="text-xs text-gray-600">
+                                        {q.votos.toLocaleString('pt-BR')} ÷ ({q.vagasAntes} + 1) = 
+                                      </span>
+                                      <span className={`font-bold ${
+                                        q.partido === sobra.partido ? 'text-green-700' : 'text-gray-700'
+                                      }`}>
+                                        {q.quocientePartidario.toLocaleString('pt-BR', { 
+                                          minimumFractionDigits: 2, 
+                                          maximumFractionDigits: 2 
+                                        })}
+                                      </span>
+                                      {q.partido === sobra.partido && (
+                                        <span className="text-green-600 font-bold ml-2">🏆 MAIOR</span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Resultado da rodada */}
+                              <div className="p-2 bg-green-100 rounded">
+                                <div className="font-semibold text-green-800">
+                                  ✅ Resultado: {sobra.partido} ganha a Vaga #{sobra.vaga} com quociente partidário de{' '}
+                                  {sobra.quocientePartidario.toLocaleString('pt-BR', { 
+                                    minimumFractionDigits: 2, 
+                                    maximumFractionDigits: 2 
+                                  })}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
 
