@@ -73,8 +73,8 @@ export default function ChapasPage() {
   const [hoveredRow, setHoveredRow] = useState<{ partidoIdx: number; candidatoNome: string } | null>(null);
   const [editingName, setEditingName] = useState<{ partidoIdx: number; candidatoNome: string; tempValue: string } | null>(null);
   const [votosIgreja, setVotosIgreja] = useState(50000);
-  const [candidato1, setCandidato1] = useState('');
-  const [candidato2, setCandidato2] = useState('');
+  const [candidato1, setCandidato1] = useState(0);
+  const [candidato2, setCandidato2] = useState(0);
   const [votosLegenda, setVotosLegenda] = useState<{ [partido: string]: number }>({});
 
   // Estados para adicionar novo candidato
@@ -1515,7 +1515,7 @@ export default function ChapasPage() {
               if (!pp) return null;
 
               const votosPP = getVotosProjetados(pp.candidatos, "PP");
-              const votosTotal = votosPP + votosIgreja;
+              const votosTotal = votosPP + votosIgreja - candidato1 - candidato2;
 
               return (
                 <div className="flex flex-col gap-2">
@@ -1536,22 +1536,22 @@ export default function ChapasPage() {
                     <div className="flex items-center gap-1">
                       <span className="text-red-600 text-xs">CANDIDATO1</span>
                       <input
-                        type="text"
+                        type="number"
                         value={candidato1}
-                        onChange={(e) => setCandidato1(e.target.value)}
-                        placeholder="Nome"
-                        className="w-24 px-1 py-0.5 text-xs border rounded"
+                        onChange={(e) => setCandidato1(Number(e.target.value) || 0)}
+                        placeholder="Votos"
+                        className="w-20 px-1 py-0.5 text-xs border rounded"
                       />
                     </div>
                     <span>-</span>
                     <div className="flex items-center gap-1">
                       <span className="text-red-600 text-xs">CANDIDATO2</span>
                       <input
-                        type="text"
+                        type="number"
                         value={candidato2}
-                        onChange={(e) => setCandidato2(e.target.value)}
-                        placeholder="Nome"
-                        className="w-24 px-1 py-0.5 text-xs border rounded"
+                        onChange={(e) => setCandidato2(Number(e.target.value) || 0)}
+                        placeholder="Votos"
+                        className="w-20 px-1 py-0.5 text-xs border rounded"
                       />
                     </div>
                     <span>=</span>
