@@ -99,9 +99,76 @@ export async function carregarChapas() {
 }
 
 function safeId(partido: string, nome: string) {
-  const safePartido = partido.replaceAll('/', '_');
-  const safeNome = nome.replaceAll('/', '_');
-  return `${safePartido}_${safeNome}`;
+  // Normalizar strings para evitar problemas de encoding
+  const safePartido = partido
+    .replaceAll('/', '_')
+    .replaceAll('\\', '_')
+    .replaceAll(' ', '_')
+    .replaceAll('.', '_')
+    .replaceAll(',', '_')
+    .replaceAll('(', '_')
+    .replaceAll(')', '_')
+    .replaceAll('[', '_')
+    .replaceAll(']', '_')
+    .replaceAll('{', '_')
+    .replaceAll('}', '_')
+    .replaceAll('&', '_')
+    .replaceAll('+', '_')
+    .replaceAll('=', '_')
+    .replaceAll('?', '_')
+    .replaceAll('#', '_')
+    .replaceAll('!', '_')
+    .replaceAll('@', '_')
+    .replaceAll('$', '_')
+    .replaceAll('%', '_')
+    .replaceAll('^', '_')
+    .replaceAll('*', '_')
+    .replaceAll('|', '_')
+    .replaceAll('~', '_')
+    .replaceAll('`', '_')
+    .replaceAll('"', '_')
+    .replaceAll("'", '_')
+    .replaceAll('<', '_')
+    .replaceAll('>', '_')
+    .toUpperCase()
+    .trim();
+    
+  const safeNome = nome
+    .replaceAll('/', '_')
+    .replaceAll('\\', '_')
+    .replaceAll(' ', '_')
+    .replaceAll('.', '_')
+    .replaceAll(',', '_')
+    .replaceAll('(', '_')
+    .replaceAll(')', '_')
+    .replaceAll('[', '_')
+    .replaceAll(']', '_')
+    .replaceAll('{', '_')
+    .replaceAll('}', '_')
+    .replaceAll('&', '_')
+    .replaceAll('+', '_')
+    .replaceAll('=', '_')
+    .replaceAll('?', '_')
+    .replaceAll('#', '_')
+    .replaceAll('!', '_')
+    .replaceAll('@', '_')
+    .replaceAll('$', '_')
+    .replaceAll('%', '_')
+    .replaceAll('^', '_')
+    .replaceAll('*', '_')
+    .replaceAll('|', '_')
+    .replaceAll('~', '_')
+    .replaceAll('`', '_')
+    .replaceAll('"', '_')
+    .replaceAll("'", '_')
+    .replaceAll('<', '_')
+    .replaceAll('>', '_')
+    .toUpperCase()
+    .trim();
+    
+  const id = `${safePartido}_${safeNome}`;
+  console.log(`safeId gerado: partido="${partido}" -> "${safePartido}", nome="${nome}" -> "${safeNome}", id="${id}"`);
+  return id;
 }
 
 export async function atualizarChapa(partido: string, nome: string, votos: number) {
@@ -119,8 +186,24 @@ export async function popularChapasIniciais() {
 }
 
 export async function excluirChapa(partido: string, nome: string) {
-  const id = safeId(partido, nome);
-  await deleteDoc(doc(db, 'chapas2026', id));
+  try {
+    const id = safeId(partido, nome);
+    console.log(`Tentando excluir chapa: partido=${partido}, nome=${nome}, id=${id}`);
+    
+    const docRef = doc(db, 'chapas2026', id);
+    const docSnap = await getDoc(docRef);
+    
+    if (!docSnap.exists()) {
+      console.warn(`Documento não encontrado para exclusão: ${id}`);
+      throw new Error(`Candidato ${nome} do partido ${partido} não encontrado`);
+    }
+    
+    await deleteDoc(docRef);
+    console.log(`Chapa excluída com sucesso: ${id}`);
+  } catch (error) {
+    console.error('Erro ao excluir chapa:', error);
+    throw error;
+  }
 }
 
 // Funções para gerenciar o quociente eleitoral

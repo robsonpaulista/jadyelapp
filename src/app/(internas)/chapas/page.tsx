@@ -652,10 +652,22 @@ export default function ChapasPage() {
   const handleExcluirCandidato = async (partidoIdx: number, candidatoNome: string) => {
     const partido = partidos[partidoIdx];
     const candidato = partido.candidatos.find(c => c.nome === candidatoNome);
-    if (!candidato) return;
+    if (!candidato) {
+      console.error('Candidato não encontrado no estado local:', candidatoNome);
+      alert('Candidato não encontrado. Tente recarregar a página.');
+      return;
+    }
+    
+    console.log(`Iniciando exclusão: partido=${partido.nome}, candidato=${candidatoNome}`);
     
     try {
+      // Primeiro, excluir do Firestore
       await excluirChapa(partido.nome, candidato.nome);
+      
+      // Se chegou até aqui, a exclusão foi bem-sucedida
+      console.log('Candidato excluído do Firestore com sucesso');
+      
+      // Atualizar estado local
       setPartidos(prev => prev.map((p, i) => {
         if (i !== partidoIdx) return p;
         return {
@@ -666,14 +678,35 @@ export default function ChapasPage() {
 
       // Salvar automaticamente no cenário ativo
       if (cenarioAtivo) {
-        const partidosConvertidos = converterPartidosParaCenario();
-        await atualizarCenario(cenarioAtivo.id, partidosConvertidos, quociente);
-        console.log('Candidato excluído e cenário atualizado:', cenarioAtivo.nome);
-        mostrarNotificacaoAutoSave(`Candidato excluído e cenário "${cenarioAtivo.nome}" atualizado automaticamente`);
+        try {
+          const partidosConvertidos = converterPartidosParaCenario();
+          await atualizarCenario(cenarioAtivo.id, partidosConvertidos, quociente);
+          console.log('Candidato excluído e cenário atualizado:', cenarioAtivo.nome);
+          mostrarNotificacaoAutoSave(`Candidato excluído e cenário "${cenarioAtivo.nome}" atualizado automaticamente`);
+        } catch (cenarioError) {
+          console.error('Erro ao atualizar cenário após exclusão:', cenarioError);
+          // Não falhar a exclusão por erro no cenário
+          mostrarNotificacaoAutoSave(`Candidato excluído, mas erro ao atualizar cenário`);
+        }
       }
+      
+      console.log('Exclusão concluída com sucesso');
     } catch (error) {
       console.error('Erro ao excluir candidato:', error);
-      alert('Erro ao excluir candidato. Tente novamente.');
+      
+      // Mensagem de erro mais específica
+      let errorMessage = 'Erro ao excluir candidato. Tente novamente.';
+      if (error instanceof Error) {
+        if (error.message.includes('não encontrado')) {
+          errorMessage = error.message;
+        } else if (error.message.includes('permission')) {
+          errorMessage = 'Sem permissão para excluir candidato. Verifique suas credenciais.';
+        } else if (error.message.includes('network')) {
+          errorMessage = 'Erro de conexão. Verifique sua internet e tente novamente.';
+        }
+      }
+      
+      alert(errorMessage);
     }
   };
 
