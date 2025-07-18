@@ -405,104 +405,68 @@ export default function ChapasPage() {
     return Math.floor(votosTotal / quociente);
   };
 
-  // Calcular sobra (parte decimal × quociente)
+  // Calcular sobra (parte decimal × quociente) - MÉTODO SIMPLIFICADO (INCORRETO)
   const calcularSobra = (votosTotal: number) => {
     const divisao = votosTotal / quociente;
     const parteDecimal = divisao - Math.floor(divisao);
     return parteDecimal * quociente;
   };
 
-  // Calcular sobras seguindo o sistema proporcional brasileiro
-  const calcularSobras = () => {
-    // Filtrar apenas partidos que atingiram o mínimo de 80% do quociente
-    const partidosElegiveis = getPartidosElegiveisSobras();
-    
-    const resultados = partidos.map(partido => {
-      const votosTotal = getVotosProjetados(partido.candidatos, partido.nome);
-      const vagasDiretas = calcularVagasDiretas(votosTotal);
-      const sobra = calcularSobra(votosTotal);
-      const divisao = votosTotal / quociente;
-      const atingiuMinimo = partidoAtingiuMinimo(partido.nome);
-      
-      return {
-        partido: partido.nome,
-        votosTotal,
-        vagasDiretas,
-        sobra: atingiuMinimo ? sobra : 0, // Sobra zero se não atingiu mínimo
-        divisao,
-        projecaoEleitos: divisao.toFixed(2),
-        atingiuMinimo
-      };
-    });
-
-    // Ordenar por sobra (maior para menor) - apenas partidos elegíveis
-    const ordenadosPorSobras = resultados
-      .filter(r => r.atingiuMinimo)
-      .sort((a, b) => b.sobra - a.sobra);
-    
-    return {
-      resultados,
-      ordenadosPorSobras,
-      maiorSobra: ordenadosPorSobras[0]?.sobra || 0
-    };
-  };
-
-  // Simular distribuição completa das vagas (8 vagas totais)
-  const simularDistribuicaoCompleta = () => {
+  // MÉTODO D'HONDT CORRETO - Legislação Brasileira
+  const calcularDistribuicaoDHondt = () => {
     const VAGAS_TOTAIS = 8;
     
-    // Inicializar com vagas diretas (apenas partidos elegíveis)
-    const partidosComVagas = partidos.map(partido => {
+    // Filtrar apenas partidos que atingiram o mínimo de 80% do quociente
+    const partidosElegiveis = partidos.filter(partido => partidoAtingiuMinimo(partido.nome));
+    
+    // Inicializar partidos com vagas diretas
+    const partidosComVagas = partidosElegiveis.map(partido => {
       const votosTotal = getVotosProjetados(partido.candidatos, partido.nome);
       const vagasDiretas = calcularVagasDiretas(votosTotal);
-      const atingiuMinimo = partidoAtingiuMinimo(partido.nome);
       
       return {
         partido: partido.nome,
         votosTotal,
         vagasObtidas: vagasDiretas,
-        votosRestantes: atingiuMinimo ? votosTotal - (vagasDiretas * quociente) : 0,
-        atingiuMinimo
+        vagasDiretas: vagasDiretas
       };
     });
     
     // Calcular vagas já distribuídas
     const vagasDistribuidas = partidosComVagas.reduce((total, p) => total + p.vagasObtidas, 0);
     const vagasRestantes = VAGAS_TOTAIS - vagasDistribuidas;
-
-    // Distribuir vagas restantes por sobras (apenas partidos elegíveis)
+    
+    // Distribuir vagas restantes pelo Método D'Hondt
     const historicoSobras = [];
     
     for (let i = 0; i < vagasRestantes; i++) {
-      // Calcular sobras atuais (apenas partidos elegíveis)
-      const sobrasAtuais = partidosComVagas
-        .filter(p => p.atingiuMinimo)
-        .map(p => ({
-          partido: p.partido,
-          sobra: p.votosRestantes
-        }))
-        .sort((a, b) => b.sobra - a.sobra);
-
-      const ganhador = sobrasAtuais[0];
+      // Calcular quocientes partidários para cada partido
+      const quocientesPartidarios = partidosComVagas.map(p => ({
+        partido: p.partido,
+        quocientePartidario: p.votosTotal / (p.vagasObtidas + 1)
+      }));
       
-      if (ganhador) {
-        // Adicionar ao histórico
-        historicoSobras.push({
-          rodada: i + 1,
-          partido: ganhador.partido,
-          sobra: ganhador.sobra,
-          vaga: vagasDistribuidas + i + 1
-        });
-
-        // Atualizar o partido ganhador
-        const partidoGanhador = partidosComVagas.find(p => p.partido === ganhador.partido);
-        if (partidoGanhador) {
-          partidoGanhador.vagasObtidas++;
-          partidoGanhador.votosRestantes -= quociente;
-        }
+      // Ordenar por quociente partidário (maior para menor)
+      quocientesPartidarios.sort((a, b) => b.quocientePartidario - a.quocientePartidario);
+      
+      // O partido com maior quociente partidário ganha a vaga
+      const ganhador = quocientesPartidarios[0];
+      
+      // Adicionar ao histórico
+      historicoSobras.push({
+        rodada: i + 1,
+        partido: ganhador.partido,
+        quocientePartidario: ganhador.quocientePartidario,
+        vaga: vagasDistribuidas + i + 1
+      });
+      
+      // Atualizar o partido ganhador
+      const partidoGanhador = partidosComVagas.find(p => p.partido === ganhador.partido);
+      if (partidoGanhador) {
+        partidoGanhador.vagasObtidas++;
       }
     }
-
+    
     return {
       partidosComVagas,
       vagasDistribuidas,
@@ -510,6 +474,49 @@ export default function ChapasPage() {
       historicoSobras,
       totalVagas: VAGAS_TOTAIS
     };
+  };
+
+  // Calcular sobras seguindo o sistema proporcional brasileiro (MÉTODO D'HONDT)
+  const calcularSobras = () => {
+    // Filtrar apenas partidos que atingiram o mínimo de 80% do quociente
+    const partidosElegiveis = getPartidosElegiveisSobras();
+    
+    const resultados = partidos.map(partido => {
+      const votosTotal = getVotosProjetados(partido.candidatos, partido.nome);
+      const vagasDiretas = calcularVagasDiretas(votosTotal);
+      const divisao = votosTotal / quociente;
+      const atingiuMinimo = partidoAtingiuMinimo(partido.nome);
+      
+      // Para o Método D'Hondt, a "sobra" é o quociente partidário
+      const quocientePartidario = atingiuMinimo ? votosTotal / (vagasDiretas + 1) : 0;
+      
+      return {
+        partido: partido.nome,
+        votosTotal,
+        vagasDiretas,
+        sobra: quocientePartidario, // Quociente partidário para D'Hondt
+        divisao,
+        projecaoEleitos: divisao.toFixed(2),
+        atingiuMinimo,
+        quocientePartidario
+      };
+    });
+
+    // Ordenar por quociente partidário (maior para menor) - apenas partidos elegíveis
+    const ordenadosPorSobras = resultados
+      .filter(r => r.atingiuMinimo)
+      .sort((a, b) => b.quocientePartidario - a.quocientePartidario);
+    
+    return {
+      resultados,
+      ordenadosPorSobras,
+      maiorSobra: ordenadosPorSobras[0]?.quocientePartidario || 0
+    };
+  };
+
+  // Simular distribuição completa das vagas (8 vagas totais) - MÉTODO D'HONDT
+  const simularDistribuicaoCompleta = () => {
+    return calcularDistribuicaoDHondt();
   };
 
   // Funções mantidas para compatibilidade com o código existente
@@ -1707,13 +1714,13 @@ export default function ChapasPage() {
             })()}
           </div>
 
-          {/* Seção de detalhes das sobras - Regra Proporcional Brasileira */}
+          {/* Seção de detalhes das sobras - Método D'Hondt */}
           <div className="mt-4 p-4 bg-blue-50 rounded-lg max-w-4xl">
             <div className="text-base font-semibold mb-3 text-blue-900">
-              📊 Cálculo de Sobras - Sistema Proporcional Brasileiro
+              📊 Cálculo de Sobras - Método D'Hondt (Legislação Brasileira)
             </div>
             <div className="text-sm text-blue-800 mb-3">
-              <strong>Fórmula:</strong> Sobra = (Votos ÷ Quociente - Parte Inteira) × Quociente
+              <strong>Fórmula:</strong> Quociente Partidário = Votos ÷ (Vagas Obtidas + 1)
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1744,11 +1751,11 @@ export default function ChapasPage() {
                       
                       <div className="border-t pt-1 mt-2">
                         <div className="flex justify-between">
-                          <span>Sobra:</span>
+                          <span>Quociente Partidário:</span>
                           <span className={`font-bold ${
                             index === 0 ? 'text-green-600' : 'text-gray-700'
                           }`}>
-                            {resultado.sobra.toLocaleString('pt-BR', { 
+                            {resultado.quocientePartidario.toLocaleString('pt-BR', { 
                               minimumFractionDigits: 2, 
                               maximumFractionDigits: 2 
                             })}
@@ -1756,9 +1763,7 @@ export default function ChapasPage() {
                         </div>
                         
                         <div className="text-xs text-gray-500 mt-1">
-                          {resultado.votosTotal.toLocaleString('pt-BR')} ÷ {quociente.toLocaleString('pt-BR')} = {resultado.divisao.toFixed(2)}
-                          <br />
-                          Parte decimal: {(resultado.divisao - Math.floor(resultado.divisao)).toFixed(2)} × {quociente.toLocaleString('pt-BR')} = {resultado.sobra.toLocaleString('pt-BR', { 
+                          {resultado.votosTotal.toLocaleString('pt-BR')} ÷ ({resultado.vagasDiretas} + 1) = {resultado.quocientePartidario.toLocaleString('pt-BR', { 
                             minimumFractionDigits: 2, 
                             maximumFractionDigits: 2 
                           })}
@@ -1766,7 +1771,7 @@ export default function ChapasPage() {
                         
                         {index === 0 && (
                           <div className="text-xs text-green-600 font-medium mt-1">
-                            🏆 Maior sobra - Ganha a primeira vaga de sobra
+                            🏆 Maior quociente partidário - Ganha a primeira vaga de sobra
                           </div>
                         )}
                       </div>
@@ -1778,7 +1783,7 @@ export default function ChapasPage() {
             
             <div className="mt-4 p-3 bg-blue-100 rounded border border-blue-300">
               <div className="text-sm font-semibold text-blue-900 mb-2">
-                📋 Ordem de Distribuição das Sobras:
+                📋 Ordem de Distribuição das Sobras (Método D'Hondt):
               </div>
               <div className="text-xs text-blue-800 space-y-1">
                 {(() => {
@@ -1789,7 +1794,7 @@ export default function ChapasPage() {
                       <span className="font-bold text-blue-900">#{index + 1}</span>
                       <span className="font-medium">{resultado.partido}</span>
                       <span className="text-gray-600">
-                        ({resultado.sobra.toLocaleString('pt-BR', { 
+                        ({resultado.quocientePartidario.toLocaleString('pt-BR', { 
                           minimumFractionDigits: 2, 
                           maximumFractionDigits: 2 
                         })})
@@ -1857,7 +1862,7 @@ export default function ChapasPage() {
                             <span className="font-bold text-green-700">Vaga #{sobra.vaga}</span>
                             <span className="text-gray-600">com</span>
                             <span className="font-medium">
-                              {sobra.sobra.toLocaleString('pt-BR', { 
+                              {sobra.quocientePartidario.toLocaleString('pt-BR', { 
                                 minimumFractionDigits: 2, 
                                 maximumFractionDigits: 2 
                               })} votos
