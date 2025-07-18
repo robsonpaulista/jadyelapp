@@ -73,6 +73,8 @@ export default function ChapasPage() {
   const [hoveredRow, setHoveredRow] = useState<{ partidoIdx: number; candidatoNome: string } | null>(null);
   const [editingName, setEditingName] = useState<{ partidoIdx: number; candidatoNome: string; tempValue: string } | null>(null);
   const [votosIgreja, setVotosIgreja] = useState(50000);
+  const [candidato1, setCandidato1] = useState('');
+  const [candidato2, setCandidato2] = useState('');
   const [votosLegenda, setVotosLegenda] = useState<{ [partido: string]: number }>({});
 
   // Estados para adicionar novo candidato
@@ -1516,22 +1518,55 @@ export default function ChapasPage() {
               const votosTotal = votosPP + votosIgreja;
 
               return (
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2 text-sm">
-                    <span>PP ({votosPP.toLocaleString('pt-BR')})</span>
-                    <span>+</span>
-                    <div className="flex items-center gap-1">
-                      <span>IGREJA</span>
+                <div className="flex flex-col gap-3">
+                  {/* Inputs para Candidato 1 e Candidato 2 */}
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm font-medium whitespace-nowrap">Candidato 1:</label>
                       <input
-                        type="number"
-                        value={votosIgreja}
-                        onChange={(e) => setVotosIgreja(Number(e.target.value))}
-                        className="w-24 px-1 py-0.5 text-xs border rounded"
+                        type="text"
+                        value={candidato1}
+                        onChange={(e) => setCandidato1(e.target.value)}
+                        placeholder="Nome do candidato"
+                        className="flex-1 px-2 py-1 text-xs border rounded"
                       />
                     </div>
-                    <span>=</span>
-                    <span className="font-bold">{votosTotal.toLocaleString('pt-BR')}</span>
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm font-medium whitespace-nowrap">Candidato 2:</label>
+                      <input
+                        type="text"
+                        value={candidato2}
+                        onChange={(e) => setCandidato2(e.target.value)}
+                        placeholder="Nome do candidato"
+                        className="flex-1 px-2 py-1 text-xs border rounded"
+                      />
+                    </div>
                   </div>
+
+                  {/* Equação atualizada */}
+                  <div className="flex flex-col gap-1">
+                    <div className="text-sm font-medium text-gray-700">Equação: PP + IGREJA - CANDIDATO1 - CANDIDATO2</div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <span>PP ({votosPP.toLocaleString('pt-BR')})</span>
+                      <span>+</span>
+                      <div className="flex items-center gap-1">
+                        <span>IGREJA</span>
+                        <input
+                          type="number"
+                          value={votosIgreja}
+                          onChange={(e) => setVotosIgreja(Number(e.target.value))}
+                          className="w-24 px-1 py-0.5 text-xs border rounded"
+                        />
+                      </div>
+                      <span>-</span>
+                      <span className="text-red-600">CANDIDATO1</span>
+                      <span>-</span>
+                      <span className="text-red-600">CANDIDATO2</span>
+                      <span>=</span>
+                      <span className="font-bold">{votosTotal.toLocaleString('pt-BR')}</span>
+                    </div>
+                  </div>
+
                   <div className="flex flex-col gap-2 text-sm text-gray-600">
                     <div>Eleitos pelo Quociente ({quociente.toLocaleString('pt-BR')}): {getProjecaoEleitos(votosTotal)}</div>
                     <div>÷3: {getDivisaoPorTres(votosTotal)}</div>
