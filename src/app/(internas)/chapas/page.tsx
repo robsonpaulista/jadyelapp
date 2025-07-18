@@ -195,6 +195,41 @@ export default function ChapasPage() {
     }
   };
 
+  // Função para sincronizar dados locais com Firestore
+  const sincronizarDadosLocais = async () => {
+    console.log('Iniciando sincronização de dados locais com Firestore...');
+    
+    try {
+      // Carregar dados do Firestore
+      const chapasFirestore = await carregarChapas();
+      console.log('Chapas carregadas do Firestore:', chapasFirestore.length);
+      
+      // Atualizar estado local baseado no Firestore
+      setPartidos(prev => prev.map(partido => {
+        const candidatosFirestore = chapasFirestore
+          .filter(chapa => chapa.partido === partido.nome && chapa.nome !== "VOTOS LEGENDA")
+          .map(chapa => ({
+            nome: chapa.nome,
+            votos: chapa.votos,
+            genero: (chapa as any).genero
+          }));
+        
+        console.log(`Partido ${partido.nome}: ${candidatosFirestore.length} candidatos no Firestore`);
+        
+        return {
+          ...partido,
+          candidatos: candidatosFirestore
+        };
+      }));
+      
+      console.log('Sincronização concluída com sucesso');
+      mostrarNotificacaoAutoSave('Dados sincronizados com sucesso');
+    } catch (error) {
+      console.error('Erro na sincronização:', error);
+      alert('Erro ao sincronizar dados. Tente novamente.');
+    }
+  };
+
   const filtrarChapas = (chapasParaFiltrar: Chapa[] = chapas) => {
     let filtradas = [...chapasParaFiltrar];
     
@@ -696,9 +731,12 @@ export default function ChapasPage() {
       
       // Mensagem de erro mais específica
       let errorMessage = 'Erro ao excluir candidato. Tente novamente.';
+      let shouldSync = false;
+      
       if (error instanceof Error) {
         if (error.message.includes('não encontrado')) {
-          errorMessage = error.message;
+          errorMessage = `${error.message}\n\nO candidato pode existir apenas localmente. Deseja sincronizar os dados?`;
+          shouldSync = true;
         } else if (error.message.includes('permission')) {
           errorMessage = 'Sem permissão para excluir candidato. Verifique suas credenciais.';
         } else if (error.message.includes('network')) {
@@ -706,7 +744,14 @@ export default function ChapasPage() {
         }
       }
       
-      alert(errorMessage);
+      if (shouldSync) {
+        const shouldProceed = confirm(errorMessage);
+        if (shouldProceed) {
+          await sincronizarDadosLocais();
+        }
+      } else {
+        alert(errorMessage);
+      }
     }
   };
 
@@ -894,6 +939,15 @@ export default function ChapasPage() {
               className={modoCenarios ? 'bg-blue-50 border-blue-200' : ''}
             >
               {modoCenarios ? 'Fechar Cenários' : 'Gerenciar Cenários'}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={sincronizarDadosLocais}
+              className="bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"
+            >
+              <RefreshCw className="h-4 w-4 mr-1" />
+              Sincronizar Dados
             </Button>
             {cenarioAtivo && (
               <Button
