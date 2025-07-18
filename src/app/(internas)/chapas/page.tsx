@@ -65,6 +65,7 @@ const getMulheresPartido = (nomePartido: string): string[] => {
 export default function ChapasPage() {
   const [loading, setLoading] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
+  const [modoImpressao, setModoImpressao] = useState(false);
 
   const [partidos, setPartidos] = useState<PartidoLocal[]>(criarPartidosIniciais());
   const [quociente, setQuociente] = useState(initialQuociente);
@@ -98,12 +99,22 @@ export default function ChapasPage() {
     if (!contentRef.current) return;
     
     try {
+      // Ativar modo de impressão
+      setModoImpressao(true);
+      
+      // Aguardar um pouco para o DOM ser atualizado
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       await generatePDF(contentRef, {
         filename: `chapas-eleitorais-${new Date().toISOString().split('T')[0]}.pdf`
       });
+      
+      // Desativar modo de impressão
+      setModoImpressao(false);
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);
       alert('Erro ao gerar PDF. Tente novamente.');
+      setModoImpressao(false);
     }
   };
 
@@ -1159,61 +1170,71 @@ export default function ChapasPage() {
                               <td className="pr-2 text-left whitespace-nowrap font-normal align-top w-2/3">
                                 <div className="flex items-center gap-2">
                                   <span className="text-sm text-gray-500">{idx + 1}.</span>
-                                  <input
-                                    type="text"
-                                    value={editingName?.partidoIdx === pIdx && editingName?.candidatoNome === c.nome 
-                                      ? editingName.tempValue 
-                                      : c.nome}
-                                    onFocus={() => startEditingName(pIdx, c.nome)}
-                                    onChange={e => {
-                                      if (editingName?.partidoIdx === pIdx && editingName?.candidatoNome === c.nome) {
-                                        setEditingName({ ...editingName, tempValue: e.target.value });
-                                      }
-                                    }}
-                                    onBlur={() => saveNameChange(pIdx, c.nome)}
-                                    onKeyDown={e => {
-                                      if (e.key === 'Enter') {
-                                        e.currentTarget.blur();
-                                      } else if (e.key === 'Escape') {
-                                        setEditingName(null);
-                                        e.currentTarget.blur();
-                                      }
-                                    }}
-                                    className="bg-transparent border-b border-gray-200 focus:border-blue-400 outline-none w-full text-xs py-0.5 px-1"
-                                  />
+                                  {modoImpressao ? (
+                                    <span className="text-xs font-medium">{c.nome}</span>
+                                  ) : (
+                                    <input
+                                      type="text"
+                                      value={editingName?.partidoIdx === pIdx && editingName?.candidatoNome === c.nome 
+                                        ? editingName.tempValue 
+                                        : c.nome}
+                                      onFocus={() => startEditingName(pIdx, c.nome)}
+                                      onChange={e => {
+                                        if (editingName?.partidoIdx === pIdx && editingName?.candidatoNome === c.nome) {
+                                          setEditingName({ ...editingName, tempValue: e.target.value });
+                                        }
+                                      }}
+                                      onBlur={() => saveNameChange(pIdx, c.nome)}
+                                      onKeyDown={e => {
+                                        if (e.key === 'Enter') {
+                                          e.currentTarget.blur();
+                                        } else if (e.key === 'Escape') {
+                                          setEditingName(null);
+                                          e.currentTarget.blur();
+                                        }
+                                      }}
+                                      className="bg-transparent border-b border-gray-200 focus:border-blue-400 outline-none w-full text-xs py-0.5 px-1"
+                                    />
+                                  )}
                                 </div>
                               </td>
                               <td className="text-right whitespace-nowrap font-normal align-top">
-                                {editVoto && editVoto.partidoIdx === pIdx && editVoto.candidatoNome === c.nome ? (
-                                  <input
-                                    type="number"
-                                    min={0}
-                                    value={c.votos}
-                                    autoFocus
-                                    onChange={e => {
-                                      const value = e.target.value;
-                                      updateLocalState(pIdx, c.nome, 'votos', value);
-                                    }}
-                                    onBlur={() => {
-                                      saveVotosChange(pIdx, c.nome, c.votos);
-                                      setEditVoto(null);
-                                    }}
-                                    onKeyDown={e => {
-                                      if (e.key === 'Enter') {
-                                        saveVotosChange(pIdx, c.nome, c.votos);
-                                        setEditVoto(null);
-                                      }
-                                    }}
-                                    className="bg-transparent border-b border-gray-200 focus:border-blue-400 outline-none w-full text-xs py-0.5 px-1 text-right"
-                                    style={{ textAlign: 'right' }}
-                                  />
-                                ) : (
-                                  <span
-                                    className="cursor-pointer select-text"
-                                    onClick={() => setEditVoto({ partidoIdx: pIdx, candidatoNome: c.nome })}
-                                  >
+                                {modoImpressao ? (
+                                  <span className="text-xs font-medium">
                                     {Number(c.votos).toLocaleString('pt-BR')}
                                   </span>
+                                ) : (
+                                  editVoto && editVoto.partidoIdx === pIdx && editVoto.candidatoNome === c.nome ? (
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      value={c.votos}
+                                      autoFocus
+                                      onChange={e => {
+                                        const value = e.target.value;
+                                        updateLocalState(pIdx, c.nome, 'votos', value);
+                                      }}
+                                      onBlur={() => {
+                                        saveVotosChange(pIdx, c.nome, c.votos);
+                                        setEditVoto(null);
+                                      }}
+                                      onKeyDown={e => {
+                                        if (e.key === 'Enter') {
+                                          saveVotosChange(pIdx, c.nome, c.votos);
+                                          setEditVoto(null);
+                                        }
+                                      }}
+                                      className="bg-transparent border-b border-gray-200 focus:border-blue-400 outline-none w-full text-xs py-0.5 px-1 text-right"
+                                      style={{ textAlign: 'right' }}
+                                    />
+                                  ) : (
+                                    <span
+                                      className="cursor-pointer select-text"
+                                      onClick={() => setEditVoto({ partidoIdx: pIdx, candidatoNome: c.nome })}
+                                    >
+                                      {Number(c.votos).toLocaleString('pt-BR')}
+                                    </span>
+                                  )
                                 )}
                               </td>
                               <td className="pl-2 text-right whitespace-nowrap font-normal align-top w-8">
@@ -1313,36 +1334,42 @@ export default function ChapasPage() {
                                 </div>
                               </td>
                               <td className="text-right whitespace-nowrap font-normal align-top">
-                                {editVoto && editVoto.partidoIdx === pIdx && editVoto.candidatoNome === c.nome ? (
-                                  <input
-                                    type="number"
-                                    min={0}
-                                    value={c.votos}
-                                    autoFocus
-                                    onChange={e => {
-                                      const value = e.target.value;
-                                      updateLocalState(pIdx, c.nome, 'votos', value);
-                                    }}
-                                    onBlur={() => {
-                                      saveVotosChange(pIdx, c.nome, c.votos);
-                                      setEditVoto(null);
-                                    }}
-                                    onKeyDown={e => {
-                                      if (e.key === 'Enter') {
-                                        saveVotosChange(pIdx, c.nome, c.votos);
-                                        setEditVoto(null);
-                                      }
-                                    }}
-                                    className="bg-transparent border-b border-gray-200 focus:border-blue-400 outline-none w-full text-xs py-0.5 px-1 text-right"
-                                    style={{ textAlign: 'right' }}
-                                  />
-                                ) : (
-                                  <span
-                                    className="cursor-pointer select-text"
-                                    onClick={() => setEditVoto({ partidoIdx: pIdx, candidatoNome: c.nome })}
-                                  >
+                                {modoImpressao ? (
+                                  <span className="text-xs font-medium">
                                     {Number(c.votos).toLocaleString('pt-BR')}
                                   </span>
+                                ) : (
+                                  editVoto && editVoto.partidoIdx === pIdx && editVoto.candidatoNome === c.nome ? (
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      value={c.votos}
+                                      autoFocus
+                                      onChange={e => {
+                                        const value = e.target.value;
+                                        updateLocalState(pIdx, c.nome, 'votos', value);
+                                      }}
+                                      onBlur={() => {
+                                        saveVotosChange(pIdx, c.nome, c.votos);
+                                        setEditVoto(null);
+                                      }}
+                                      onKeyDown={e => {
+                                        if (e.key === 'Enter') {
+                                          saveVotosChange(pIdx, c.nome, c.votos);
+                                          setEditVoto(null);
+                                        }
+                                      }}
+                                      className="bg-transparent border-b border-gray-200 focus:border-blue-400 outline-none w-full text-xs py-0.5 px-1 text-right"
+                                      style={{ textAlign: 'right' }}
+                                    />
+                                  ) : (
+                                    <span
+                                      className="cursor-pointer select-text"
+                                      onClick={() => setEditVoto({ partidoIdx: pIdx, candidatoNome: c.nome })}
+                                    >
+                                      {Number(c.votos).toLocaleString('pt-BR')}
+                                    </span>
+                                  )
                                 )}
                               </td>
                               <td className="pl-2 text-right whitespace-nowrap font-normal align-top w-8">
@@ -1435,36 +1462,42 @@ export default function ChapasPage() {
                             </div>
                           </td>
                           <td className="text-right whitespace-nowrap font-normal align-top">
-                            {editVoto && editVoto.partidoIdx === pIdx && editVoto.candidatoNome === c.nome ? (
-                              <input
-                                type="number"
-                                min={0}
-                                value={c.votos}
-                                autoFocus
-                                onChange={e => {
-                                  const value = e.target.value;
-                                  updateLocalState(pIdx, c.nome, 'votos', value);
-                                }}
-                                onBlur={() => {
-                                  saveVotosChange(pIdx, c.nome, c.votos);
-                                  setEditVoto(null);
-                                }}
-                                onKeyDown={e => {
-                                  if (e.key === 'Enter') {
-                                    saveVotosChange(pIdx, c.nome, c.votos);
-                                    setEditVoto(null);
-                                  }
-                                }}
-                                className="bg-transparent border-b border-gray-200 focus:border-blue-400 outline-none w-full text-xs py-0.5 px-1 text-right"
-                                style={{ textAlign: 'right' }}
-                              />
-                            ) : (
-                              <span
-                                className="cursor-pointer select-text"
-                                onClick={() => setEditVoto({ partidoIdx: pIdx, candidatoNome: c.nome })}
-                              >
+                            {modoImpressao ? (
+                              <span className="text-xs font-medium">
                                 {Number(c.votos).toLocaleString('pt-BR')}
                               </span>
+                            ) : (
+                              editVoto && editVoto.partidoIdx === pIdx && editVoto.candidatoNome === c.nome ? (
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={c.votos}
+                                  autoFocus
+                                  onChange={e => {
+                                    const value = e.target.value;
+                                    updateLocalState(pIdx, c.nome, 'votos', value);
+                                  }}
+                                  onBlur={() => {
+                                    saveVotosChange(pIdx, c.nome, c.votos);
+                                    setEditVoto(null);
+                                  }}
+                                  onKeyDown={e => {
+                                    if (e.key === 'Enter') {
+                                      saveVotosChange(pIdx, c.nome, c.votos);
+                                      setEditVoto(null);
+                                    }
+                                  }}
+                                  className="bg-transparent border-b border-gray-200 focus:border-blue-400 outline-none w-full text-xs py-0.5 px-1 text-right"
+                                  style={{ textAlign: 'right' }}
+                                />
+                              ) : (
+                                <span
+                                  className="cursor-pointer select-text"
+                                  onClick={() => setEditVoto({ partidoIdx: pIdx, candidatoNome: c.nome })}
+                                >
+                                  {Number(c.votos).toLocaleString('pt-BR')}
+                                </span>
+                              )
                             )}
                           </td>
                           <td className="pl-2 text-right whitespace-nowrap font-normal align-top w-8">
@@ -2018,4 +2051,4 @@ export default function ChapasPage() {
       </div>
     </div>
   );
-} 
+}
