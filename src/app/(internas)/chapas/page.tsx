@@ -379,93 +379,80 @@ export default function ChapasPage() {
   const getDivisaoPorQuatro = (votosTotal: number) => (votosTotal / 4).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const getDivisaoPorCinco = (votosTotal: number) => (votosTotal / 5).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  // Funções para calcular as maiores sobras entre todos os partidos
-  const calcularMaiorSobra1 = () => {
-    const sobras1 = partidos.map(partido => {
+  // Funções para calcular sobras seguindo a regra proporcional brasileira
+  // Média = Total de votos da chapa / (Nº de vagas já obtidas + 1)
+  
+  // Calcular vagas diretas (quociente eleitoral)
+  const calcularVagasDiretas = (votosTotal: number) => {
+    return Math.floor(votosTotal / quociente);
+  };
+
+  // Calcular média para sobras (regra brasileira)
+  const calcularMediaSobras = (votosTotal: number, vagasJaObtidas: number) => {
+    return votosTotal / (vagasJaObtidas + 1);
+  };
+
+  // Calcular sobras seguindo o sistema proporcional brasileiro
+  const calcularSobras = () => {
+    const resultados = partidos.map(partido => {
       const votosTotal = getVotosProjetados(partido.candidatos, partido.nome);
-      return getSobra1Partido(partido.nome, votosTotal);
+      const vagasDiretas = calcularVagasDiretas(votosTotal);
+      const mediaSobras = calcularMediaSobras(votosTotal, vagasDiretas);
+      
+      return {
+        partido: partido.nome,
+        votosTotal,
+        vagasDiretas,
+        mediaSobras,
+        projecaoEleitos: (votosTotal / quociente).toFixed(2)
+      };
     });
-    return Math.max(...sobras1);
+
+    // Ordenar por média de sobras (maior para menor)
+    const ordenadosPorSobras = resultados.sort((a, b) => b.mediaSobras - a.mediaSobras);
+    
+    return {
+      resultados,
+      ordenadosPorSobras,
+      maiorSobra: ordenadosPorSobras[0]?.mediaSobras || 0
+    };
+  };
+
+  // Funções mantidas para compatibilidade com o código existente
+  const calcularMaiorSobra1 = () => {
+    const { maiorSobra } = calcularSobras();
+    return maiorSobra;
   };
 
   const calcularMaiorSobra2 = () => {
-    // Calcular todas as Sobras 2
-    const sobras2 = partidos.map(partido => {
-      const votosTotal = getVotosProjetados(partido.candidatos, partido.nome);
-      return getSobra2Calculada(partido.nome, votosTotal);
-    });
-    
-    // Retornar a maior Sobra 2
-    return Math.max(...sobras2);
+    const { ordenadosPorSobras } = calcularSobras();
+    // Para a segunda sobra, considerar o segundo maior
+    return ordenadosPorSobras[1]?.mediaSobras || 0;
   };
 
   const getSobra1Partido = (partidoNome: string, votosTotal: number) => {
-    const projecaoEleitos = votosTotal / quociente;
-    
-    // Regra geral para todos os partidos:
-    // Se projeção < N eleitos: Sobra 1 = votos totais ÷ N
-    if (projecaoEleitos < 1) {
-      return votosTotal; // ÷1 = votos totais
-    } else if (projecaoEleitos < 2) {
-      return votosTotal / 2;
-    } else if (projecaoEleitos < 3) {
-      return votosTotal / 3;
-    } else if (projecaoEleitos < 4) {
-      return votosTotal / 4;
-    } else if (projecaoEleitos < 5) {
-      return votosTotal / 5;
-    } else {
-      // Para projeções muito altas, continuar a sequência
-      return votosTotal / Math.ceil(projecaoEleitos);
-    }
+    const vagasDiretas = calcularVagasDiretas(votosTotal);
+    return calcularMediaSobras(votosTotal, vagasDiretas);
   };
 
   const getSobra2Partido = (partidoNome: string, votosTotal: number) => {
-    if (partidoNome === "PT" || partidoNome === "PSD/MDB") {
-      return votosTotal / 4;
-    } else {
-      return votosTotal; // Mesmo valor da Sobra 1 para PP e REPUBLICANOS
-    }
+    const vagasDiretas = calcularVagasDiretas(votosTotal);
+    return calcularMediaSobras(votosTotal, vagasDiretas);
   };
 
   const getSobra2Calculada = (partidoNome: string, votosTotal: number) => {
-    // Encontrar o partido com a maior Sobra 1
-    const sobras1 = partidos.map(partido => {
-      const votosTotalPartido = getVotosProjetados(partido.candidatos, partido.nome);
-      return {
-        partido: partido.nome,
-        sobra1: getSobra1Partido(partido.nome, votosTotalPartido),
-        votosTotal: votosTotalPartido
-      };
-    });
+    const { ordenadosPorSobras } = calcularSobras();
+    const partidoIndex = ordenadosPorSobras.findIndex(p => p.partido === partidoNome);
     
-    const maiorSobra1 = Math.max(...sobras1.map(s => s.sobra1));
-    const vencedor = sobras1.find(s => s.sobra1 === maiorSobra1);
-    
-    if (!vencedor) return getSobra2Partido(partidoNome, votosTotal);
-    
-    // Se este partido é o ganhador da Sobra 1, "andar uma casa" no cálculo
-    if (partidoNome === vencedor.partido) {
-      const projecaoEleitos = votosTotal / quociente;
-      
-      // "Andar uma casa": se Sobra 1 era ÷N, Sobra 2 será ÷(N+1)
-      if (projecaoEleitos < 1) {
-        return votosTotal / 2; // Era votos totais, agora ÷2
-      } else if (projecaoEleitos < 2) {
-        return votosTotal / 3; // Era ÷2, agora ÷3
-      } else if (projecaoEleitos < 3) {
-        return votosTotal / 4; // Era ÷3, agora ÷4
-      } else if (projecaoEleitos < 4) {
-        return votosTotal / 5; // Era ÷4, agora ÷5
-      } else if (projecaoEleitos < 5) {
-        return votosTotal / 6; // Era ÷5, agora ÷6
-      } else {
-        return votosTotal / (Math.ceil(projecaoEleitos) + 1);
-      }
+    // Se o partido ganhou a primeira sobra, calcular para a segunda vaga
+    if (partidoIndex === 0) {
+      const vagasDiretas = calcularVagasDiretas(votosTotal);
+      return calcularMediaSobras(votosTotal, vagasDiretas + 1);
     }
     
-    // Se este partido é um perdedor da Sobra 1, repetir sua própria Sobra 1
-    return getSobra1Partido(partidoNome, votosTotal);
+    // Caso contrário, manter a média original
+    const vagasDiretas = calcularVagasDiretas(votosTotal);
+    return calcularMediaSobras(votosTotal, vagasDiretas);
   };
 
   // Função genérica para separar candidatos por gênero
@@ -1563,6 +1550,98 @@ export default function ChapasPage() {
                 </div>
               );
             })()}
+          </div>
+
+          {/* Seção de detalhes das sobras - Regra Proporcional Brasileira */}
+          <div className="mt-4 p-4 bg-blue-50 rounded-lg max-w-4xl">
+            <div className="text-base font-semibold mb-3 text-blue-900">
+              📊 Cálculo de Sobras - Sistema Proporcional Brasileiro
+            </div>
+            <div className="text-sm text-blue-800 mb-3">
+              <strong>Fórmula:</strong> Média = Total de votos da chapa ÷ (Nº de vagas já obtidas + 1)
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {(() => {
+                const { resultados, ordenadosPorSobras } = calcularSobras();
+                
+                return resultados.map((resultado, index) => (
+                  <div key={resultado.partido} className="bg-white p-3 rounded border border-blue-200">
+                    <div className="font-semibold text-sm mb-2 text-blue-900">
+                      {resultado.partido}
+                    </div>
+                    
+                    <div className="space-y-1 text-xs">
+                      <div className="flex justify-between">
+                        <span>Votos Totais:</span>
+                        <span className="font-medium">{resultado.votosTotal.toLocaleString('pt-BR')}</span>
+                      </div>
+                      
+                      <div className="flex justify-between">
+                        <span>Vagas Diretas:</span>
+                        <span className="font-medium">{resultado.vagasDiretas}</span>
+                      </div>
+                      
+                      <div className="flex justify-between">
+                        <span>Projeção:</span>
+                        <span className="font-medium">{resultado.projecaoEleitos}</span>
+                      </div>
+                      
+                      <div className="border-t pt-1 mt-2">
+                        <div className="flex justify-between">
+                          <span>Média Sobras:</span>
+                          <span className={`font-bold ${
+                            index === 0 ? 'text-green-600' : 'text-gray-700'
+                          }`}>
+                            {resultado.mediaSobras.toLocaleString('pt-BR', { 
+                              minimumFractionDigits: 2, 
+                              maximumFractionDigits: 2 
+                            })}
+                          </span>
+                        </div>
+                        
+                        <div className="text-xs text-gray-500 mt-1">
+                          {resultado.votosTotal.toLocaleString('pt-BR')} ÷ ({resultado.vagasDiretas} + 1) = {resultado.mediaSobras.toLocaleString('pt-BR', { 
+                            minimumFractionDigits: 2, 
+                            maximumFractionDigits: 2 
+                          })}
+                        </div>
+                        
+                        {index === 0 && (
+                          <div className="text-xs text-green-600 font-medium mt-1">
+                            🏆 Maior média - Ganha a primeira sobra
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ));
+              })()}
+            </div>
+            
+            <div className="mt-4 p-3 bg-blue-100 rounded border border-blue-300">
+              <div className="text-sm font-semibold text-blue-900 mb-2">
+                📋 Ordem de Distribuição das Sobras:
+              </div>
+              <div className="text-xs text-blue-800 space-y-1">
+                {(() => {
+                  const { ordenadosPorSobras } = calcularSobras();
+                  
+                  return ordenadosPorSobras.map((resultado, index) => (
+                    <div key={resultado.partido} className="flex items-center gap-2">
+                      <span className="font-bold text-blue-900">#{index + 1}</span>
+                      <span className="font-medium">{resultado.partido}</span>
+                      <span className="text-gray-600">
+                        ({resultado.mediaSobras.toLocaleString('pt-BR', { 
+                          minimumFractionDigits: 2, 
+                          maximumFractionDigits: 2 
+                        })})
+                      </span>
+                    </div>
+                  ));
+                })()}
+              </div>
+            </div>
           </div>
         </div>
       </div>
