@@ -380,16 +380,19 @@ export default function ChapasPage() {
   const getDivisaoPorCinco = (votosTotal: number) => (votosTotal / 5).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   // Funções para calcular sobras seguindo a regra proporcional brasileira
-  // Média = Total de votos da chapa / (Nº de vagas já obtidas + 1)
+  // Votos diretos = parte inteira da divisão (votos/quociente)
+  // Sobra = parte decimal × quociente
   
-  // Calcular vagas diretas (quociente eleitoral)
+  // Calcular vagas diretas (eleitos diretos)
   const calcularVagasDiretas = (votosTotal: number) => {
     return Math.floor(votosTotal / quociente);
   };
 
-  // Calcular média para sobras (regra brasileira)
-  const calcularMediaSobras = (votosTotal: number, vagasJaObtidas: number) => {
-    return votosTotal / (vagasJaObtidas + 1);
+  // Calcular sobra (parte decimal × quociente)
+  const calcularSobra = (votosTotal: number) => {
+    const divisao = votosTotal / quociente;
+    const parteDecimal = divisao - Math.floor(divisao);
+    return parteDecimal * quociente;
   };
 
   // Calcular sobras seguindo o sistema proporcional brasileiro
@@ -397,24 +400,26 @@ export default function ChapasPage() {
     const resultados = partidos.map(partido => {
       const votosTotal = getVotosProjetados(partido.candidatos, partido.nome);
       const vagasDiretas = calcularVagasDiretas(votosTotal);
-      const mediaSobras = calcularMediaSobras(votosTotal, vagasDiretas);
+      const sobra = calcularSobra(votosTotal);
+      const divisao = votosTotal / quociente;
       
       return {
         partido: partido.nome,
         votosTotal,
         vagasDiretas,
-        mediaSobras,
-        projecaoEleitos: (votosTotal / quociente).toFixed(2)
+        sobra,
+        divisao,
+        projecaoEleitos: divisao.toFixed(2)
       };
     });
 
-    // Ordenar por média de sobras (maior para menor)
-    const ordenadosPorSobras = resultados.sort((a, b) => b.mediaSobras - a.mediaSobras);
+    // Ordenar por sobra (maior para menor)
+    const ordenadosPorSobras = resultados.sort((a, b) => b.sobra - a.sobra);
     
     return {
       resultados,
       ordenadosPorSobras,
-      maiorSobra: ordenadosPorSobras[0]?.mediaSobras || 0
+      maiorSobra: ordenadosPorSobras[0]?.sobra || 0
     };
   };
 
@@ -427,17 +432,15 @@ export default function ChapasPage() {
   const calcularMaiorSobra2 = () => {
     const { ordenadosPorSobras } = calcularSobras();
     // Para a segunda sobra, considerar o segundo maior
-    return ordenadosPorSobras[1]?.mediaSobras || 0;
+    return ordenadosPorSobras[1]?.sobra || 0;
   };
 
   const getSobra1Partido = (partidoNome: string, votosTotal: number) => {
-    const vagasDiretas = calcularVagasDiretas(votosTotal);
-    return calcularMediaSobras(votosTotal, vagasDiretas);
+    return calcularSobra(votosTotal);
   };
 
   const getSobra2Partido = (partidoNome: string, votosTotal: number) => {
-    const vagasDiretas = calcularVagasDiretas(votosTotal);
-    return calcularMediaSobras(votosTotal, vagasDiretas);
+    return calcularSobra(votosTotal);
   };
 
   const getSobra2Calculada = (partidoNome: string, votosTotal: number) => {
@@ -446,13 +449,13 @@ export default function ChapasPage() {
     
     // Se o partido ganhou a primeira sobra, calcular para a segunda vaga
     if (partidoIndex === 0) {
-      const vagasDiretas = calcularVagasDiretas(votosTotal);
-      return calcularMediaSobras(votosTotal, vagasDiretas + 1);
+      // Para segunda sobra, considerar que já ganhou uma vaga
+      const votosAjustados = votosTotal - quociente;
+      return calcularSobra(votosAjustados);
     }
     
-    // Caso contrário, manter a média original
-    const vagasDiretas = calcularVagasDiretas(votosTotal);
-    return calcularMediaSobras(votosTotal, vagasDiretas);
+    // Caso contrário, manter a sobra original
+    return calcularSobra(votosTotal);
   };
 
   // Função genérica para separar candidatos por gênero
@@ -1558,7 +1561,7 @@ export default function ChapasPage() {
               📊 Cálculo de Sobras - Sistema Proporcional Brasileiro
             </div>
             <div className="text-sm text-blue-800 mb-3">
-              <strong>Fórmula:</strong> Média = Total de votos da chapa ÷ (Nº de vagas já obtidas + 1)
+              <strong>Fórmula:</strong> Sobra = (Votos ÷ Quociente - Parte Inteira) × Quociente
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1589,11 +1592,11 @@ export default function ChapasPage() {
                       
                       <div className="border-t pt-1 mt-2">
                         <div className="flex justify-between">
-                          <span>Média Sobras:</span>
+                          <span>Sobra:</span>
                           <span className={`font-bold ${
                             index === 0 ? 'text-green-600' : 'text-gray-700'
                           }`}>
-                            {resultado.mediaSobras.toLocaleString('pt-BR', { 
+                            {resultado.sobra.toLocaleString('pt-BR', { 
                               minimumFractionDigits: 2, 
                               maximumFractionDigits: 2 
                             })}
@@ -1601,7 +1604,9 @@ export default function ChapasPage() {
                         </div>
                         
                         <div className="text-xs text-gray-500 mt-1">
-                          {resultado.votosTotal.toLocaleString('pt-BR')} ÷ ({resultado.vagasDiretas} + 1) = {resultado.mediaSobras.toLocaleString('pt-BR', { 
+                          {resultado.votosTotal.toLocaleString('pt-BR')} ÷ {quociente.toLocaleString('pt-BR')} = {resultado.divisao.toFixed(2)}
+                          <br />
+                          Parte decimal: {(resultado.divisao - Math.floor(resultado.divisao)).toFixed(2)} × {quociente.toLocaleString('pt-BR')} = {resultado.sobra.toLocaleString('pt-BR', { 
                             minimumFractionDigits: 2, 
                             maximumFractionDigits: 2 
                           })}
@@ -1609,7 +1614,7 @@ export default function ChapasPage() {
                         
                         {index === 0 && (
                           <div className="text-xs text-green-600 font-medium mt-1">
-                            🏆 Maior média - Ganha a primeira sobra
+                            🏆 Maior sobra - Ganha a primeira vaga de sobra
                           </div>
                         )}
                       </div>
@@ -1632,7 +1637,7 @@ export default function ChapasPage() {
                       <span className="font-bold text-blue-900">#{index + 1}</span>
                       <span className="font-medium">{resultado.partido}</span>
                       <span className="text-gray-600">
-                        ({resultado.mediaSobras.toLocaleString('pt-BR', { 
+                        ({resultado.sobra.toLocaleString('pt-BR', { 
                           minimumFractionDigits: 2, 
                           maximumFractionDigits: 2 
                         })})
