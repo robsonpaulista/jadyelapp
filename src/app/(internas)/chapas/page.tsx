@@ -1518,51 +1518,48 @@ export default function ChapasPage() {
               const votosTotal = votosPP + votosIgreja - candidato1 - candidato2;
 
               return (
-                <div className="flex flex-col gap-2">
-                  {/* Equação com todos os inputs na mesma linha */}
-                  <div className="flex items-center gap-2 text-sm">
-                    <span>PP ({votosPP.toLocaleString('pt-BR')})</span>
-                    <span>+</span>
-                    <div className="flex items-center gap-1">
-                      <span>IGREJA</span>
-                      <input
-                        type="number"
-                        value={votosIgreja}
-                        onChange={(e) => setVotosIgreja(Number(e.target.value))}
-                        className="w-20 px-1 py-0.5 text-xs border rounded"
-                      />
-                    </div>
-                    <span>-</span>
-                    <div className="flex items-center gap-1">
-                      <span className="text-red-600 text-xs">CANDIDATO1</span>
-                      <input
-                        type="number"
-                        value={candidato1}
-                        onChange={(e) => setCandidato1(Number(e.target.value) || 0)}
-                        placeholder="Votos"
-                        className="w-20 px-1 py-0.5 text-xs border rounded"
-                      />
-                    </div>
-                    <span>-</span>
-                    <div className="flex items-center gap-1">
-                      <span className="text-red-600 text-xs">CANDIDATO2</span>
-                      <input
-                        type="number"
-                        value={candidato2}
-                        onChange={(e) => setCandidato2(Number(e.target.value) || 0)}
-                        placeholder="Votos"
-                        className="w-20 px-1 py-0.5 text-xs border rounded"
-                      />
-                    </div>
-                    <span>=</span>
-                    <span className="font-bold">{votosTotal.toLocaleString('pt-BR')}</span>
+                <div className="flex items-center gap-2 text-sm">
+                  <span>PP ({votosPP.toLocaleString('pt-BR')})</span>
+                  <span>+</span>
+                  <div className="flex items-center gap-1">
+                    <span>IGREJA</span>
+                    <input
+                      type="number"
+                      value={votosIgreja}
+                      onChange={(e) => setVotosIgreja(Number(e.target.value))}
+                      className="w-16 px-1 py-0.5 text-xs border rounded"
+                    />
                   </div>
-
-                  <div className="flex flex-col gap-2 text-sm text-gray-600">
-                    <div>Eleitos pelo Quociente ({quociente.toLocaleString('pt-BR')}): {getProjecaoEleitos(votosTotal)}</div>
-                    <div>÷3: {getDivisaoPorTres(votosTotal)}</div>
-                    <div>÷2: {getDivisaoPorDois(votosTotal)}</div>
+                  <span>-</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-red-600 text-xs">C1</span>
+                    <input
+                      type="number"
+                      value={candidato1}
+                      onChange={(e) => setCandidato1(Number(e.target.value) || 0)}
+                      placeholder="Votos"
+                      className="w-16 px-1 py-0.5 text-xs border rounded"
+                    />
                   </div>
+                  <span>-</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-red-600 text-xs">C2</span>
+                    <input
+                      type="number"
+                      value={candidato2}
+                      onChange={(e) => setCandidato2(Number(e.target.value) || 0)}
+                      placeholder="Votos"
+                      className="w-16 px-1 py-0.5 text-xs border rounded"
+                    />
+                  </div>
+                  <span>=</span>
+                  <span className="font-bold">{votosTotal.toLocaleString('pt-BR')}</span>
+                  <span className="text-gray-500 text-xs">|</span>
+                  <span className="text-xs text-gray-600">Eleitos: {getProjecaoEleitos(votosTotal)}</span>
+                  <span className="text-gray-500 text-xs">|</span>
+                  <span className="text-xs text-gray-600">÷3: {getDivisaoPorTres(votosTotal)}</span>
+                  <span className="text-gray-500 text-xs">|</span>
+                  <span className="text-xs text-gray-600">÷2: {getDivisaoPorDois(votosTotal)}</span>
                 </div>
               );
             })()}
