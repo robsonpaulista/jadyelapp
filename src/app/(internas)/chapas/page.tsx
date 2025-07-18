@@ -481,71 +481,6 @@ export default function ChapasPage() {
     };
   };
 
-  // Nova função para calcular candidatos eleitos baseado na distribuição de vagas
-  const calcularCandidatosEleitos = () => {
-    const simulacao = simularDistribuicaoCompleta();
-    const candidatosEleitos: Array<{
-      vaga: number;
-      partido: string;
-      candidato: string;
-      votos: number;
-      tipo: 'direta' | 'sobra';
-    }> = [];
-
-    let vagaAtual = 1;
-
-    // Processar cada partido
-    simulacao.partidosComVagas.forEach(partidoInfo => {
-      const partido = partidos.find(p => p.nome === partidoInfo.partido);
-      if (!partido) return;
-
-      // Ordenar candidatos por votos (maior para menor)
-      const candidatosOrdenados = partido.candidatos
-        .filter(c => c.nome !== "VOTOS LEGENDA")
-        .sort((a, b) => b.votos - a.votos);
-
-      // Vagas diretas (primeiras vagas do partido)
-      const vagasDiretas = calcularVagasDiretas(partidoInfo.votosTotal);
-      for (let i = 0; i < vagasDiretas && i < candidatosOrdenados.length; i++) {
-        candidatosEleitos.push({
-          vaga: vagaAtual++,
-          partido: partidoInfo.partido,
-          candidato: candidatosOrdenados[i].nome,
-          votos: candidatosOrdenados[i].votos,
-          tipo: 'direta'
-        });
-      }
-    });
-
-    // Vagas por sobras (processar na ordem do histórico)
-    simulacao.historicoSobras.forEach(sobra => {
-      const partido = partidos.find(p => p.nome === sobra.partido);
-      if (!partido) return;
-
-      // Ordenar candidatos por votos
-      const candidatosOrdenados = partido.candidatos
-        .filter(c => c.nome !== "VOTOS LEGENDA")
-        .sort((a, b) => b.votos - a.votos);
-
-      // Contar quantas vagas o partido já tem (incluindo as que acabamos de adicionar)
-      const vagasJaObtidas = candidatosEleitos.filter(c => c.partido === sobra.partido).length;
-      
-      // Se ainda há candidatos disponíveis, adicionar o próximo
-      if (vagasJaObtidas < candidatosOrdenados.length) {
-        candidatosEleitos.push({
-          vaga: sobra.vaga,
-          partido: sobra.partido,
-          candidato: candidatosOrdenados[vagasJaObtidas].nome,
-          votos: candidatosOrdenados[vagasJaObtidas].votos,
-          tipo: 'sobra'
-        });
-      }
-    });
-
-    // Ordenar por número da vaga
-    return candidatosEleitos.sort((a, b) => a.vaga - b.vaga);
-  };
-
   // Funções mantidas para compatibilidade com o código existente
   const calcularMaiorSobra1 = () => {
     const { maiorSobra } = calcularSobras();
@@ -875,6 +810,51 @@ export default function ChapasPage() {
       }
     }
   };
+
+  // Função para calcular os candidatos eleitos baseado nos votos
+  const calcularCandidatosEleitos = () => {
+    const simulacao = simularDistribuicaoCompleta();
+    const candidatosEleitos: Array<{
+      partido: string;
+      nome: string;
+      votos: number;
+      posicao: number;
+      tipoEleicao: 'direta' | 'sobra';
+    }> = [];
+
+    simulacao.partidosComVagas.forEach(partidoInfo => {
+      const partido = partidos.find(p => p.nome === partidoInfo.partido);
+      if (!partido || partidoInfo.vagasObtidas === 0) return;
+
+      // Filtrar candidatos (excluir votos de legenda)
+      const candidatosValidos = partido.candidatos.filter(c => c.nome !== "VOTOS LEGENDA");
+      
+      // Ordenar candidatos por votos (maior para menor)
+      const candidatosOrdenados = [...candidatosValidos].sort((a, b) => b.votos - a.votos);
+      
+      // Pegar os candidatos com mais votos até o número de vagas
+      for (let i = 0; i < partidoInfo.vagasObtidas && i < candidatosOrdenados.length; i++) {
+        const candidato = candidatosOrdenados[i];
+        candidatosEleitos.push({
+          partido: partido.nome,
+          nome: candidato.nome,
+          votos: candidato.votos,
+          posicao: i + 1,
+          tipoEleicao: i < calcularVagasDiretas(partidoInfo.votosTotal) ? 'direta' : 'sobra'
+        });
+      }
+    });
+
+    // Ordenar por partido e depois por votos (dentro do partido)
+    return candidatosEleitos.sort((a, b) => {
+      if (a.partido !== b.partido) {
+        // Ordenar partidos: PT, PSD/MDB, PP, REPUBLICANOS
+        const ordemPartidos = ['PT', 'PSD/MDB', 'PP', 'REPUBLICANOS'];
+        return ordemPartidos.indexOf(a.partido) - ordemPartidos.indexOf(b.partido);
+      }
+      return b.votos - a.votos;
+    });
+  }
 
   return (
     <div className="flex-1 flex flex-col min-h-screen bg-gray-50">
@@ -1838,66 +1818,47 @@ export default function ChapasPage() {
                       </div>
                     </div>
 
-                    {/* Quadro de Vagas com Nomes dos Candidatos */}
-                    <div className="bg-white p-3 rounded border">
-                      <div className="text-sm font-semibold text-green-900 mb-2">👥 Quadro de Vagas - Candidatos Eleitos</div>
-                      <div className="text-xs">
+                    {/* Seção dos candidatos eleitos */}
+                    <div className="bg-white p-4 rounded border">
+                      <div className="text-sm font-semibold text-green-900 mb-3">🏆 Candidatos Eleitos</div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         {(() => {
                           const candidatosEleitos = calcularCandidatosEleitos();
-                          
-                          return (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
-                              {Array.from({ length: 8 }, (_, i) => {
-                                const candidato = candidatosEleitos.find(c => c.vaga === i + 1);
-                                
-                                return (
-                                  <div 
-                                    key={i} 
-                                    className={`p-2 rounded border-2 ${
-                                      candidato 
-                                        ? 'border-green-300 bg-green-50' 
-                                        : 'border-gray-200 bg-gray-50'
-                                    }`}
-                                  >
-                                    <div className="font-bold text-center text-sm mb-1">
-                                      Vaga #{i + 1}
+                          const candidatosPorPartido = candidatosEleitos.reduce((acc, candidato) => {
+                            if (!acc[candidato.partido]) {
+                              acc[candidato.partido] = [];
+                            }
+                            acc[candidato.partido].push(candidato);
+                            return acc;
+                          }, {} as { [partido: string]: typeof candidatosEleitos });
+
+                          return Object.entries(candidatosPorPartido).map(([partido, candidatos]) => (
+                            <div key={partido} className="border rounded-lg p-3">
+                              <div className={`font-semibold text-sm mb-2 text-center ${coresPartidos[partido as keyof typeof coresPartidos]?.cor || 'bg-gray-200'} ${coresPartidos[partido as keyof typeof coresPartidos]?.corTexto || 'text-gray-800'}`}>{partido}</div>
+                              <div className="space-y-2">
+                                {candidatos.map((candidato, index) => (
+                                  <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded text-xs">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-bold text-blue-600">#{candidato.posicao}</span>
+                                      <span className="font-medium">{candidato.nome}</span>
                                     </div>
-                                    {candidato ? (
-                                      <div className="space-y-1">
-                                        <div className="text-center font-medium text-xs">
-                                          {candidato.candidato}
-                                        </div>
-                                        <div className="text-center text-xs text-gray-600">
-                                          {candidato.partido}
-                                        </div>
-                                        <div className="text-center text-xs text-gray-500">
-                                          {candidato.votos.toLocaleString('pt-BR')} votos
-                                        </div>
-                                        <div className={`text-center text-xs px-1 py-0.5 rounded ${
-                                          candidato.tipo === 'direta' 
-                                            ? 'bg-blue-100 text-blue-700' 
-                                            : 'bg-orange-100 text-orange-700'
-                                        }`}>
-                                          {candidato.tipo === 'direta' ? 'Direta' : 'Sobra'}
-                                        </div>
+                                    <div className="text-right">
+                                      <div className="font-semibold">
+                                        {candidato.votos.toLocaleString('pt-BR')}
                                       </div>
-                                    ) : (
-                                      <div className="text-center text-gray-400 text-xs">
-                                        Vaga não preenchida
-                                      </div>
-                                    )}
+                                      <div className={`text-xs ${candidato.tipoEleicao === 'direta' ? 'text-green-600' : 'text-orange-600'}`}>{candidato.tipoEleicao === 'direta' ? 'Direta' : 'Sobra'}</div>
+                                    </div>
                                   </div>
-                                );
-                              })}
+                                ))}
+                              </div>
                             </div>
-                          );
+                          ));
                         })()}
                       </div>
                     </div>
                   </div>
-                </div>
-              );
-            })()}
+                );
+              })()}
             </div>
           </div>
         </div>
