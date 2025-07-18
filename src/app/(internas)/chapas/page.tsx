@@ -192,10 +192,7 @@ export default function ChapasPage() {
     }
   };
 
-  // Função para sincronizar dados locais com Firestore (mantida para compatibilidade)
-  const sincronizarDadosLocais = async () => {
-    await carregarDadosFirestore();
-  };
+
 
   const filtrarChapas = (chapasParaFiltrar: Chapa[] = chapas) => {
     let filtradas = [...chapasParaFiltrar];
@@ -211,9 +208,7 @@ export default function ChapasPage() {
     setChapasFiltradas(filtradas);
   };
 
-  useEffect(() => {
-    handleAtualizar();
-  }, []);
+  // Removido useEffect conflitante - o carregamento será feito no useEffect principal
 
   useEffect(() => {
     filtrarChapas();
@@ -287,29 +282,26 @@ export default function ChapasPage() {
         setQuociente(quocienteSalvo);
         setQuocienteCarregado(true);
 
-        // Tentar carregar cenário ativo primeiro
-        const cenarioAtivo = await obterCenarioAtivo();
-        if (cenarioAtivo) {
-          console.log('Cenário ativo encontrado:', cenarioAtivo.nome);
-          setCenarioAtivo(cenarioAtivo);
-          const partidosOrdenados = ordenarPartidos(cenarioAtivo.partidos);
-          setPartidos(partidosOrdenados);
-          setQuociente(cenarioAtivo.quocienteEleitoral);
-        } else {
-          console.log('Nenhum cenário ativo encontrado, carregando dados do Firestore...');
-          // Carregar dados diretamente do Firestore usando a nova função
-          await carregarDadosFirestore();
+        // SEMPRE carregar dados do Firestore primeiro
+        console.log('Carregando dados do Firestore...');
+        await carregarDadosFirestore();
+        
+        // Depois tentar carregar cenário ativo (se existir)
+        try {
+          const cenarioAtivo = await obterCenarioAtivo();
+          if (cenarioAtivo) {
+            console.log('Cenário ativo encontrado:', cenarioAtivo.nome);
+            setCenarioAtivo(cenarioAtivo);
+            // Não sobrescrever os dados já carregados, apenas atualizar o cenário
+          }
+        } catch (cenarioError) {
+          console.log('Nenhum cenário ativo encontrado ou erro ao carregar cenário');
         }
         
         console.log('Carregamento inicial concluído');
       } catch (error) {
         console.error('Erro ao carregar dados iniciais:', error);
-        // Em caso de erro, tentar carregar dados básicos
-        try {
-          await carregarDadosFirestore();
-        } catch (fallbackError) {
-          console.error('Erro no fallback:', fallbackError);
-        }
+        alert('Erro ao carregar dados iniciais. Recarregue a página.');
       }
     }
     
@@ -666,7 +658,7 @@ export default function ChapasPage() {
       if (shouldSync) {
         const shouldProceed = confirm(errorMessage);
         if (shouldProceed) {
-          await sincronizarDadosLocais();
+          await carregarDadosFirestore();
         }
       } else {
         alert(errorMessage);
@@ -853,15 +845,7 @@ export default function ChapasPage() {
             >
               {modoCenarios ? 'Fechar Cenários' : 'Gerenciar Cenários'}
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={sincronizarDadosLocais}
-              className="bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"
-            >
-              <RefreshCw className="h-4 w-4 mr-1" />
-              Sincronizar Dados
-            </Button>
+
             {cenarioAtivo && (
               <Button
                 variant="outline"
