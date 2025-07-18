@@ -373,6 +373,26 @@ export default function ChapasPage() {
       .filter(c => c.nome !== "VOTOS LEGENDA") // Filtra o candidato especial de votos de legenda
       .reduce((acc, c) => acc + c.votos, 0) + votosLegendaPartido;
   };
+
+  // Calcular 80% do Quociente Eleitoral
+  const getQuocienteMinimo = () => {
+    return quociente * 0.8;
+  };
+
+  // Verificar se partido atingiu o mínimo de 80% do quociente
+  const partidoAtingiuMinimo = (partidoNome: string) => {
+    const votosProjetados = getVotosProjetados(
+      partidos.find(p => p.nome === partidoNome)?.candidatos || [], 
+      partidoNome
+    );
+    const quocienteMinimo = getQuocienteMinimo();
+    return votosProjetados >= quocienteMinimo;
+  };
+
+  // Obter partidos que podem participar da disputa das sobras
+  const getPartidosElegiveisSobras = () => {
+    return partidos.filter(partido => partidoAtingiuMinimo(partido.nome));
+  };
   const getProjecaoEleitos = (votosTotal: number) => (votosTotal / quociente).toFixed(2);
   const getDivisaoPorDois = (votosTotal: number) => (votosTotal / 2).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const getDivisaoPorTres = (votosTotal: number) => (votosTotal / 3).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -397,24 +417,31 @@ export default function ChapasPage() {
 
   // Calcular sobras seguindo o sistema proporcional brasileiro
   const calcularSobras = () => {
+    // Filtrar apenas partidos que atingiram o mínimo de 80% do quociente
+    const partidosElegiveis = getPartidosElegiveisSobras();
+    
     const resultados = partidos.map(partido => {
       const votosTotal = getVotosProjetados(partido.candidatos, partido.nome);
       const vagasDiretas = calcularVagasDiretas(votosTotal);
       const sobra = calcularSobra(votosTotal);
       const divisao = votosTotal / quociente;
+      const atingiuMinimo = partidoAtingiuMinimo(partido.nome);
       
       return {
         partido: partido.nome,
         votosTotal,
         vagasDiretas,
-        sobra,
+        sobra: atingiuMinimo ? sobra : 0, // Sobra zero se não atingiu mínimo
         divisao,
-        projecaoEleitos: divisao.toFixed(2)
+        projecaoEleitos: divisao.toFixed(2),
+        atingiuMinimo
       };
     });
 
-    // Ordenar por sobra (maior para menor)
-    const ordenadosPorSobras = resultados.sort((a, b) => b.sobra - a.sobra);
+    // Ordenar por sobra (maior para menor) - apenas partidos elegíveis
+    const ordenadosPorSobras = resultados
+      .filter(r => r.atingiuMinimo)
+      .sort((a, b) => b.sobra - a.sobra);
     
     return {
       resultados,
@@ -427,16 +454,18 @@ export default function ChapasPage() {
   const simularDistribuicaoCompleta = () => {
     const VAGAS_TOTAIS = 8;
     
-    // Inicializar com vagas diretas
+    // Inicializar com vagas diretas (apenas partidos elegíveis)
     const partidosComVagas = partidos.map(partido => {
       const votosTotal = getVotosProjetados(partido.candidatos, partido.nome);
       const vagasDiretas = calcularVagasDiretas(votosTotal);
+      const atingiuMinimo = partidoAtingiuMinimo(partido.nome);
       
       return {
         partido: partido.nome,
         votosTotal,
         vagasObtidas: vagasDiretas,
-        votosRestantes: votosTotal - (vagasDiretas * quociente)
+        votosRestantes: atingiuMinimo ? votosTotal - (vagasDiretas * quociente) : 0,
+        atingiuMinimo
       };
     });
     
@@ -444,31 +473,36 @@ export default function ChapasPage() {
     const vagasDistribuidas = partidosComVagas.reduce((total, p) => total + p.vagasObtidas, 0);
     const vagasRestantes = VAGAS_TOTAIS - vagasDistribuidas;
 
-    // Distribuir vagas restantes por sobras
+    // Distribuir vagas restantes por sobras (apenas partidos elegíveis)
     const historicoSobras = [];
     
     for (let i = 0; i < vagasRestantes; i++) {
-      // Calcular sobras atuais
-      const sobrasAtuais = partidosComVagas.map(p => ({
-        partido: p.partido,
-        sobra: p.votosRestantes
-      })).sort((a, b) => b.sobra - a.sobra);
+      // Calcular sobras atuais (apenas partidos elegíveis)
+      const sobrasAtuais = partidosComVagas
+        .filter(p => p.atingiuMinimo)
+        .map(p => ({
+          partido: p.partido,
+          sobra: p.votosRestantes
+        }))
+        .sort((a, b) => b.sobra - a.sobra);
 
       const ganhador = sobrasAtuais[0];
       
-      // Adicionar ao histórico
-      historicoSobras.push({
-        rodada: i + 1,
-        partido: ganhador.partido,
-        sobra: ganhador.sobra,
-        vaga: vagasDistribuidas + i + 1
-      });
+      if (ganhador) {
+        // Adicionar ao histórico
+        historicoSobras.push({
+          rodada: i + 1,
+          partido: ganhador.partido,
+          sobra: ganhador.sobra,
+          vaga: vagasDistribuidas + i + 1
+        });
 
-      // Atualizar o partido ganhador
-      const partidoGanhador = partidosComVagas.find(p => p.partido === ganhador.partido);
-      if (partidoGanhador) {
-        partidoGanhador.vagasObtidas++;
-        partidoGanhador.votosRestantes -= quociente;
+        // Atualizar o partido ganhador
+        const partidoGanhador = partidosComVagas.find(p => p.partido === ganhador.partido);
+        if (partidoGanhador) {
+          partidoGanhador.vagasObtidas++;
+          partidoGanhador.votosRestantes -= quociente;
+        }
       }
     }
 
@@ -988,16 +1022,62 @@ export default function ChapasPage() {
           </div>
         )}
 
-
+        {/* Resumo do Quociente Mínimo */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="text-sm">
+                <span className="font-semibold text-gray-700">Quociente Eleitoral:</span>
+                <span className="ml-2 text-lg font-bold text-blue-600">{quociente.toLocaleString('pt-BR')}</span>
+              </div>
+              <div className="text-sm">
+                <span className="font-semibold text-gray-700">Mínimo (80%):</span>
+                <span className="ml-2 text-lg font-bold text-orange-600">{getQuocienteMinimo().toLocaleString('pt-BR')}</span>
+              </div>
+            </div>
+            <div className="text-sm">
+              <span className="font-semibold text-gray-700">Partidos elegíveis para sobras:</span>
+              <span className="ml-2 text-lg font-bold text-green-600">
+                {getPartidosElegiveisSobras().length} de {partidos.length}
+              </span>
+            </div>
+          </div>
+        </div>
 
         {/* Grid de partidos */}
         <div className="w-full grid grid-cols-1 md:grid-cols-4 gap-6">
           {ordenarPartidos(partidos).map((partido, pIdx) => {
             // Encontrar o índice real do partido no array original
             const partidoIdx = partidos.findIndex(p => p.nome === partido.nome);
+            
+            // Verificar se o partido atingiu o mínimo de 80% do quociente
+            const atingiuMinimo = partidoAtingiuMinimo(partido.nome);
+            const quocienteMinimo = getQuocienteMinimo();
+            const votosProjetados = getVotosProjetados(partido.candidatos, partido.nome);
+            
             return (
-            <div key={partido.nome} className="flex flex-col items-center bg-white rounded-lg shadow-sm border border-gray-100 p-3 h-full min-h-[420px]">
-              <div className="w-full text-center py-1 font-bold text-base mb-2 rounded bg-gray-200 text-gray-800">{partido.nome}</div>
+            <div key={partido.nome} className={`flex flex-col items-center bg-white rounded-lg shadow-sm border p-3 h-full min-h-[420px] ${
+              atingiuMinimo 
+                ? 'border-gray-100' 
+                : 'border-red-300 bg-red-50'
+            }`}>
+              <div className={`w-full text-center py-1 font-bold text-base mb-2 rounded ${
+                atingiuMinimo 
+                  ? 'bg-gray-200 text-gray-800' 
+                  : 'bg-red-200 text-red-800'
+              }`}>
+                {partido.nome}
+              </div>
+              
+              {/* Informativo para partidos que não atingiram o mínimo */}
+              {!atingiuMinimo && (
+                <div className="w-full mb-2 p-2 bg-red-100 border border-red-200 rounded text-xs text-red-700 text-center">
+                  <div className="font-semibold">⚠️ Partido não atingiu o mínimo</div>
+                  <div>Votos: {votosProjetados.toLocaleString('pt-BR')}</div>
+                  <div>Mínimo: {quocienteMinimo.toLocaleString('pt-BR')} (80% do QE)</div>
+                  <div className="text-red-600 font-medium">Não participa da disputa das sobras</div>
+                </div>
+              )}
               
               <div className="w-full flex flex-col flex-1">
                 {(partido.nome === "PT" || partido.nome === "PSD/MDB" || partido.nome === "PP" || partido.nome === "REPUBLICANOS") ? (
