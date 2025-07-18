@@ -661,12 +661,19 @@ export default function ChapasPage() {
     const partido = partidos[partidoIdx];
     
     try {
+      // Verificar se o candidato já existe
+      const candidatoExistente = partido.candidatos.find(c => c.nome === novoCandidato.nome);
+      if (candidatoExistente) {
+        alert('Este candidato já existe no partido!');
+        return;
+      }
+
       // Salvar apenas no cenário base (fonte única de verdade)
       if (!cenarioAtivo) {
         throw new Error('Cenário base não encontrado');
       }
       
-      // Atualizar estado local primeiro
+      // Atualizar estado local UMA VEZ apenas
       setPartidos(prev => prev.map((p, i) => {
         if (i !== partidoIdx) return p;
         
@@ -714,61 +721,12 @@ export default function ChapasPage() {
       // Salvar no cenário base
       const partidosConvertidos = converterPartidosParaCenario();
       await atualizarCenario(cenarioAtivo.id, partidosConvertidos, quociente);
-      
-      // Atualizar estado local respeitando a separação homens/mulheres
-      setPartidos(prev => prev.map((p, i) => {
-        if (i !== partidoIdx) return p;
-        
-        // O gênero é determinado pela seleção do usuário no modal
-        // Inserir o candidato no local correto baseado no gênero selecionado
-        const candidatosAtuais = [...p.candidatos];
-        
-        // Adicionar o candidato com informação de gênero
-        const candidatoComGenero = { 
-          nome: novoCandidato.nome, 
-          votos: novoCandidato.votos,
-          genero: novoCandidato.genero 
-        };
-        
-        if (novoCandidato.genero === 'mulher') {
-          // Para mulheres, inserir após a última mulher existente
-          const ultimaMulherIndex = candidatosAtuais.findLastIndex(c => c.genero === 'mulher');
-          
-          if (ultimaMulherIndex === -1) {
-            // Não há mulheres na lista, inserir no final
-            candidatosAtuais.push(candidatoComGenero);
-          } else {
-            // Inserir após a última mulher
-            candidatosAtuais.splice(ultimaMulherIndex + 1, 0, candidatoComGenero);
-          }
-        } else {
-          // Para homens, inserir antes da primeira mulher
-          const primeiraMulherIndex = candidatosAtuais.findIndex(c => c.genero === 'mulher');
-          
-          if (primeiraMulherIndex === -1) {
-            // Não há mulheres na lista, inserir no final
-            candidatosAtuais.push(candidatoComGenero);
-          } else {
-            // Inserir antes da primeira mulher
-            candidatosAtuais.splice(primeiraMulherIndex, 0, candidatoComGenero);
-          }
-        }
-        
-        return {
-          ...p,
-          candidatos: candidatosAtuais
-        };
-      }));
-
-      // Atualizar cenário ativo se existir
-      if (cenarioAtivo) {
-        const partidosConvertidos = converterPartidosParaCenario();
-        await atualizarCenario(cenarioAtivo.id, partidosConvertidos, quociente);
-      }
 
       // Limpar formulário e fechar dialog
       setNovoCandidato({ nome: '', votos: 0, genero: 'homem' });
       setDialogAberto(null);
+      
+      mostrarNotificacaoAutoSave('Candidato adicionado com sucesso');
     } catch (error) {
       console.error('Erro ao adicionar candidato:', error);
       alert('Erro ao adicionar candidato. Tente novamente.');
@@ -814,6 +772,38 @@ export default function ChapasPage() {
         console.error('Erro: não foi possível carregar o cenário base');
       }
     });
+  };
+
+  // Função para limpar e recriar o cenário base (resolver problemas de dados corrompidos)
+  const limparERecriarCenarioBase = async () => {
+    if (!confirm('Isso irá limpar completamente o cenário base e recriar com dados limpos. Tem certeza?')) {
+      return;
+    }
+
+    try {
+      console.log('Limpando e recriando cenário base...');
+      
+      // Limpar estado local
+      const partidosLimpos = criarPartidosIniciais();
+      setPartidos(partidosLimpos);
+      setVotosLegenda({});
+      
+      // Recriar cenário base
+      await criarCenarioBase(partidosLimpos, quociente);
+      
+      // Recarregar o cenário recém-criado
+      const cenarioBaseRecriado = await carregarCenario('base');
+      if (cenarioBaseRecriado) {
+        setCenarioAtivo(cenarioBaseRecriado);
+        const partidosOrdenados = ordenarPartidos(cenarioBaseRecriado.partidos);
+        setPartidos(partidosOrdenados);
+        console.log('Cenário base recriado com sucesso');
+        mostrarNotificacaoAutoSave('Cenário base limpo e recriado com sucesso');
+      }
+    } catch (error) {
+      console.error('Erro ao limpar cenário base:', error);
+      alert('Erro ao limpar cenário base. Tente novamente.');
+    }
   };
 
   // Função para ordenar partidos na ordem fixa
@@ -897,6 +887,16 @@ export default function ChapasPage() {
                 ) : (
                   cenarioAtivo.tipo === 'base' ? 'Salvar Base' : 'Salvar Mudanças'
                 )}
+              </Button>
+            )}
+            {cenarioAtivo && cenarioAtivo.tipo === 'base' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={limparERecriarCenarioBase}
+                className="bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
+              >
+                Limpar Base
               </Button>
             )}
             {cenarioAtivo && (
