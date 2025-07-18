@@ -395,9 +395,6 @@ export default function ChapasPage() {
   };
   const getProjecaoEleitos = (votosTotal: number) => (votosTotal / quociente).toFixed(2);
   const getDivisaoPorDois = (votosTotal: number) => (votosTotal / 2).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const getDivisaoPorTres = (votosTotal: number) => (votosTotal / 3).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const getDivisaoPorQuatro = (votosTotal: number) => (votosTotal / 4).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const getDivisaoPorCinco = (votosTotal: number) => (votosTotal / 5).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   // Funções para calcular sobras seguindo a regra proporcional brasileira
   // Votos diretos = parte inteira da divisão (votos/quociente)
@@ -594,9 +591,7 @@ export default function ChapasPage() {
 
     return {
       total: votosTotal,
-      projecao: (votosTotal / quociente).toFixed(2),
-      divisaoPorTres: (votosTotal / 3).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-      divisaoPorQuatro: (votosTotal / 4).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      projecao: (votosTotal / quociente).toFixed(2)
     };
   };
 
@@ -1623,30 +1618,6 @@ export default function ChapasPage() {
                     
                     return (
                       <>
-                        {/* Divisões específicas por partido */}
-                        {partido.nome === "PT" || partido.nome === "PSD/MDB" ? (
-                          <div className="grid grid-cols-3 gap-2 text-xs items-center justify-start">
-                            <div className="whitespace-nowrap flex items-center">
-                              ÷3: {getDivisaoPorTres(votosTotal)}
-                            </div>
-                            <div className="whitespace-nowrap flex items-center">
-                              ÷4: {getDivisaoPorQuatro(votosTotal)}
-                            </div>
-                            <div className="whitespace-nowrap flex items-center">
-                              ÷5: {getDivisaoPorCinco(votosTotal)}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="grid grid-cols-2 gap-2 text-xs items-center justify-start">
-                            <div className="whitespace-nowrap flex items-center">
-                              ÷2: {getDivisaoPorDois(votosTotal)}
-                            </div>
-                            <div className="whitespace-nowrap flex items-center">
-                              ÷3: {getDivisaoPorTres(votosTotal)}
-                            </div>
-                          </div>
-                        )}
-                        
                         {/* Sobras - todos os partidos têm Sobra 1 e Sobra 2 */}
                         <div className="flex flex-col gap-1">
                           <div className="text-center">
@@ -1729,8 +1700,6 @@ export default function ChapasPage() {
                     <span className="font-bold">{votosTotal.toLocaleString('pt-BR')}</span>
                   <span className="text-gray-500 text-xs">|</span>
                   <span className="text-xs text-gray-600">Eleitos: {getProjecaoEleitos(votosTotal)}</span>
-                  <span className="text-gray-500 text-xs">|</span>
-                  <span className="text-xs text-gray-600">÷3: {getDivisaoPorTres(votosTotal)}</span>
                   <span className="text-gray-500 text-xs">|</span>
                   <span className="text-xs text-gray-600">÷2: {getDivisaoPorDois(votosTotal)}</span>
                   </div>
