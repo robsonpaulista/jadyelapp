@@ -171,9 +171,15 @@ function safeId(partido: string, nome: string) {
   return id;
 }
 
-export async function atualizarChapa(partido: string, nome: string, votos: number) {
+export async function atualizarChapa(partido: string, nome: string, votos: number, genero?: string) {
   const id = safeId(partido, nome);
-  await setDoc(doc(db, 'chapas2026', id), { partido, nome, votos });
+  const dados: any = { partido, nome, votos };
+  
+  if (genero) {
+    dados.genero = genero;
+  }
+  
+  await setDoc(doc(db, 'chapas2026', id), dados);
 }
 
 export async function popularChapasIniciais() {
@@ -489,5 +495,58 @@ export async function obterCenarioAtivo(): Promise<CenarioCompleto | null> {
   } catch (error) {
     console.error('Erro ao obter cenário ativo:', error);
     return null;
+  }
+}
+
+// Função para migrar dados existentes e adicionar campo genero
+export async function migrarDadosComGenero() {
+  console.log('Iniciando migração de dados com campo genero...');
+  
+  try {
+    // Lista de mulheres por partido (usada apenas para migração)
+    const mulheresPorPartido: { [partido: string]: string[] } = {
+      "PT": ['MARINA SANTOS', 'RAISSA PROTETORA', 'MULHER'],
+      "PSD/MDB": ['MULHER 1', 'MULHER 2', 'MULHER 3', 'MULHER 4'],
+      "PP": ['SAMANTA CAVALCA', 'MULHER 2', 'MULHER 3', 'MULHER 4'],
+      "REPUBLICANOS": ['ANA FIDELIS', 'GABRIELA']
+    };
+
+    // Carregar todos os dados existentes
+    const snapshot = await getDocs(collection(db, 'chapas2026'));
+    const batch = writeBatch(db);
+    let atualizados = 0;
+
+    snapshot.docs.forEach(doc => {
+      const data = doc.data();
+      const partido = data.partido;
+      const nome = data.nome;
+      
+      // Pular se já tem campo genero
+      if (data.genero) {
+        return;
+      }
+
+      // Determinar genero baseado na lista de mulheres
+      const mulheresPartido = mulheresPorPartido[partido] || [];
+      const genero = mulheresPartido.includes(nome) ? 'mulher' : 'homem';
+      
+      // Atualizar documento com campo genero
+      batch.update(doc.ref, { genero });
+      atualizados++;
+      
+      console.log(`Migrando: ${partido} - ${nome} -> ${genero}`);
+    });
+
+    if (atualizados > 0) {
+      await batch.commit();
+      console.log(`Migração concluída: ${atualizados} candidatos atualizados`);
+    } else {
+      console.log('Nenhum candidato precisa ser migrado');
+    }
+
+    return atualizados;
+  } catch (error) {
+    console.error('Erro na migração:', error);
+    throw error;
   }
 } 

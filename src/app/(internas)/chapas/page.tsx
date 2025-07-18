@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Trash2, Plus, Pencil, RefreshCw, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { carregarChapas, atualizarChapa, excluirChapa, carregarQuocienteEleitoral, salvarQuocienteEleitoral, Chapa, CenarioCompleto, PartidoCenario, obterCenarioAtivo, atualizarCenario, carregarCenario } from "@/services/chapasService";
+import { carregarChapas, atualizarChapa, excluirChapa, carregarQuocienteEleitoral, salvarQuocienteEleitoral, Chapa, CenarioCompleto, PartidoCenario, obterCenarioAtivo, atualizarCenario, carregarCenario, migrarDadosComGenero } from "@/services/chapasService";
 import CenariosManager from "@/components/CenariosManager";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -14,81 +14,34 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { DialogFooter } from "@/components/ui/dialog";
 
-const initialPartidos = [
-  {
-    nome: "PT",
-    cor: "bg-red-600",
-    corTexto: "text-white",
-    candidatos: [
-      { nome: "ZÉ", votos: 120000 },
-      { nome: "F COSTA", votos: 120000 },
-      { nome: "F NOGUEIRA", votos: 100000 },
-      { nome: "FLORENTINO", votos: 80000 },
-      { nome: "WILSON", votos: 80000 },
-      { nome: "MERLONG", votos: 80000 },
-      { nome: "FRANZE", votos: 60000 },
-      { nome: "MARINA SANTOS", votos: 10000 },
-      { nome: "RAISSA PROTETORA", votos: 10000 },
-      { nome: "MULHER", votos: 6000 },
-      { nome: "MULHER", votos: 4000 },
-      { nome: "LEGENDA", votos: 10000 },
-    ],
-  },
-  {
-    nome: "PSD/MDB",
-    cor: "bg-yellow-400",
-    corTexto: "text-gray-900",
-    candidatos: [
-      { nome: "GEORGIANO", votos: 200000 },
-      { nome: "CASTRO", votos: 180000 },
-      { nome: "MARCOS AURELIO", votos: 80000 },
-      { nome: "FABIO ABREU", votos: 35000 },
-      { nome: "NOME5", votos: 10000 },
-      { nome: "NOME6", votos: 10000 },
-      { nome: "NOME7", votos: 5000 },
-      { nome: "MULHER 1", votos: 5000 },
-      { nome: "MULHER 2", votos: 5000 },
-      { nome: "MULHER 3", votos: 3000 },
-      { nome: "MULHER 4", votos: 2000 },
-    ],
-  },
-  {
-    nome: "PP",
-    cor: "bg-sky-400",
-    corTexto: "text-white",
-    candidatos: [
-      { nome: "ATILA", votos: 105000 },
-      { nome: "JULIO ARCOVERDE", votos: 105000 },
-      { nome: "ISMAEL", votos: 20000 },
-      { nome: "PETRUS", votos: 20000 },
-      { nome: "NOME6", votos: 10000 },
-      { nome: "NOME7", votos: 5000 },
-      { nome: "NOME8", votos: 5000 },
-      { nome: "SAMANTA CAVALCA", votos: 10000 },
-      { nome: "MULHER 2", votos: 5000 },
-      { nome: "MULHER 3", votos: 3000 },
-      { nome: "MULHER 4", votos: 2000 },
-    ],
-  },
-  {
-    nome: "REPUBLICANOS",
-    cor: "bg-blue-900",
-    corTexto: "text-white",
-    candidatos: [
-      { nome: "JADYEL", votos: 120000 },
-      { nome: "ANA FIDELIS", votos: 40000 },
-      { nome: "MAGNO", votos: 25000 },
-      { nome: "CHARLES", votos: 40000 },
-      { nome: "ZE LUIS ASSEMBLEIA DE DEUS", votos: 25000 },
-      { nome: "GAIOSO", votos: 10000 },
-      { nome: "GABRIELA", votos: 10000 },
-      { nome: "PARNAIBA", votos: 10000 },
-      { nome: "AGRO/SUL", votos: 10000 },
-      { nome: "DIANA IGREJA OU K B", votos: 5000 },
-      { nome: "CAUSA ANIMAL", votos: 10000 },
-    ],
-  },
-];
+// Configuração de cores dos partidos
+const coresPartidos = {
+  "PT": { cor: "bg-red-600", corTexto: "text-white" },
+  "PSD/MDB": { cor: "bg-yellow-400", corTexto: "text-gray-900" },
+  "PP": { cor: "bg-sky-400", corTexto: "text-white" },
+  "REPUBLICANOS": { cor: "bg-blue-900", corTexto: "text-white" }
+};
+
+// Interface para partido local
+interface PartidoLocal {
+  nome: string;
+  cor: string;
+  corTexto: string;
+  candidatos: Array<{
+    nome: string;
+    votos: number;
+    genero?: string;
+  }>;
+}
+
+// Função para criar estrutura inicial de partidos
+const criarPartidosIniciais = (): PartidoLocal[] => {
+  return Object.keys(coresPartidos).map(nome => ({
+    nome,
+    ...coresPartidos[nome as keyof typeof coresPartidos],
+    candidatos: []
+  }));
+};
 
 const initialQuociente = 190000;
 
@@ -123,7 +76,7 @@ export default function ChapasPage() {
     status: "Em andamento"
   });
 
-  const [partidos, setPartidos] = useState(initialPartidos);
+  const [partidos, setPartidos] = useState<PartidoLocal[]>(criarPartidosIniciais());
   const [quociente, setQuociente] = useState(initialQuociente);
   const [quocienteCarregado, setQuocienteCarregado] = useState(false);
   const [cenarioAtivo, setCenarioAtivo] = useState<CenarioCompleto | null>(null);
@@ -175,11 +128,10 @@ export default function ChapasPage() {
   const handleAtualizar = async () => {
     setLoading(true);
     try {
-      const novasChapas = await carregarChapas();
-      setChapas(novasChapas);
-      filtrarChapas(novasChapas);
-
+      await carregarDadosFirestore();
+      
       // Carregar votos de legenda
+      const novasChapas = await carregarChapas();
       const votosLegendaTemp: { [partido: string]: number } = {};
       for (const partido of partidos) {
         const votosLegendaChapa = novasChapas.find(c => c.partido === partido.nome && c.nome === "VOTOS LEGENDA");
@@ -189,17 +141,20 @@ export default function ChapasPage() {
       }
       setVotosLegenda(votosLegendaTemp);
     } catch (error) {
-      console.error("Erro ao carregar chapas:", error);
+      console.error("Erro ao carregar dados:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Função para sincronizar dados locais com Firestore
-  const sincronizarDadosLocais = async () => {
-    console.log('Iniciando sincronização de dados locais com Firestore...');
+  // Função para carregar dados do Firestore
+  const carregarDadosFirestore = async () => {
+    console.log('Carregando dados do Firestore...');
     
     try {
+      // Primeiro, migrar dados se necessário
+      await migrarDadosComGenero();
+      
       // Carregar dados do Firestore
       const chapasFirestore = await carregarChapas();
       console.log('Chapas carregadas do Firestore:', chapasFirestore.length);
@@ -211,7 +166,7 @@ export default function ChapasPage() {
           .map(chapa => ({
             nome: chapa.nome,
             votos: chapa.votos,
-            genero: (chapa as any).genero
+            genero: (chapa as any).genero || 'homem' // fallback para candidatos sem genero
           }));
         
         console.log(`Partido ${partido.nome}: ${candidatosFirestore.length} candidatos no Firestore`);
@@ -222,12 +177,17 @@ export default function ChapasPage() {
         };
       }));
       
-      console.log('Sincronização concluída com sucesso');
-      mostrarNotificacaoAutoSave('Dados sincronizados com sucesso');
+      console.log('Carregamento concluído com sucesso');
+      mostrarNotificacaoAutoSave('Dados carregados com sucesso');
     } catch (error) {
-      console.error('Erro na sincronização:', error);
-      alert('Erro ao sincronizar dados. Tente novamente.');
+      console.error('Erro ao carregar dados:', error);
+      alert('Erro ao carregar dados. Tente novamente.');
     }
+  };
+
+  // Função para sincronizar dados locais com Firestore (mantida para compatibilidade)
+  const sincronizarDadosLocais = async () => {
+    await carregarDadosFirestore();
   };
 
   const filtrarChapas = (chapasParaFiltrar: Chapa[] = chapas) => {
@@ -593,76 +553,36 @@ export default function ChapasPage() {
     return getSobra1Partido(partidoNome, votosTotal);
   };
 
-  // Função para separar candidatos homens e mulheres do PT
+  // Função genérica para separar candidatos por gênero
+  const separarCandidatosPorGenero = (candidatos: { nome: string; votos: number; genero?: string }[]) => {
+    const candidatosFiltrados = candidatos.filter(c => c.nome !== "VOTOS LEGENDA");
+    
+    const homens = candidatosFiltrados
+      .filter(c => c.genero !== 'mulher')
+      .sort((a, b) => b.votos - a.votos);
+    
+    const mulheres = candidatosFiltrados
+      .filter(c => c.genero === 'mulher')
+      .sort((a, b) => b.votos - a.votos);
+    
+    return { homens, mulheres };
+  };
+
+  // Funções específicas mantidas para compatibilidade (agora usam apenas o campo genero)
   const separarCandidatosPT = (candidatos: { nome: string; votos: number; genero?: string }[]) => {
-    const candidatosFiltrados = candidatos.filter(c => c.nome !== "VOTOS LEGENDA");
-    
-    // Lista de mulheres do PT
-    const mulheresPT = getMulheresPartido("PT");
-    
-    const homens = candidatosFiltrados
-      .filter(c => !mulheresPT.includes(c.nome) && (c as any).genero !== 'mulher')
-      .sort((a, b) => b.votos - a.votos);
-    
-    const mulheres = candidatosFiltrados
-      .filter(c => mulheresPT.includes(c.nome) || (c as any).genero === 'mulher')
-      .sort((a, b) => b.votos - a.votos);
-    
-    return { homens, mulheres };
+    return separarCandidatosPorGenero(candidatos);
   };
 
-  // Função para separar candidatos homens e mulheres do PSD/MDB
   const separarCandidatosPSDMDB = (candidatos: { nome: string; votos: number; genero?: string }[]) => {
-    const candidatosFiltrados = candidatos.filter(c => c.nome !== "VOTOS LEGENDA");
-    
-    // Lista de mulheres do PSD/MDB
-    const mulheresPSDMDB = getMulheresPartido("PSD/MDB");
-    
-    const homens = candidatosFiltrados
-      .filter(c => !mulheresPSDMDB.includes(c.nome) && (c as any).genero !== 'mulher')
-      .sort((a, b) => b.votos - a.votos);
-    
-    const mulheres = candidatosFiltrados
-      .filter(c => mulheresPSDMDB.includes(c.nome) || (c as any).genero === 'mulher')
-      .sort((a, b) => b.votos - a.votos);
-    
-    return { homens, mulheres };
+    return separarCandidatosPorGenero(candidatos);
   };
 
-  // Função para separar candidatos homens e mulheres do PP
   const separarCandidatosPP = (candidatos: { nome: string; votos: number; genero?: string }[]) => {
-    const candidatosFiltrados = candidatos.filter(c => c.nome !== "VOTOS LEGENDA");
-    
-    // Lista de mulheres do PP
-    const mulheresPP = getMulheresPartido("PP");
-    
-    const homens = candidatosFiltrados
-      .filter(c => !mulheresPP.includes(c.nome) && (c as any).genero !== 'mulher')
-      .sort((a, b) => b.votos - a.votos);
-    
-    const mulheres = candidatosFiltrados
-      .filter(c => mulheresPP.includes(c.nome) || (c as any).genero === 'mulher')
-      .sort((a, b) => b.votos - a.votos);
-    
-    return { homens, mulheres };
+    return separarCandidatosPorGenero(candidatos);
   };
 
-  // Função para separar candidatos homens e mulheres do REPUBLICANOS
   const separarCandidatosRepublicanos = (candidatos: { nome: string; votos: number; genero?: string }[]) => {
-    const candidatosFiltrados = candidatos.filter(c => c.nome !== "VOTOS LEGENDA");
-    
-    // Lista de mulheres do REPUBLICANOS
-    const mulheresRepublicanos = getMulheresPartido("REPUBLICANOS");
-    
-    const homens = candidatosFiltrados
-      .filter(c => !mulheresRepublicanos.includes(c.nome) && (c as any).genero !== 'mulher')
-      .sort((a, b) => b.votos - a.votos);
-    
-    const mulheres = candidatosFiltrados
-      .filter(c => mulheresRepublicanos.includes(c.nome) || (c as any).genero === 'mulher')
-      .sort((a, b) => b.votos - a.votos);
-    
-    return { homens, mulheres };
+    return separarCandidatosPorGenero(candidatos);
   };
 
   const getVotosFusaoPSDJadyel = () => {
@@ -766,8 +686,8 @@ export default function ChapasPage() {
     const partido = partidos[partidoIdx];
     
     try {
-      // Salvar no Firestore
-      await atualizarChapa(partido.nome, novoCandidato.nome, novoCandidato.votos);
+      // Salvar no Firestore com campo genero
+      await atualizarChapa(partido.nome, novoCandidato.nome, novoCandidato.votos, novoCandidato.genero);
       
       // Atualizar estado local respeitando a separação homens/mulheres
       setPartidos(prev => prev.map((p, i) => {
@@ -785,11 +705,8 @@ export default function ChapasPage() {
         };
         
         if (novoCandidato.genero === 'mulher') {
-          // Para mulheres, inserir após a última mulher existente (ou no final se não houver mulheres)
-          const mulheresPartido = getMulheresPartido(p.nome);
-          const ultimaMulherIndex = candidatosAtuais.findLastIndex(c => 
-            mulheresPartido.includes(c.nome) || (c as any).genero === 'mulher'
-          );
+          // Para mulheres, inserir após a última mulher existente
+          const ultimaMulherIndex = candidatosAtuais.findLastIndex(c => c.genero === 'mulher');
           
           if (ultimaMulherIndex === -1) {
             // Não há mulheres na lista, inserir no final
@@ -799,11 +716,8 @@ export default function ChapasPage() {
             candidatosAtuais.splice(ultimaMulherIndex + 1, 0, candidatoComGenero);
           }
         } else {
-          // Para homens, inserir antes da primeira mulher (ou no final se não houver mulheres)
-          const mulheresPartido = getMulheresPartido(p.nome);
-          const primeiraMulherIndex = candidatosAtuais.findIndex(c => 
-            mulheresPartido.includes(c.nome) || (c as any).genero === 'mulher'
-          );
+          // Para homens, inserir antes da primeira mulher
+          const primeiraMulherIndex = candidatosAtuais.findIndex(c => c.genero === 'mulher');
           
           if (primeiraMulherIndex === -1) {
             // Não há mulheres na lista, inserir no final
