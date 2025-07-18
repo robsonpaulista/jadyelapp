@@ -1309,28 +1309,32 @@ export default function ChapasPage() {
                               <td className="pr-2 text-left whitespace-nowrap font-normal align-top w-2/3">
                                 <div className="flex items-center gap-2">
                                   <span className="text-sm text-gray-500">{idx + 1}.</span>
-                                  <input
-                                    type="text"
-                                    value={editingName?.partidoIdx === pIdx && editingName?.candidatoNome === c.nome 
-                                      ? editingName.tempValue 
-                                      : c.nome}
-                                    onFocus={() => startEditingName(pIdx, c.nome)}
-                                    onChange={e => {
-                                      if (editingName?.partidoIdx === pIdx && editingName?.candidatoNome === c.nome) {
-                                        setEditingName({ ...editingName, tempValue: e.target.value });
-                                      }
-                                    }}
-                                    onBlur={() => saveNameChange(pIdx, c.nome)}
-                                    onKeyDown={e => {
-                                      if (e.key === 'Enter') {
-                                        e.currentTarget.blur();
-                                      } else if (e.key === 'Escape') {
-                                        setEditingName(null);
-                                        e.currentTarget.blur();
-                                      }
-                                    }}
-                                    className="bg-transparent border-b border-gray-200 focus:border-blue-400 outline-none w-full text-xs py-0.5 px-1"
-                                  />
+                                  {modoImpressao ? (
+                                    <span className="text-xs font-medium">{c.nome}</span>
+                                  ) : (
+                                    <input
+                                      type="text"
+                                      value={editingName?.partidoIdx === pIdx && editingName?.candidatoNome === c.nome 
+                                        ? editingName.tempValue 
+                                        : c.nome}
+                                      onFocus={() => startEditingName(pIdx, c.nome)}
+                                      onChange={e => {
+                                        if (editingName?.partidoIdx === pIdx && editingName?.candidatoNome === c.nome) {
+                                          setEditingName({ ...editingName, tempValue: e.target.value });
+                                        }
+                                      }}
+                                      onBlur={() => saveNameChange(pIdx, c.nome)}
+                                      onKeyDown={e => {
+                                        if (e.key === 'Enter') {
+                                          e.currentTarget.blur();
+                                        } else if (e.key === 'Escape') {
+                                          setEditingName(null);
+                                          e.currentTarget.blur();
+                                        }
+                                      }}
+                                      className="bg-transparent border-b border-gray-200 focus:border-blue-400 outline-none w-full text-xs py-0.5 px-1"
+                                    />
+                                  )}
                                 </div>
                               </td>
                               <td className="text-right whitespace-nowrap font-normal align-top">
@@ -1437,28 +1441,32 @@ export default function ChapasPage() {
                           <td className="pr-2 text-left whitespace-nowrap font-normal align-top w-2/3">
                             <div className="flex items-center gap-2">
                               <span className="text-sm text-gray-500">{idx + 1}.</span>
-                              <input
-                                type="text"
-                                value={editingName?.partidoIdx === pIdx && editingName?.candidatoNome === c.nome 
-                                  ? editingName.tempValue 
-                                  : c.nome}
-                                onFocus={() => startEditingName(pIdx, c.nome)}
-                                onChange={e => {
-                                  if (editingName?.partidoIdx === pIdx && editingName?.candidatoNome === c.nome) {
-                                    setEditingName({ ...editingName, tempValue: e.target.value });
-                                  }
-                                }}
-                                onBlur={() => saveNameChange(pIdx, c.nome)}
-                                onKeyDown={e => {
-                                  if (e.key === 'Enter') {
-                                    e.currentTarget.blur();
-                                  } else if (e.key === 'Escape') {
-                                    setEditingName(null);
-                                    e.currentTarget.blur();
-                                  }
-                                }}
-                                className="bg-transparent border-b border-gray-200 focus:border-blue-400 outline-none w-full text-xs py-0.5 px-1"
-                              />
+                              {modoImpressao ? (
+                                <span className="text-xs font-medium">{c.nome}</span>
+                              ) : (
+                                <input
+                                  type="text"
+                                  value={editingName?.partidoIdx === pIdx && editingName?.candidatoNome === c.nome 
+                                    ? editingName.tempValue 
+                                    : c.nome}
+                                  onFocus={() => startEditingName(pIdx, c.nome)}
+                                  onChange={e => {
+                                    if (editingName?.partidoIdx === pIdx && editingName?.candidatoNome === c.nome) {
+                                      setEditingName({ ...editingName, tempValue: e.target.value });
+                                    }
+                                  }}
+                                  onBlur={() => saveNameChange(pIdx, c.nome)}
+                                  onKeyDown={e => {
+                                    if (e.key === 'Enter') {
+                                      e.currentTarget.blur();
+                                    } else if (e.key === 'Escape') {
+                                      setEditingName(null);
+                                      e.currentTarget.blur();
+                                    }
+                                  }}
+                                  className="bg-transparent border-b border-gray-200 focus:border-blue-400 outline-none w-full text-xs py-0.5 px-1"
+                                />
+                              )}
                             </div>
                           </td>
                           <td className="text-right whitespace-nowrap font-normal align-top">
