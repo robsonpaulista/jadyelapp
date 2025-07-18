@@ -815,7 +815,8 @@ export default function ChapasPage() {
       corTexto: partido.corTexto,
       candidatos: partido.candidatos.map(c => ({
         nome: c.nome,
-        votos: c.votos
+        votos: c.votos,
+        genero: (c as any).genero // Incluir o campo genero para persistência
       })),
       votosLegenda: votosLegenda[partido.nome] || 0
     }));

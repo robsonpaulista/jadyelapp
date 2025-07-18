@@ -38,6 +38,7 @@ export interface PartidoCenario {
 export interface CandidatoCenario {
   nome: string;
   votos: number;
+  genero?: string;
 }
 
 // Dados iniciais conforme o estado atual do app
@@ -182,6 +183,7 @@ export async function criarCenarioBase(partidos: PartidoCenario[], quociente: nu
         partido: partido.nome,
         nome: candidato.nome,
         votos: candidato.votos,
+        genero: (candidato as any).genero, // Incluir o campo genero
         cor: partido.cor,
         corTexto: partido.corTexto,
         votosLegenda: partido.votosLegenda || 0
@@ -236,7 +238,8 @@ export async function carregarCenario(cenarioId: string): Promise<CenarioComplet
       }
       partidosMap[data.partido].candidatos.push({
         nome: data.nome,
-        votos: data.votos
+        votos: data.votos,
+        genero: data.genero // Carregar o campo genero
       });
     });
 
@@ -289,6 +292,7 @@ export async function criarNovoCenario(
           partido: partido.nome,
           nome: candidato.nome,
           votos: candidato.votos,
+          genero: (candidato as any).genero, // Incluir o campo genero
           cor: partido.cor,
           corTexto: partido.corTexto,
           votosLegenda: partido.votosLegenda || 0
@@ -334,6 +338,7 @@ export async function atualizarCenario(
           partido: partido.nome,
           nome: candidato.nome,
           votos: candidato.votos,
+          genero: (candidato as any).genero, // Incluir o campo genero
           cor: partido.cor,
           corTexto: partido.corTexto,
           votosLegenda: partido.votosLegenda || 0
