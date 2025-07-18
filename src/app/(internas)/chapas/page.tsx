@@ -1639,41 +1639,7 @@ export default function ChapasPage() {
                 <div className="text-[10px] text-gray-500 mb-1 text-center">{getVotosProjetados(partido.candidatos, partido.nome).toLocaleString('pt-BR')} / {quociente.toLocaleString('pt-BR')} = {getProjecaoEleitos(getVotosProjetados(partido.candidatos, partido.nome))}</div>
               </div>
 
-              <div className="flex flex-col gap-1 mt-2">
-                <div className="flex flex-col gap-1">
-                                     {(() => {
-                     const votosTotal = getVotosProjetados(partido.candidatos, partido.nome);
-                     const sobra1 = getSobra1Partido(partido.nome, votosTotal);
-                     const sobra2 = getSobra2Calculada(partido.nome, votosTotal);
-                     const maiorSobra1 = calcularMaiorSobra1();
-                     const maiorSobra2 = calcularMaiorSobra2();
-                    
-                    return (
-                      <>
-                        {/* Sobras - todos os partidos têm Sobra 1 e Sobra 2 */}
-                        <div className="flex flex-col gap-1">
-                          <div className="text-center">
-                            <div className={`whitespace-nowrap flex items-center justify-center font-semibold text-xs ${
-                              sobra1 === maiorSobra1 ? 'text-green-600' : 'text-gray-600'
-                            }`}>
-                              Sobra 1: {sobra1.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                              {sobra1 === maiorSobra1 && <Check className="h-3 w-3 ml-1 text-green-600" />}
-                            </div>
-                          </div>
-                          <div className="text-center">
-                            <div className={`whitespace-nowrap flex items-center justify-center font-semibold text-xs ${
-                              sobra2 === maiorSobra2 ? 'text-green-600' : 'text-gray-600'
-                            }`}>
-                              Sobra 2: {sobra2.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                              {sobra2 === maiorSobra2 && <Check className="h-3 w-3 ml-1 text-green-600" />}
-                            </div>
-                          </div>
-                        </div>
-                      </>
-                    );
-                  })()}
-                </div>
-              </div>
+
             </div>
           );
           })}
