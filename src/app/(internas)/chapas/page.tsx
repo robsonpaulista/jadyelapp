@@ -439,7 +439,7 @@ export default function ChapasPage() {
         votosRestantes: votosTotal - (vagasDiretas * quociente)
       };
     });
-
+    
     // Calcular vagas já distribuídas
     const vagasDistribuidas = partidosComVagas.reduce((total, p) => total + p.vagasObtidas, 0);
     const vagasRestantes = VAGAS_TOTAIS - vagasDistribuidas;
@@ -479,6 +479,71 @@ export default function ChapasPage() {
       historicoSobras,
       totalVagas: VAGAS_TOTAIS
     };
+  };
+
+  // Nova função para calcular candidatos eleitos baseado na distribuição de vagas
+  const calcularCandidatosEleitos = () => {
+    const simulacao = simularDistribuicaoCompleta();
+    const candidatosEleitos: Array<{
+      vaga: number;
+      partido: string;
+      candidato: string;
+      votos: number;
+      tipo: 'direta' | 'sobra';
+    }> = [];
+
+    let vagaAtual = 1;
+
+    // Processar cada partido
+    simulacao.partidosComVagas.forEach(partidoInfo => {
+      const partido = partidos.find(p => p.nome === partidoInfo.partido);
+      if (!partido) return;
+
+      // Ordenar candidatos por votos (maior para menor)
+      const candidatosOrdenados = partido.candidatos
+        .filter(c => c.nome !== "VOTOS LEGENDA")
+        .sort((a, b) => b.votos - a.votos);
+
+      // Vagas diretas (primeiras vagas do partido)
+      const vagasDiretas = calcularVagasDiretas(partidoInfo.votosTotal);
+      for (let i = 0; i < vagasDiretas && i < candidatosOrdenados.length; i++) {
+        candidatosEleitos.push({
+          vaga: vagaAtual++,
+          partido: partidoInfo.partido,
+          candidato: candidatosOrdenados[i].nome,
+          votos: candidatosOrdenados[i].votos,
+          tipo: 'direta'
+        });
+      }
+    });
+
+    // Vagas por sobras (processar na ordem do histórico)
+    simulacao.historicoSobras.forEach(sobra => {
+      const partido = partidos.find(p => p.nome === sobra.partido);
+      if (!partido) return;
+
+      // Ordenar candidatos por votos
+      const candidatosOrdenados = partido.candidatos
+        .filter(c => c.nome !== "VOTOS LEGENDA")
+        .sort((a, b) => b.votos - a.votos);
+
+      // Contar quantas vagas o partido já tem (incluindo as que acabamos de adicionar)
+      const vagasJaObtidas = candidatosEleitos.filter(c => c.partido === sobra.partido).length;
+      
+      // Se ainda há candidatos disponíveis, adicionar o próximo
+      if (vagasJaObtidas < candidatosOrdenados.length) {
+        candidatosEleitos.push({
+          vaga: sobra.vaga,
+          partido: sobra.partido,
+          candidato: candidatosOrdenados[vagasJaObtidas].nome,
+          votos: candidatosOrdenados[vagasJaObtidas].votos,
+          tipo: 'sobra'
+        });
+      }
+    });
+
+    // Ordenar por número da vaga
+    return candidatosEleitos.sort((a, b) => a.vaga - b.vaga);
   };
 
   // Funções mantidas para compatibilidade com o código existente
@@ -1566,15 +1631,15 @@ export default function ChapasPage() {
               const votosTotal = votosPP + votosIgreja - candidato1 - candidato2;
 
               return (
-                <div className="flex items-center gap-2 text-sm">
-                  <span>PP ({votosPP.toLocaleString('pt-BR')})</span>
-                  <span>+</span>
-                  <div className="flex items-center gap-1">
-                    <span>IGREJA</span>
-                    <input
-                      type="number"
-                      value={votosIgreja}
-                      onChange={(e) => setVotosIgreja(Number(e.target.value))}
+                  <div className="flex items-center gap-2 text-sm">
+                    <span>PP ({votosPP.toLocaleString('pt-BR')})</span>
+                    <span>+</span>
+                    <div className="flex items-center gap-1">
+                      <span>IGREJA</span>
+                      <input
+                        type="number"
+                        value={votosIgreja}
+                        onChange={(e) => setVotosIgreja(Number(e.target.value))}
                       className="w-16 px-1 py-0.5 text-xs border rounded"
                     />
                   </div>
@@ -1598,17 +1663,17 @@ export default function ChapasPage() {
                       onChange={(e) => setCandidato2(Number(e.target.value) || 0)}
                       placeholder="Votos"
                       className="w-16 px-1 py-0.5 text-xs border rounded"
-                    />
-                  </div>
-                  <span>=</span>
-                  <span className="font-bold">{votosTotal.toLocaleString('pt-BR')}</span>
+                      />
+                    </div>
+                    <span>=</span>
+                    <span className="font-bold">{votosTotal.toLocaleString('pt-BR')}</span>
                   <span className="text-gray-500 text-xs">|</span>
                   <span className="text-xs text-gray-600">Eleitos: {getProjecaoEleitos(votosTotal)}</span>
                   <span className="text-gray-500 text-xs">|</span>
                   <span className="text-xs text-gray-600">÷3: {getDivisaoPorTres(votosTotal)}</span>
                   <span className="text-gray-500 text-xs">|</span>
                   <span className="text-xs text-gray-600">÷2: {getDivisaoPorDois(votosTotal)}</span>
-                </div>
+                  </div>
               );
             })()}
           </div>
@@ -1772,9 +1837,67 @@ export default function ChapasPage() {
                         ))}
                       </div>
                     </div>
+
+                    {/* Quadro de Vagas com Nomes dos Candidatos */}
+                    <div className="bg-white p-3 rounded border">
+                      <div className="text-sm font-semibold text-green-900 mb-2">👥 Quadro de Vagas - Candidatos Eleitos</div>
+                      <div className="text-xs">
+                        {(() => {
+                          const candidatosEleitos = calcularCandidatosEleitos();
+                          
+                          return (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+                              {Array.from({ length: 8 }, (_, i) => {
+                                const candidato = candidatosEleitos.find(c => c.vaga === i + 1);
+                                
+                                return (
+                                  <div 
+                                    key={i} 
+                                    className={`p-2 rounded border-2 ${
+                                      candidato 
+                                        ? 'border-green-300 bg-green-50' 
+                                        : 'border-gray-200 bg-gray-50'
+                                    }`}
+                                  >
+                                    <div className="font-bold text-center text-sm mb-1">
+                                      Vaga #{i + 1}
+                                    </div>
+                                    {candidato ? (
+                                      <div className="space-y-1">
+                                        <div className="text-center font-medium text-xs">
+                                          {candidato.candidato}
+                                        </div>
+                                        <div className="text-center text-xs text-gray-600">
+                                          {candidato.partido}
+                                        </div>
+                                        <div className="text-center text-xs text-gray-500">
+                                          {candidato.votos.toLocaleString('pt-BR')} votos
+                                        </div>
+                                        <div className={`text-center text-xs px-1 py-0.5 rounded ${
+                                          candidato.tipo === 'direta' 
+                                            ? 'bg-blue-100 text-blue-700' 
+                                            : 'bg-orange-100 text-orange-700'
+                                        }`}>
+                                          {candidato.tipo === 'direta' ? 'Direta' : 'Sobra'}
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <div className="text-center text-gray-400 text-xs">
+                                        Vaga não preenchida
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
                   </div>
-                );
-              })()}
+                </div>
+              );
+            })()}
             </div>
           </div>
         </div>
