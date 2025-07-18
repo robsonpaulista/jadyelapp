@@ -92,6 +92,22 @@ const initialPartidos = [
 
 const initialQuociente = 190000;
 
+// Função centralizada para obter a lista de mulheres de cada partido
+const getMulheresPartido = (nomePartido: string): string[] => {
+  switch (nomePartido) {
+    case "PT":
+      return ['MARINA SANTOS', 'RAISSA PROTETORA', 'MULHER'];
+    case "PSD/MDB":
+      return ['MULHER 1', 'MULHER 2', 'MULHER 3', 'MULHER 4'];
+    case "PP":
+      return ['SAMANTA CAVALCA', 'MULHER 2', 'MULHER 3', 'MULHER 4'];
+    case "REPUBLICANOS":
+      return ['ANA FIDELIS', 'GABRIELA'];
+    default:
+      return [];
+  }
+};
+
 export default function ChapasPage() {
   const [loading, setLoading] = useState(false);
   const [chapas, setChapas] = useState<Chapa[]>([]);
@@ -374,25 +390,8 @@ export default function ChapasPage() {
           return;
         }
 
-        // Para partidos com separação, verificar se a mudança de nome respeita a regra
-        if (partido.nome === "PT" || partido.nome === "PSD/MDB" || partido.nome === "PP" || partido.nome === "REPUBLICANOS") {
-          const mulheresPartido = partido.nome === "PT" 
-            ? ['CARMELITA CASTRO', 'MARINA SANTOS', 'RAISSA PROTETORA']
-            : partido.nome === "PSD/MDB"
-            ? ['MULHER 1', 'MULHER 2', 'MULHER 3']
-            : partido.nome === "PP"
-            ? ['SAMANTA CAVALCA', 'MULHER 1', 'MULHER 2']
-            : ['ANA FIDELIS', 'GABRIELA', 'KARLA'];
-          
-          const eraMulher = mulheresPartido.includes(oldNome);
-          const seraMulher = mulheresPartido.includes(newNome);
-          
-          // Se estava mudando de homem para mulher ou vice-versa, alertar
-          if (eraMulher !== seraMulher) {
-            alert(`Não é possível alterar o gênero do candidato. O nome "${newNome}" não está na lista de mulheres do partido ${partido.nome}.`);
-            return;
-          }
-        }
+        // Permitir mudança de nome livremente - o gênero não é determinado pelo nome
+        // mas sim pela posição na lista ou por outros critérios do sistema
 
         // Primeiro, excluir o registro antigo do Firestore
         await excluirChapa(partido.nome, oldNome);
@@ -560,72 +559,72 @@ export default function ChapasPage() {
   };
 
   // Função para separar candidatos homens e mulheres do PT
-  const separarCandidatosPT = (candidatos: { nome: string; votos: number }[]) => {
+  const separarCandidatosPT = (candidatos: { nome: string; votos: number; genero?: string }[]) => {
     const candidatosFiltrados = candidatos.filter(c => c.nome !== "VOTOS LEGENDA");
     
-    // Lista de mulheres do PT (registros 7, 8 e 9)
-    const mulheresPT = ['CARMELITA CASTRO', 'MARINA SANTOS', 'RAISSA PROTETORA'];
+    // Lista de mulheres do PT
+    const mulheresPT = getMulheresPartido("PT");
     
     const homens = candidatosFiltrados
-      .filter(c => !mulheresPT.includes(c.nome))
+      .filter(c => !mulheresPT.includes(c.nome) && (c as any).genero !== 'mulher')
       .sort((a, b) => b.votos - a.votos);
     
     const mulheres = candidatosFiltrados
-      .filter(c => mulheresPT.includes(c.nome))
+      .filter(c => mulheresPT.includes(c.nome) || (c as any).genero === 'mulher')
       .sort((a, b) => b.votos - a.votos);
     
     return { homens, mulheres };
   };
 
   // Função para separar candidatos homens e mulheres do PSD/MDB
-  const separarCandidatosPSDMDB = (candidatos: { nome: string; votos: number }[]) => {
+  const separarCandidatosPSDMDB = (candidatos: { nome: string; votos: number; genero?: string }[]) => {
     const candidatosFiltrados = candidatos.filter(c => c.nome !== "VOTOS LEGENDA");
     
     // Lista de mulheres do PSD/MDB
-    const mulheresPSDMDB = ['MULHER 1', 'MULHER 2', 'MULHER 3'];
+    const mulheresPSDMDB = getMulheresPartido("PSD/MDB");
     
     const homens = candidatosFiltrados
-      .filter(c => !mulheresPSDMDB.includes(c.nome))
+      .filter(c => !mulheresPSDMDB.includes(c.nome) && (c as any).genero !== 'mulher')
       .sort((a, b) => b.votos - a.votos);
     
     const mulheres = candidatosFiltrados
-      .filter(c => mulheresPSDMDB.includes(c.nome))
+      .filter(c => mulheresPSDMDB.includes(c.nome) || (c as any).genero === 'mulher')
       .sort((a, b) => b.votos - a.votos);
     
     return { homens, mulheres };
   };
 
   // Função para separar candidatos homens e mulheres do PP
-  const separarCandidatosPP = (candidatos: { nome: string; votos: number }[]) => {
+  const separarCandidatosPP = (candidatos: { nome: string; votos: number; genero?: string }[]) => {
     const candidatosFiltrados = candidatos.filter(c => c.nome !== "VOTOS LEGENDA");
     
     // Lista de mulheres do PP
-    const mulheresPP = ['SAMANTA CAVALCA', 'MULHER 1', 'MULHER 2'];
+    const mulheresPP = getMulheresPartido("PP");
     
     const homens = candidatosFiltrados
-      .filter(c => !mulheresPP.includes(c.nome))
+      .filter(c => !mulheresPP.includes(c.nome) && (c as any).genero !== 'mulher')
       .sort((a, b) => b.votos - a.votos);
     
     const mulheres = candidatosFiltrados
-      .filter(c => mulheresPP.includes(c.nome))
+      .filter(c => mulheresPP.includes(c.nome) || (c as any).genero === 'mulher')
       .sort((a, b) => b.votos - a.votos);
     
     return { homens, mulheres };
   };
 
   // Função para separar candidatos homens e mulheres do REPUBLICANOS
-  const separarCandidatosRepublicanos = (candidatos: { nome: string; votos: number }[]) => {
+  const separarCandidatosRepublicanos = (candidatos: { nome: string; votos: number; genero?: string }[]) => {
     const candidatosFiltrados = candidatos.filter(c => c.nome !== "VOTOS LEGENDA");
     
     // Lista de mulheres do REPUBLICANOS
-    const mulheresRepublicanos = ['ANA FIDELIS', 'GABRIELA', 'KARLA'];
+    const mulheresRepublicanos = getMulheresPartido("REPUBLICANOS");
     
     const homens = candidatosFiltrados
-      .filter(c => !mulheresRepublicanos.includes(c.nome))
+      .filter(c => !mulheresRepublicanos.includes(c.nome) && (c as any).genero !== 'mulher')
       .sort((a, b) => b.votos - a.votos);
     
     const mulheres = candidatosFiltrados
-      .filter(c => mulheresRepublicanos.includes(c.nome))
+      .filter(c => mulheresRepublicanos.includes(c.nome) || (c as any).genero === 'mulher')
       .sort((a, b) => b.votos - a.votos);
     
     return { homens, mulheres };
@@ -696,29 +695,50 @@ export default function ChapasPage() {
       setPartidos(prev => prev.map((p, i) => {
         if (i !== partidoIdx) return p;
         
-        // Para partidos com separação, precisamos verificar se o candidato deve ser adicionado
-        // ao bloco correto baseado no gênero selecionado
-        if (p.nome === "PT" || p.nome === "PSD/MDB" || p.nome === "PP" || p.nome === "REPUBLICANOS") {
-          // Verificar se o nome já existe na lista de mulheres do partido
-          const mulheresPartido = p.nome === "PT" 
-            ? ['CARMELITA CASTRO', 'MARINA SANTOS', 'RAISSA PROTETORA']
-            : p.nome === "PSD/MDB"
-            ? ['MULHER 1', 'MULHER 2', 'MULHER 3']
-            : p.nome === "PP"
-            ? ['SAMANTA CAVALCA', 'MULHER 1', 'MULHER 2']
-            : ['ANA FIDELIS', 'GABRIELA', 'KARLA'];
+        // O gênero é determinado pela seleção do usuário no modal
+        // Inserir o candidato no local correto baseado no gênero selecionado
+        const candidatosAtuais = [...p.candidatos];
+        
+        // Adicionar o candidato com informação de gênero
+        const candidatoComGenero = { 
+          nome: novoCandidato.nome, 
+          votos: novoCandidato.votos,
+          genero: novoCandidato.genero 
+        };
+        
+        if (novoCandidato.genero === 'mulher') {
+          // Para mulheres, inserir após a última mulher existente (ou no final se não houver mulheres)
+          const mulheresPartido = getMulheresPartido(p.nome);
+          const ultimaMulherIndex = candidatosAtuais.findLastIndex(c => 
+            mulheresPartido.includes(c.nome) || (c as any).genero === 'mulher'
+          );
           
-          // Se o usuário selecionou "mulher" mas o nome não está na lista de mulheres,
-          // ou se selecionou "homem" mas o nome está na lista de mulheres, mostrar alerta
-          if (novoCandidato.genero === 'mulher' && !mulheresPartido.includes(novoCandidato.nome)) {
-            alert(`Para adicionar uma mulher no partido ${p.nome}, o nome deve estar na lista de mulheres do partido.`);
-            return p;
+          if (ultimaMulherIndex === -1) {
+            // Não há mulheres na lista, inserir no final
+            candidatosAtuais.push(candidatoComGenero);
+          } else {
+            // Inserir após a última mulher
+            candidatosAtuais.splice(ultimaMulherIndex + 1, 0, candidatoComGenero);
+          }
+        } else {
+          // Para homens, inserir antes da primeira mulher (ou no final se não houver mulheres)
+          const mulheresPartido = getMulheresPartido(p.nome);
+          const primeiraMulherIndex = candidatosAtuais.findIndex(c => 
+            mulheresPartido.includes(c.nome) || (c as any).genero === 'mulher'
+          );
+          
+          if (primeiraMulherIndex === -1) {
+            // Não há mulheres na lista, inserir no final
+            candidatosAtuais.push(candidatoComGenero);
+          } else {
+            // Inserir antes da primeira mulher
+            candidatosAtuais.splice(primeiraMulherIndex, 0, candidatoComGenero);
           }
         }
         
         return {
           ...p,
-          candidatos: [...p.candidatos, { nome: novoCandidato.nome, votos: novoCandidato.votos }]
+          candidatos: candidatosAtuais
         };
       }));
 
