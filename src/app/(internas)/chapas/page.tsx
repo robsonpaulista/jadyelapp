@@ -166,8 +166,8 @@ export default function ChapasPage() {
       const chapasFirestore = await carregarChapas();
       console.log('Chapas carregadas do Firestore:', chapasFirestore.length);
       
-      // Atualizar estado local baseado no Firestore
-      setPartidos(prev => prev.map(partido => {
+      // LIMPAR COMPLETAMENTE o estado local e recriar baseado no Firestore
+      const partidosAtualizados = criarPartidosIniciais().map(partido => {
         const candidatosFirestore = chapasFirestore
           .filter(chapa => chapa.partido === partido.nome && chapa.nome !== "VOTOS LEGENDA")
           .map(chapa => ({
@@ -182,7 +182,10 @@ export default function ChapasPage() {
           ...partido,
           candidatos: candidatosFirestore
         };
-      }));
+      });
+      
+      // Forçar atualização completa do estado
+      setPartidos(partidosAtualizados);
       
       console.log('Carregamento concluído com sucesso');
       mostrarNotificacaoAutoSave('Dados carregados com sucesso');
@@ -640,29 +643,13 @@ export default function ChapasPage() {
     } catch (error) {
       console.error('Erro ao excluir candidato:', error);
       
-      // Mensagem de erro mais específica
-      let errorMessage = 'Erro ao excluir candidato. Tente novamente.';
-      let shouldSync = false;
+      // Simplificar tratamento de erro
+      console.error('Erro ao excluir candidato:', error);
       
-      if (error instanceof Error) {
-        if (error.message.includes('não encontrado')) {
-          errorMessage = `${error.message}\n\nO candidato pode existir apenas localmente. Deseja sincronizar os dados?`;
-          shouldSync = true;
-        } else if (error.message.includes('permission')) {
-          errorMessage = 'Sem permissão para excluir candidato. Verifique suas credenciais.';
-        } else if (error.message.includes('network')) {
-          errorMessage = 'Erro de conexão. Verifique sua internet e tente novamente.';
-        }
-      }
-      
-      if (shouldSync) {
-        const shouldProceed = confirm(errorMessage);
-        if (shouldProceed) {
-          await carregarDadosFirestore();
-        }
-      } else {
-        alert(errorMessage);
-      }
+      // Sempre recarregar dados do Firestore em caso de erro
+      console.log('Erro na exclusão, recarregando dados do Firestore...');
+      await carregarDadosFirestore();
+      alert('Candidato não encontrado. Dados foram recarregados automaticamente.');
     }
   };
 
