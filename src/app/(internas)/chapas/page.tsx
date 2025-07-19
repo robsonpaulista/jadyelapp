@@ -779,12 +779,7 @@ export default function ChapasPage() {
     
     setCarregandoCenario(true);
     try {
-      // Salvar mudanças do cenário atual antes de carregar o novo
-      if (cenarioAtivo && cenarioAtivo.id !== cenarioId) {
-        await salvarMudancasCenario();
-      }
-      
-      // Carregar o novo cenário
+      // Carregar o novo cenário diretamente (sem salvar automaticamente)
       const novoCenario = await carregarCenario(cenarioId);
       if (novoCenario) {
         handleCenarioChange(novoCenario);
