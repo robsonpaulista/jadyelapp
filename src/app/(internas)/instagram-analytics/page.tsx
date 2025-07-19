@@ -1474,8 +1474,10 @@ export default function InstagramAnalyticsPage() {
     return (
       <div className="min-h-screen bg-white">
         <Navbar />
-        <div className="flex-1 flex items-center justify-center min-h-[400px]">
-          <Loading message="Carregando dados do Instagram..." />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex-1 flex items-center justify-center min-h-[400px]">
+            <Loading message="Carregando dados do Instagram..." />
+          </div>
         </div>
       </div>
     );
@@ -1488,39 +1490,41 @@ export default function InstagramAnalyticsPage() {
       <div className="flex-1 flex flex-col">
         {/* Navbar interna do conteúdo */}
         <nav className="w-full bg-white border-b border-gray-100 shadow-sm">
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex flex-col items-start">
-              <span className="text-base md:text-lg font-semibold text-gray-900">Análise do Instagram</span>
-              <span className="text-xs text-gray-500 font-light">Métricas de desempenho e engajamento do Instagram oficial.</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleRefresh}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border ${
-                  isLoading 
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                    : 'bg-white hover:bg-gray-50 text-gray-700 cursor-pointer'
-                } border-gray-200`}
-                title="Atualizar dados"
-                disabled={isLoading}
-              >
-                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-                {isLoading ? 'Atualizando...' : 'Atualizar'}
-              </button>
-              <button
-                onClick={handleDisconnect}
-                className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-red-50 hover:bg-red-100 text-red-700 border-red-200"
-                title="Desconectar conta"
-              >
-                <X className="h-4 w-4" />
-                Desconectar
-              </button>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between py-3">
+              <div className="flex flex-col items-start">
+                <span className="text-base md:text-lg font-semibold text-gray-900">Análise do Instagram</span>
+                <span className="text-xs text-gray-500 font-light">Métricas de desempenho e engajamento do Instagram oficial.</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleRefresh}
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border ${
+                    isLoading 
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                      : 'bg-white hover:bg-gray-50 text-gray-700 cursor-pointer'
+                  } border-gray-200`}
+                  title="Atualizar dados"
+                  disabled={isLoading}
+                >
+                  <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                  {isLoading ? 'Atualizando...' : 'Atualizar'}
+                </button>
+                <button
+                  onClick={handleDisconnect}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-red-50 hover:bg-red-100 text-red-700 border-red-200"
+                  title="Desconectar conta"
+                >
+                  <X className="h-4 w-4" />
+                  Desconectar
+                </button>
+              </div>
             </div>
           </div>
         </nav>
         
         {/* Conteúdo */}
-        <div className="p-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           {!isConfigured ? (
             renderConfiguration()
           ) : (
