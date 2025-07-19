@@ -764,10 +764,12 @@ export default function ChapasPage() {
   // Funções para gerenciar cenários
   const handleCenarioChange = (cenario: CenarioCompleto) => {
     console.log('Mudando para cenário:', cenario.nome, cenario.tipo);
+    console.log('QE do cenário carregado:', cenario.quocienteEleitoral);
     setCenarioAtivo(cenario);
     const partidosOrdenados = ordenarPartidos(cenario.partidos);
     setPartidos(partidosOrdenados);
     setQuociente(cenario.quocienteEleitoral);
+    console.log('QE definido no estado:', cenario.quocienteEleitoral);
   };
 
   // Carregar cenário ao clicar no card
@@ -881,6 +883,10 @@ export default function ChapasPage() {
     if (cenarioAtivo) {
       setSalvandoMudancas(true);
       try {
+        console.log('Salvando mudanças no cenário:', cenarioAtivo.nome);
+        console.log('QE atual no estado:', quociente);
+        console.log('QE do cenário ativo:', cenarioAtivo.quocienteEleitoral);
+        
         const partidosConvertidos = converterPartidosParaCenario();
         await atualizarCenario(cenarioAtivo.id, partidosConvertidos, quociente);
         console.log('Mudanças salvas no cenário:', cenarioAtivo.nome, 'com QE:', quociente);
