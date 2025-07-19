@@ -414,10 +414,36 @@ export async function excluirCenario(cenarioId: string): Promise<void> {
 // Função para ativar/desativar um cenário
 export async function ativarCenario(cenarioId: string, ativo: boolean): Promise<void> {
   try {
-    await setDoc(doc(db, 'cenarios', cenarioId), {
-      ativo,
-      atualizadoEm: new Date().toISOString()
-    }, { merge: true });
+    if (ativo) {
+      // Se está ativando, primeiro desativar todos os outros cenários
+      const batch = writeBatch(db);
+      
+      // Buscar todos os cenários ativos
+      const q = query(collection(db, 'cenarios'), where('ativo', '==', true));
+      const snapshot = await getDocs(q);
+      
+      // Desativar todos os cenários ativos
+      snapshot.docs.forEach(doc => {
+        batch.update(doc.ref, {
+          ativo: false,
+          atualizadoEm: new Date().toISOString()
+        });
+      });
+      
+      // Ativar o cenário selecionado
+      batch.update(doc(db, 'cenarios', cenarioId), {
+        ativo: true,
+        atualizadoEm: new Date().toISOString()
+      });
+      
+      await batch.commit();
+    } else {
+      // Se está desativando, apenas desativar o cenário específico
+      await setDoc(doc(db, 'cenarios', cenarioId), {
+        ativo: false,
+        atualizadoEm: new Date().toISOString()
+      }, { merge: true });
+    }
   } catch (error) {
     console.error('Erro ao ativar/desativar cenário:', error);
     throw error;
@@ -433,6 +459,21 @@ export async function obterCenarioAtivo(): Promise<CenarioCompleto | null> {
     if (snapshot.empty) {
       // Se não há cenário ativo, retornar o base
       return await carregarCenario('base');
+    }
+
+    // Se há múltiplos cenários ativos, corrigir
+    if (snapshot.docs.length > 1) {
+      console.warn('Múltiplos cenários ativos detectados, corrigindo...');
+      const batch = writeBatch(db);
+      
+      // Manter apenas o primeiro como ativo
+      for (let i = 1; i < snapshot.docs.length; i++) {
+        batch.update(snapshot.docs[i].ref, {
+          ativo: false,
+          atualizadoEm: new Date().toISOString()
+        });
+      }
+      await batch.commit();
     }
 
     const cenarioAtivo = snapshot.docs[0];
