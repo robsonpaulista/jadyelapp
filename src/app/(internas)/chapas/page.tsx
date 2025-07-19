@@ -75,9 +75,6 @@ export default function ChapasPage() {
   const [editVoto, setEditVoto] = useState<{ partidoIdx: number; candidatoNome: string } | null>(null);
   const [hoveredRow, setHoveredRow] = useState<{ partidoIdx: number; candidatoNome: string } | null>(null);
   const [editingName, setEditingName] = useState<{ partidoIdx: number; candidatoNome: string; tempValue: string } | null>(null);
-  const [votosIgreja, setVotosIgreja] = useState(50000);
-  const [candidato1, setCandidato1] = useState(0);
-  const [candidato2, setCandidato2] = useState(0);
   const [votosLegenda, setVotosLegenda] = useState<{ [partido: string]: number }>({});
 
   // Estados para adicionar novo candidato
@@ -961,10 +958,9 @@ export default function ChapasPage() {
               variant="outline"
               size="sm"
               onClick={handleImprimirPDF}
-              className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
             >
               <Printer className="h-4 w-4 mr-1" />
-              Imprimir PDF
+              PDF
             </Button>
             <Button
               variant="outline"
@@ -972,7 +968,7 @@ export default function ChapasPage() {
               onClick={() => setModoCenarios(!modoCenarios)}
               className={modoCenarios ? 'bg-blue-50 border-blue-200' : ''}
             >
-              {modoCenarios ? 'Fechar Cenários' : 'Gerenciar Cenários'}
+              {modoCenarios ? 'Fechar' : 'Cenários'}
             </Button>
 
             {cenarioAtivo && (
@@ -981,15 +977,14 @@ export default function ChapasPage() {
                 size="sm"
                 onClick={salvarMudancasCenario}
                 disabled={salvandoMudancas}
-                className={cenarioAtivo.tipo === 'base' ? 'bg-green-50 border-green-200 text-green-700' : ''}
               >
                 {salvandoMudancas ? (
                   <>
                     <RefreshCw className="h-4 w-4 mr-1 animate-spin" />
-                    Salvando...
+                    ...
                   </>
                 ) : (
-                  cenarioAtivo.tipo === 'base' ? 'Salvar Base' : 'Salvar Mudanças'
+                  cenarioAtivo.tipo === 'base' ? 'Salvar' : 'Mudanças'
                 )}
               </Button>
             )}
@@ -998,77 +993,18 @@ export default function ChapasPage() {
                 variant="outline"
                 size="sm"
                 onClick={limparERecriarCenarioBase}
-                className="bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
               >
-                Limpar Base
+                Limpar
               </Button>
             )}
             {cenarioAtivo && (
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <span>Cenário:</span>
-                <Badge variant={cenarioAtivo.tipo === 'base' ? 'default' : 'secondary'}>
-                  {cenarioAtivo.nome}
-                </Badge>
-              </div>
+              <Badge variant={cenarioAtivo.tipo === 'base' ? 'default' : 'secondary'}>
+                {cenarioAtivo.nome}
+              </Badge>
             )}
           </div>
 
-          {/* Quociente eleitoral */}
-          <div className="flex items-center gap-3 bg-white rounded-lg shadow-sm border border-gray-100 p-2">
-            <span className="text-sm font-bold whitespace-nowrap">QUOCIENTE ELEITORAL 2026</span>
-            <input
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9.]*"
-              value={quociente.toLocaleString('pt-BR')}
-              onChange={e => {
-                const raw = e.target.value.replace(/\./g, '');
-                const num = Number(raw);
-                setQuociente(num || 0);
-              }}
-              onBlur={async () => {
-                try {
-                  console.log('Salvando quociente eleitoral:', quociente);
-                  await salvarQuocienteEleitoral(quociente);
-                  console.log('Quociente salvo com sucesso');
-                  
-                  // Se há um cenário ativo, salvar também nele
-                  if (cenarioAtivo) {
-                    console.log('Atualizando cenário ativo:', cenarioAtivo.nome);
-                    const partidosConvertidos = converterPartidosParaCenario();
-                    await atualizarCenario(cenarioAtivo.id, partidosConvertidos, quociente);
-                    console.log('Cenário atualizado com sucesso');
-                  }
-                } catch (error) {
-                  console.error('Erro ao salvar quociente eleitoral:', error);
-                  alert(`Erro ao salvar quociente eleitoral: ${error instanceof Error ? error.message : 'Erro desconhecido'}. Tente novamente.`);
-                }
-              }}
-              onKeyDown={async (e) => {
-                if (e.key === 'Enter') {
-                  try {
-                    console.log('Salvando quociente eleitoral (Enter):', quociente);
-                    await salvarQuocienteEleitoral(quociente);
-                    console.log('Quociente salvo com sucesso (Enter)');
-                    
-                    // Se há um cenário ativo, salvar também nele
-                    if (cenarioAtivo) {
-                      console.log('Atualizando cenário ativo (Enter):', cenarioAtivo.nome);
-                      const partidosConvertidos = converterPartidosParaCenario();
-                      await atualizarCenario(cenarioAtivo.id, partidosConvertidos, quociente);
-                      console.log('Cenário atualizado com sucesso (Enter)');
-                    }
-                    e.currentTarget.blur();
-                  } catch (error) {
-                    console.error('Erro ao salvar quociente eleitoral (Enter):', error);
-                    alert(`Erro ao salvar quociente eleitoral: ${error instanceof Error ? error.message : 'Erro desconhecido'}. Tente novamente.`);
-                  }
-                }
-              }}
-              className="text-xl font-extrabold text-gray-900 bg-transparent border-b border-gray-200 focus:border-blue-400 outline-none w-28 text-center px-1"
-              style={{ maxWidth: 120 }}
-            />
-          </div>
+
         </div>
 
         {/* Gerenciador de Cenários */}
@@ -1085,22 +1021,70 @@ export default function ChapasPage() {
         )}
 
         {/* Resumo do Quociente Mínimo */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="text-sm">
-                <span className="font-semibold text-gray-700">Quociente Eleitoral:</span>
-                <span className="ml-2 text-lg font-bold text-blue-600">{quociente.toLocaleString('pt-BR')}</span>
-              </div>
-              <div className="text-sm">
-                <span className="font-semibold text-gray-700">Mínimo (80%):</span>
-                <span className="ml-2 text-lg font-bold text-orange-600">{getQuocienteMinimo().toLocaleString('pt-BR')}</span>
-              </div>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-3">
+          <div className="flex flex-wrap items-center gap-4 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-gray-700">QE 2026:</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9.]*"
+                value={quociente.toLocaleString('pt-BR')}
+                onChange={e => {
+                  const raw = e.target.value.replace(/\./g, '');
+                  const num = Number(raw);
+                  setQuociente(num || 0);
+                }}
+                onBlur={async () => {
+                  try {
+                    console.log('Salvando quociente eleitoral:', quociente);
+                    await salvarQuocienteEleitoral(quociente);
+                    console.log('Quociente salvo com sucesso');
+                    
+                    // Se há um cenário ativo, salvar também nele
+                    if (cenarioAtivo) {
+                      console.log('Atualizando cenário ativo:', cenarioAtivo.nome);
+                      const partidosConvertidos = converterPartidosParaCenario();
+                      await atualizarCenario(cenarioAtivo.id, partidosConvertidos, quociente);
+                      console.log('Cenário atualizado com sucesso');
+                    }
+                  } catch (error) {
+                    console.error('Erro ao salvar quociente eleitoral:', error);
+                    alert(`Erro ao salvar quociente eleitoral: ${error instanceof Error ? error.message : 'Erro desconhecido'}. Tente novamente.`);
+                  }
+                }}
+                onKeyDown={async (e) => {
+                  if (e.key === 'Enter') {
+                    try {
+                      console.log('Salvando quociente eleitoral (Enter):', quociente);
+                      await salvarQuocienteEleitoral(quociente);
+                      console.log('Quociente salvo com sucesso (Enter)');
+                      
+                      // Se há um cenário ativo, salvar também nele
+                      if (cenarioAtivo) {
+                        console.log('Atualizando cenário ativo (Enter):', cenarioAtivo.nome);
+                        const partidosConvertidos = converterPartidosParaCenario();
+                        await atualizarCenario(cenarioAtivo.id, partidosConvertidos, quociente);
+                        console.log('Cenário atualizado com sucesso (Enter)');
+                      }
+                      e.currentTarget.blur();
+                    } catch (error) {
+                      console.error('Erro ao salvar quociente eleitoral (Enter):', error);
+                      alert(`Erro ao salvar quociente eleitoral: ${error instanceof Error ? error.message : 'Erro desconhecido'}. Tente novamente.`);
+                    }
+                  }
+                }}
+                className="text-sm font-bold text-gray-700 bg-transparent border-b border-gray-200 focus:border-blue-400 outline-none w-20 text-center px-1"
+              />
             </div>
-            <div className="text-sm">
-              <span className="font-semibold text-gray-700">Partidos elegíveis para sobras:</span>
-              <span className="ml-2 text-lg font-bold text-green-600">
-                {getPartidosElegiveisSobras().length} de {partidos.length}
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-gray-700">Mínimo:</span>
+              <span className="text-sm font-bold text-gray-700">{getQuocienteMinimo().toLocaleString('pt-BR')}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-gray-700">Elegíveis:</span>
+              <span className="text-sm font-bold text-gray-700">
+                {getPartidosElegiveisSobras().length}/{partidos.length}
               </span>
             </div>
           </div>
@@ -1712,80 +1696,22 @@ export default function ChapasPage() {
 
         {/* Container para as simulações */}
         <div className="mt-8">
-          {/* Seção independente para soma PP + IGREJA */}
-          <div className="p-4 bg-gray-100 rounded-lg max-w-md">
-            <div className="text-base font-semibold mb-2">
-              Simulação de Fusão - PP + IGREJA
-            </div>
-            {(() => {
-              const pp = partidos.find(p => p.nome === "PP");
-              if (!pp) return null;
-
-              const votosPP = getVotosProjetados(pp.candidatos, "PP");
-              const votosTotal = votosPP + votosIgreja - candidato1 - candidato2;
-
-              return (
-                  <div className="flex items-center gap-2 text-sm">
-                    <span>PP ({votosPP.toLocaleString('pt-BR')})</span>
-                    <span>+</span>
-                    <div className="flex items-center gap-1">
-                      <span>IGREJA</span>
-                      <input
-                        type="number"
-                        value={votosIgreja}
-                        onChange={(e) => setVotosIgreja(Number(e.target.value))}
-                      className="w-16 px-1 py-0.5 text-xs border rounded"
-                    />
-                  </div>
-                  <span>-</span>
-                  <div className="flex items-center gap-1">
-                    <span className="text-red-600 text-xs">C1</span>
-                    <input
-                      type="number"
-                      value={candidato1}
-                      onChange={(e) => setCandidato1(Number(e.target.value) || 0)}
-                      placeholder="Votos"
-                      className="w-16 px-1 py-0.5 text-xs border rounded"
-                    />
-                  </div>
-                  <span>-</span>
-                  <div className="flex items-center gap-1">
-                    <span className="text-red-600 text-xs">C2</span>
-                    <input
-                      type="number"
-                      value={candidato2}
-                      onChange={(e) => setCandidato2(Number(e.target.value) || 0)}
-                      placeholder="Votos"
-                      className="w-16 px-1 py-0.5 text-xs border rounded"
-                      />
-                    </div>
-                    <span>=</span>
-                    <span className="font-bold">{votosTotal.toLocaleString('pt-BR')}</span>
-                  <span className="text-gray-500 text-xs">|</span>
-                  <span className="text-xs text-gray-600">Eleitos: {getProjecaoEleitos(votosTotal)}</span>
-                  <span className="text-gray-500 text-xs">|</span>
-                  <span className="text-xs text-gray-600">÷2: {getDivisaoPorDois(votosTotal)}</span>
-                  </div>
-              );
-            })()}
-          </div>
-
           {/* Seção de detalhes das sobras - Método D'Hondt */}
-          <div className="mt-4 p-4 bg-blue-50 rounded-lg max-w-4xl">
-            <div className="text-base font-semibold mb-3 text-blue-900">
+          <div className="mt-4 p-4 bg-gray-50 rounded-lg max-w-4xl">
+            <div className="text-base font-semibold mb-3 text-gray-900">
               📊 Cálculo de Sobras - Método D'Hondt (Legislação Brasileira)
             </div>
-            <div className="text-sm text-blue-800 mb-3">
+            <div className="text-sm text-gray-700 mb-3">
               <strong>Fórmula:</strong> Quociente Partidário = Votos ÷ (Vagas Obtidas + 1)
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-4 gap-4">
               {(() => {
                 const { resultados, ordenadosPorSobras } = calcularSobras();
                 
-                return resultados.map((resultado, index) => (
-                  <div key={resultado.partido} className="bg-white p-3 rounded border border-blue-200">
-                    <div className="font-semibold text-sm mb-2 text-blue-900">
+                return ordenadosPorSobras.map((resultado, index) => (
+                  <div key={resultado.partido} className="bg-white p-3 rounded border border-gray-200">
+                    <div className="font-semibold text-sm mb-2 text-gray-900">
                       {resultado.partido}
                     </div>
                     
@@ -1808,9 +1734,7 @@ export default function ChapasPage() {
                       <div className="border-t pt-1 mt-2">
                         <div className="flex justify-between">
                           <span>Quociente Partidário:</span>
-                          <span className={`font-bold ${
-                            index === 0 ? 'text-green-600' : 'text-gray-700'
-                          }`}>
+                          <span className="font-bold text-gray-700">
                             {resultado.quocientePartidario.toLocaleString('pt-BR', { 
                               minimumFractionDigits: 2, 
                               maximumFractionDigits: 2 
@@ -1818,18 +1742,12 @@ export default function ChapasPage() {
                           </span>
                         </div>
                         
-                        <div className="text-xs text-gray-500 mt-1">
+                        <div className="text-xs text-gray-500 mt-1 whitespace-nowrap">
                           {resultado.votosTotal.toLocaleString('pt-BR')} ÷ ({resultado.vagasDiretas} + 1) = {resultado.quocientePartidario.toLocaleString('pt-BR', { 
                             minimumFractionDigits: 2, 
                             maximumFractionDigits: 2 
                           })}
                         </div>
-                        
-                        {index === 0 && (
-                          <div className="text-xs text-green-600 font-medium mt-1">
-                            🏆 Maior quociente partidário - Ganha a primeira vaga de sobra
-                          </div>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -1837,40 +1755,16 @@ export default function ChapasPage() {
               })()}
             </div>
             
-            <div className="mt-4 p-3 bg-blue-100 rounded border border-blue-300">
-              <div className="text-sm font-semibold text-blue-900 mb-2">
-                📋 Ordem de Distribuição das Sobras (Método D'Hondt):
-              </div>
-              <div className="text-xs text-blue-800 space-y-1">
-                {(() => {
-                  const { ordenadosPorSobras } = calcularSobras();
-                  
-                  return ordenadosPorSobras.map((resultado, index) => (
-                    <div key={resultado.partido} className="flex items-center gap-2">
-                      <span className="font-bold text-blue-900">#{index + 1}</span>
-                      <span className="font-medium">{resultado.partido}</span>
-                      <span className="text-gray-600">
-                        ({resultado.quocientePartidario.toLocaleString('pt-BR', { 
-                          minimumFractionDigits: 2, 
-                          maximumFractionDigits: 2 
-                        })})
-                      </span>
-                    </div>
-                  ));
-                })()}
-              </div>
-            </div>
-
             {/* Seção de distribuição completa das 8 vagas */}
-            <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
-              <div className="text-base font-semibold mb-3 text-green-900">
+            <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="text-base font-semibold mb-3 text-gray-900">
                 🎯 Distribuição Completa das 8 Vagas - Método D'Hondt
               </div>
               
               {/* Explicação do Método D'Hondt */}
-              <div className="mb-4 p-3 bg-blue-100 rounded border border-blue-300">
-                <div className="text-sm font-semibold text-blue-900 mb-2">📚 Como funciona o Método D'Hondt:</div>
-                <div className="text-xs text-blue-800 space-y-1">
+              <div className="mb-4 p-3 bg-gray-100 rounded border border-gray-300">
+                <div className="text-sm font-semibold text-gray-900 mb-2">📚 Como funciona o Método D'Hondt:</div>
+                <div className="text-xs text-gray-700 space-y-1">
                   <div>1️⃣ <strong>Vagas Diretas:</strong> Cada partido ganha vagas baseado na parte inteira da divisão (Votos ÷ QE)</div>
                   <div>2️⃣ <strong>Vagas por Sobras:</strong> Para cada vaga restante, calcula-se o Quociente Partidário = Votos ÷ (Vagas Obtidas + 1)</div>
                   <div>3️⃣ <strong>Ganhador:</strong> O partido com maior Quociente Partidário ganha a vaga</div>
@@ -1887,7 +1781,7 @@ export default function ChapasPage() {
                     {/* Resumo das vagas */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="bg-white p-3 rounded border">
-                        <div className="text-sm font-semibold text-green-900 mb-2">📊 Resumo das Vagas</div>
+                        <div className="text-sm font-semibold text-gray-900 mb-2">📊 Resumo das Vagas</div>
                         <div className="text-xs space-y-1">
                           <div className="flex justify-between">
                             <span>Vagas Diretas:</span>
@@ -1905,7 +1799,7 @@ export default function ChapasPage() {
                       </div>
                       
                       <div className="bg-white p-3 rounded border">
-                        <div className="text-sm font-semibold text-green-900 mb-2">🏆 Vagas por Partido</div>
+                        <div className="text-sm font-semibold text-gray-900 mb-2">🏆 Vagas por Partido</div>
                         <div className="text-xs space-y-1">
                           {simulacao.partidosComVagas.map(partido => (
                             <div key={partido.partido} className="flex justify-between">
@@ -1919,7 +1813,7 @@ export default function ChapasPage() {
 
                     {/* Histórico das sobras */}
                     <div className="bg-white p-3 rounded border">
-                      <div className="text-sm font-semibold text-green-900 mb-2">📋 Histórico das Sobras - Método D'Hondt</div>
+                      <div className="text-sm font-semibold text-gray-900 mb-2">📋 Histórico das Sobras - Método D'Hondt</div>
                       <div className="text-xs space-y-3">
                         {simulacao.historicoSobras.map((sobra, index) => {
                           // Calcular os quocientes partidários para esta rodada
@@ -1938,30 +1832,30 @@ export default function ChapasPage() {
                             .sort((a, b) => b.quocientePartidario - a.quocientePartidario);
 
                           return (
-                            <div key={index} className="border rounded-lg p-3 bg-blue-50">
+                            <div key={index} className="border rounded-lg p-3 bg-gray-50">
                               {/* Cabeçalho da rodada */}
                               <div className="flex items-center gap-3 mb-2 p-2 bg-white rounded">
-                                <span className="font-bold text-green-700">🎯 Rodada {sobra.rodada}</span>
+                                <span className="font-bold text-gray-700">🎯 Rodada {sobra.rodada}</span>
                                 <span className="text-gray-600">→</span>
-                                <span className="font-medium bg-green-100 px-2 py-1 rounded">{sobra.partido}</span>
+                                <span className="font-medium bg-gray-100 px-2 py-1 rounded">{sobra.partido}</span>
                                 <span className="text-gray-600">ganha a</span>
-                                <span className="font-bold text-green-700 bg-green-100 px-2 py-1 rounded">Vaga #{sobra.vaga}</span>
+                                <span className="font-bold text-gray-700 bg-gray-100 px-2 py-1 rounded">Vaga #{sobra.vaga}</span>
                               </div>
 
                               {/* Explicação do cálculo */}
                               <div className="mb-2 p-2 bg-white rounded">
-                                <div className="font-semibold text-blue-800 mb-1">📊 Cálculo dos Quocientes Partidários:</div>
+                                <div className="font-semibold text-gray-800 mb-1">📊 Cálculo dos Quocientes Partidários:</div>
                                 <div className="space-y-1">
                                   {quocientesRodada.map((q, qIndex) => (
                                     <div key={q.partido} className={`flex justify-between items-center p-1 rounded ${
-                                      q.partido === sobra.partido ? 'bg-green-100' : 'bg-gray-50'
+                                      q.partido === sobra.partido ? 'bg-gray-100' : 'bg-gray-50'
                                     }`}>
                                       <span className="font-medium">{q.partido}:</span>
                                       <span className="text-xs text-gray-600">
                                         {q.votos.toLocaleString('pt-BR')} ÷ ({q.vagasAntes} + 1) = 
                                       </span>
                                       <span className={`font-bold ${
-                                        q.partido === sobra.partido ? 'text-green-700' : 'text-gray-700'
+                                        q.partido === sobra.partido ? 'text-gray-700' : 'text-gray-700'
                                       }`}>
                                         {q.quocientePartidario.toLocaleString('pt-BR', { 
                                           minimumFractionDigits: 2, 
@@ -1969,7 +1863,7 @@ export default function ChapasPage() {
                                         })}
                                       </span>
                                       {q.partido === sobra.partido && (
-                                        <span className="text-green-600 font-bold ml-2">🏆 MAIOR</span>
+                                        <span className="text-gray-600 font-bold ml-2">🏆 MAIOR</span>
                                       )}
                                     </div>
                                   ))}
@@ -1977,8 +1871,8 @@ export default function ChapasPage() {
                               </div>
 
                               {/* Resultado da rodada */}
-                              <div className="p-2 bg-green-100 rounded">
-                                <div className="font-semibold text-green-800">
+                              <div className="p-2 bg-gray-100 rounded">
+                                <div className="font-semibold text-gray-800">
                                   ✅ Resultado: {sobra.partido} ganha a Vaga #{sobra.vaga} com quociente partidário de{' '}
                                   {sobra.quocientePartidario.toLocaleString('pt-BR', { 
                                     minimumFractionDigits: 2, 
@@ -1994,7 +1888,7 @@ export default function ChapasPage() {
 
                     {/* Seção dos candidatos eleitos */}
                     <div className="bg-white p-4 rounded border">
-                      <div className="text-sm font-semibold text-green-900 mb-3">🏆 Candidatos Eleitos</div>
+                      <div className="text-sm font-semibold text-gray-900 mb-3">🏆 Candidatos Eleitos</div>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         {(() => {
                           try {
