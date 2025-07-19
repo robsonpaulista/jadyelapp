@@ -4,6 +4,22 @@ const nextConfig = {
   poweredByHeader: false,
   output: 'standalone',
   generateEtags: true,
+  // Habilitar Turbopack para desenvolvimento
+  experimental: {
+    turbo: {
+      rules: {
+        '*.svg': {
+          loaders: ['@svgr/webpack'],
+          as: '*.js',
+        },
+      },
+    },
+    optimizeCss: true,
+    optimizePackageImports: ['lucide-react', '@/components/ui'],
+    // Otimizações de performance
+    optimizeServerReact: true,
+    serverComponentsExternalPackages: ['better-sqlite3'],
+  },
   images: {
     unoptimized: false,
     remotePatterns: [
@@ -20,10 +36,7 @@ const nextConfig = {
     ],
     domains: ['images.unsplash.com', 'placehold.co', 'firebasestorage.googleapis.com'],
   },
-  experimental: {
-    optimizeCss: true,
-    optimizePackageImports: ['lucide-react', '@/components/ui'],
-  },
+
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production' ? {
       exclude: ['error', 'warn'],

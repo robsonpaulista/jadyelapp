@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { getCurrentUser } from '@/lib/storage';
 import { User } from '@/types/user';
@@ -49,7 +49,7 @@ export function usePermissions() {
   // Removendo o redirecionamento automático daqui para evitar loops
   // O redirecionamento será feito apenas no RouteGuard quando necessário
 
-  const hasAccess = (route: string): boolean => {
+  const hasAccess = useCallback((route: string): boolean => {
     try {
       if (!userLevel) return false;
       
@@ -61,9 +61,9 @@ export function usePermissions() {
       console.error('Erro em hasAccess:', error);
       return false;
     }
-  };
+  }, [userLevel]);
 
-  const hasMenuAccess = (menu: keyof UserPermissions['menuAccess']): boolean => {
+  const hasMenuAccess = useCallback((menu: keyof UserPermissions['menuAccess']): boolean => {
     try {
       if (!userLevel) {
         return false;
@@ -74,61 +74,61 @@ export function usePermissions() {
       console.error('Erro em hasMenuAccess:', error);
       return false;
     }
-  };
+  }, [userLevel]);
 
-  const isAdmin = (): boolean => {
+  const isAdmin = useCallback((): boolean => {
     try {
       return userLevel === 'admin';
     } catch (error) {
       console.error('Erro em isAdmin:', error);
       return false;
     }
-  };
+  }, [userLevel]);
 
-  const isUser = (): boolean => {
+  const isUser = useCallback((): boolean => {
     try {
       return userLevel === 'user';
     } catch (error) {
       console.error('Erro em isUser:', error);
       return false;
     }
-  };
+  }, [userLevel]);
 
-  const isGabineteEmendas = (): boolean => {
+  const isGabineteEmendas = useCallback((): boolean => {
     try {
       return userLevel === 'gabineteemendas';
     } catch (error) {
       console.error('Erro em isGabineteEmendas:', error);
       return false;
     }
-  };
+  }, [userLevel]);
 
-  const isGabineteJuridico = (): boolean => {
+  const isGabineteJuridico = useCallback((): boolean => {
     try {
       return userLevel === 'gabinetejuridico';
     } catch (error) {
       console.error('Erro em isGabineteJuridico:', error);
       return false;
     }
-  };
+  }, [userLevel]);
 
-  const canAccessRoute = (route: string): boolean => {
+  const canAccessRoute = useCallback((route: string): boolean => {
     try {
       return hasAccess(route);
     } catch (error) {
       console.error('Erro em canAccessRoute:', error);
       return false;
     }
-  };
+  }, [hasAccess]);
 
-  const getDefaultRoute = (): string => {
+  const getDefaultRoute = useCallback((): string => {
     try {
       return '/painel-aplicacoes';
     } catch (error) {
       console.error('Erro em getDefaultRoute:', error);
       return '/painel-aplicacoes';
     }
-  };
+  }, []);
 
   return {
     userLevel,

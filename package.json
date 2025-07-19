@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3006 -H 0.0.0.0",
-    "dev:network": "next dev -p 3006 -H 0.0.0.0",
-    "dev:alt": "next dev -p 3007",
+    "dev": "next dev --turbo -p 3006 -H 0.0.0.0",
+    "dev:network": "next dev --turbo -p 3006 -H 0.0.0.0",
+    "dev:alt": "next dev --turbo -p 3007",
     "build": "next build",
     "start": "next start -p 3006 -H 0.0.0.0",
     "start:prod": "next build && next start -p 3006 -H 0.0.0.0",

@@ -13,11 +13,28 @@ const AuthGuard = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
+    // Verificar primeiro se já temos dados no localStorage (mais rápido)
+    const existingUserData = localStorage.getItem('user');
+    const isLoggedIn = localStorage.getItem('isLoggedIn');
+    
+    if (existingUserData && isLoggedIn === 'true') {
+      try {
+        const userData = JSON.parse(existingUserData);
+        setUser(userData);
+        setLoading(false);
+        return;
+      } catch (error) {
+        // Se os dados estão corrompidos, limpar e continuar
+        localStorage.removeItem('user');
+        localStorage.removeItem('isLoggedIn');
+      }
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setUser(user);
         
-        // Verificar se os dados já existem no localStorage (vindos do login)
+        // Verificar novamente se os dados já existem no localStorage
         const existingUserData = localStorage.getItem('user');
         const isLoggedIn = localStorage.getItem('isLoggedIn');
         

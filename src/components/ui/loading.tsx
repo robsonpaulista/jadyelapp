@@ -1,44 +1,50 @@
 import React from 'react';
-import './loading.css';
 
 interface LoadingProps {
   message?: string;
+  size?: 'sm' | 'md' | 'lg';
   className?: string;
 }
 
-export function Loading({ message = 'Carregando...', className = '' }: LoadingProps) {
+export function Loading({ message = "Carregando...", size = 'md', className = '' }: LoadingProps) {
+  const sizeClasses = {
+    sm: 'h-4 w-4',
+    md: 'h-8 w-8',
+    lg: 'h-12 w-12'
+  };
+
   return (
-    <div className={`flex flex-col items-center justify-center p-8 ${className}`}>
-      {/* Spinner animado */}
-      <div className="relative w-12 h-12">
-        {/* Círculo base */}
-        <div className="absolute inset-0 border-3 border-gray-100 rounded-full"></div>
-        {/* Círculo animado */}
-        <div className="absolute inset-0 border-3 border-blue-500 rounded-full loading-spin border-t-transparent"></div>
-        {/* Círculo interno pulsante */}
-        <div className="absolute inset-2 bg-blue-50 rounded-full loading-pulse"></div>
-      </div>
-      
-      {/* Mensagem de loading com animação suave */}
-      <div className="mt-3 text-sm text-gray-600 loading-pulse font-medium">
-        {message}
+    <div className={`flex items-center justify-center ${className}`}>
+      <div className="text-center">
+        <div 
+          className={`animate-spin rounded-full border-b-2 border-blue-600 mx-auto ${sizeClasses[size]}`}
+          style={{
+            animationDuration: '0.8s',
+            animationTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)'
+          }}
+        />
+        {message && (
+          <p className="mt-2 text-sm text-gray-600 font-medium">{message}</p>
+        )}
       </div>
     </div>
   );
 }
 
-export function LoadingOverlay({ message, className = '' }: LoadingProps) {
+// Componente de loading otimizado para páginas
+export function PageLoading({ message = "Carregando página..." }: { message?: string }) {
   return (
-    <div className="fixed inset-0 bg-white/80 loading-blur-in z-50 flex items-center justify-center">
-      <Loading message={message} className={className} />
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <Loading message={message} size="lg" />
     </div>
   );
 }
 
-export function LoadingCard({ message, className = '' }: LoadingProps) {
+// Componente de loading otimizado para componentes
+export function ComponentLoading({ message = "Carregando..." }: { message?: string }) {
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
-      <Loading message={message} className={className} />
+    <div className="flex items-center justify-center py-8">
+      <Loading message={message} size="md" />
     </div>
   );
 } 

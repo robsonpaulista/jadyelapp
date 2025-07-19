@@ -30,15 +30,33 @@ export function RouteGuard({ children }: RouteGuardProps) {
         return;
       }
 
+      // Cache de permissões para evitar verificações repetidas
+      const cacheKey = `${user.id}-${pathname}`;
+      const cachedResult = sessionStorage.getItem(cacheKey);
+      
+      if (cachedResult !== null) {
+        const hasPermission = cachedResult === 'true';
+        if (!hasPermission) {
+          console.log(`Usuário ${user.name} (${userLevel}) tentou acessar ${pathname} sem permissão (cache)`);
+          router.replace('/painel-aplicacoes');
+          return;
+        }
+        setIsChecking(false);
+        return;
+      }
+
       // Se não tem acesso à rota atual
       if (!hasAccess(pathname)) {
         console.log(`Usuário ${user.name} (${userLevel}) tentou acessar ${pathname} sem permissão`);
+        sessionStorage.setItem(cacheKey, 'false');
         
         // Redirecionar para o painel de aplicações quando não tiver acesso
         router.replace('/painel-aplicacoes');
         return;
       }
 
+      // Cache do resultado positivo
+      sessionStorage.setItem(cacheKey, 'true');
       setIsChecking(false);
     };
 
