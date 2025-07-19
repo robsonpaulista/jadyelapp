@@ -65,11 +65,27 @@ export default function CenariosManager({
     setLoading(true);
     try {
       const cenariosList = await listarCenarios();
-      setCenarios(cenariosList);
       
-      // Encontrar cenário ativo
-      const ativo = cenariosList.find(c => c.ativo);
-      setCenarioAtivo(ativo || null);
+      // Garantir que apenas um cenário esteja ativo
+      const cenariosAtivos = cenariosList.filter(c => c.ativo);
+      if (cenariosAtivos.length > 1) {
+        console.warn('Múltiplos cenários ativos detectados:', cenariosAtivos.map(c => c.nome));
+        // Manter apenas o primeiro como ativo e desativar os outros
+        for (let i = 1; i < cenariosAtivos.length; i++) {
+          await ativarCenario(cenariosAtivos[i].id, false);
+        }
+        // Recarregar após correção
+        const cenariosCorrigidos = await listarCenarios();
+        setCenarios(cenariosCorrigidos);
+        const ativo = cenariosCorrigidos.find(c => c.ativo);
+        setCenarioAtivo(ativo || null);
+      } else {
+        setCenarios(cenariosList);
+        const ativo = cenariosList.find(c => c.ativo);
+        setCenarioAtivo(ativo || null);
+      }
+      
+      console.log('Cenários carregados:', cenariosList.map(c => ({ nome: c.nome, ativo: c.ativo })));
     } catch (error) {
       console.error('Erro ao carregar cenários:', error);
     } finally {
@@ -141,13 +157,20 @@ export default function CenariosManager({
     try {
       console.log('Ativando cenário:', cenarioId);
       
-      // Desativar todos os cenários
+      // Desativar todos os cenários primeiro
       for (const cenario of cenarios) {
-        await ativarCenario(cenario.id, false);
+        if (cenario.ativo) {
+          console.log('Desativando cenário:', cenario.nome);
+          await ativarCenario(cenario.id, false);
+        }
       }
 
       // Ativar o cenário selecionado
+      console.log('Ativando cenário selecionado:', cenarioId);
       await ativarCenario(cenarioId, true);
+
+      // Recarregar cenários para garantir consistência
+      await carregarCenarios();
 
       // Carregar o cenário ativo
       const cenarioCompleto = await carregarCenario(cenarioId);
@@ -157,8 +180,6 @@ export default function CenariosManager({
       } else {
         console.error('Erro: não foi possível carregar o cenário ativado');
       }
-
-      await carregarCenarios();
     } catch (error) {
       console.error('Erro ao ativar cenário:', error);
       alert('Erro ao ativar cenário. Tente novamente.');
