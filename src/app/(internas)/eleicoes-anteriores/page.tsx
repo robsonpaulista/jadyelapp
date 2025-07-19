@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { getLimiteMacByMunicipio } from '@/utils/limitesmac';
 import { getLimitePapByMunicipio } from '@/utils/limitepap';
 import { disableConsoleLogging } from '@/lib/logger';
+import Navbar from '@/components/Navbar';
 import {
   Dialog,
   DialogContent,
@@ -658,99 +659,104 @@ export default function EleicoesAnterioresPage() {
   };
 
   return (
-    <div className="flex-1 flex flex-col min-h-screen">
-      {/* Navbar interna do conteúdo */}
-      <nav className="w-full bg-white border-b border-gray-100 shadow-sm">
-        <div className="flex flex-col md:flex-row md:items-center justify-between px-4 py-3 space-y-3 md:space-y-0">
-          <div className="flex flex-col items-start">
-            <span className="text-base md:text-lg font-semibold text-gray-900">Eleições Anteriores</span>
-            <span className="text-xs text-gray-500 font-light">Análise de resultados eleitorais e projeções por município</span>
-          </div>
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
-            <div className="flex items-center gap-2 w-full md:w-auto">
-              <span className="text-sm font-medium whitespace-nowrap">Cidade:</span>
-              <select
-                value={cidade}
-                onChange={(e) => setCidade(e.target.value)}
-                className="text-sm border border-gray-200 rounded px-2 py-1.5 flex-1 md:flex-none min-w-[200px] h-9 bg-background"
-              >
-                <option value="">Selecione um município...</option>
-                {cidades.map((cidade) => (
-                  <option key={cidade} value={cidade}>{cidade}</option>
-                ))}
-              </select>
-              <button
-                onClick={buscarDados}
-                disabled={loading || !cidade}
-                className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-white hover:bg-orange-50 text-orange-500 cursor-pointer border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-              >
-                {loading ? (
-                  <RefreshCw className="h-4 w-4 animate-spin text-orange-500" />
-                ) : (
-                  <RefreshCw className="h-4 w-4 text-orange-500" />
-                )}
-                Buscar
-              </button>
-            </div>
-
-            {/* Dropdown de lideranças e botão de demandas */}
-            {buscaIniciada && !loading && liderancasSelecionadas.length > 0 && (
-              <div className="flex flex-col md:flex-row items-start md:items-center gap-2 w-full md:w-auto md:ml-4">
+    <div className="min-h-screen bg-white text-gray-800 flex flex-col">
+      <Navbar />
+      {/* Conteúdo principal */}
+      <div className="flex-1 flex flex-col">
+        {/* Navbar interna do conteúdo */}
+        <nav className="w-full bg-white border-b border-gray-100 shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between py-3 space-y-3 md:space-y-0">
+              <div className="flex flex-col items-start">
+                <span className="text-base md:text-lg font-semibold text-gray-900">Eleições Anteriores</span>
+                <span className="text-xs text-gray-500 font-light">Análise de resultados eleitorais e projeções por município</span>
+              </div>
+              <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
                 <div className="flex items-center gap-2 w-full md:w-auto">
-                  <span className="text-sm font-medium whitespace-nowrap">Liderança:</span>
+                  <span className="text-sm font-medium whitespace-nowrap">Cidade:</span>
                   <select
-                    value={liderancaSelecionada}
-                    onChange={(e) => setLiderancaSelecionada(e.target.value)}
+                    value={cidade}
+                    onChange={(e) => setCidade(e.target.value)}
                     className="text-sm border border-gray-200 rounded px-2 py-1.5 flex-1 md:flex-none min-w-[200px] h-9 bg-background"
                   >
-                    <option value="">Selecione uma liderança...</option>
-                    <option value="TODAS">📋 Todas as lideranças</option>
-                    {liderancasSelecionadas.map((lideranca, index) => (
-                      <option key={index} value={lideranca.lideranca}>
-                        {lideranca.lideranca}
-                      </option>
+                    <option value="">Selecione um município...</option>
+                    {cidades.map((cidade) => (
+                      <option key={cidade} value={cidade}>{cidade}</option>
                     ))}
                   </select>
-                </div>
-                
-                <div className="flex gap-2">
                   <button
-                    onClick={buscarDemandasLideranca}
-                    disabled={!liderancaSelecionada || loadingDemandas}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-orange-500 hover:bg-orange-600 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto justify-center"
+                    onClick={buscarDados}
+                    disabled={loading || !cidade}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-white hover:bg-orange-50 text-orange-500 cursor-pointer border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                   >
-                    {loadingDemandas ? (
-                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    {loading ? (
+                      <RefreshCw className="h-4 w-4 animate-spin text-orange-500" />
                     ) : (
-                      <Building className="h-4 w-4" />
+                      <RefreshCw className="h-4 w-4 text-orange-500" />
                     )}
-                    Demandas
-                  </button>
-                  <button
-                    onClick={() => {
-                      setModalNoticiasOpen(true);
-                      buscarNoticiasCidade();
-                    }}
-                    disabled={!cidade}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-orange-500 hover:bg-orange-600 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto justify-center"
-                  >
-                    {loadingNoticias ? (
-                      <RefreshCw className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Newspaper className="h-4 w-4" />
-                    )}
-                    Notícias
+                    Buscar
                   </button>
                 </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </nav>
 
-      {/* Conteúdo principal */}
-      <main className="p-0 w-full flex-1">
-        <div className="px-2 md:px-4 py-4 md:py-8">
+                {/* Dropdown de lideranças e botão de demandas */}
+                {buscaIniciada && !loading && liderancasSelecionadas.length > 0 && (
+                  <div className="flex flex-col md:flex-row items-start md:items-center gap-2 w-full md:w-auto md:ml-4">
+                    <div className="flex items-center gap-2 w-full md:w-auto">
+                      <span className="text-sm font-medium whitespace-nowrap">Liderança:</span>
+                      <select
+                        value={liderancaSelecionada}
+                        onChange={(e) => setLiderancaSelecionada(e.target.value)}
+                        className="text-sm border border-gray-200 rounded px-2 py-1.5 flex-1 md:flex-none min-w-[200px] h-9 bg-background"
+                      >
+                        <option value="">Selecione uma liderança...</option>
+                        <option value="TODAS">📋 Todas as lideranças</option>
+                        {liderancasSelecionadas.map((lideranca, index) => (
+                          <option key={index} value={lideranca.lideranca}>
+                            {lideranca.lideranca}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <button
+                        onClick={buscarDemandasLideranca}
+                        disabled={!liderancaSelecionada || loadingDemandas}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-orange-500 hover:bg-orange-600 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto justify-center"
+                      >
+                        {loadingDemandas ? (
+                          <RefreshCw className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Building className="h-4 w-4" />
+                        )}
+                        Demandas
+                      </button>
+                      <button
+                        onClick={() => {
+                          setModalNoticiasOpen(true);
+                          buscarNoticiasCidade();
+                        }}
+                        disabled={!cidade}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-orange-500 hover:bg-orange-600 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto justify-center"
+                      >
+                        {loadingNoticias ? (
+                          <RefreshCw className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Newspaper className="h-4 w-4" />
+                        )}
+                        Notícias
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </nav>
+
+        {/* Conteúdo principal */}
+        <main className="flex-1">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
 
         {buscaIniciada && loading && (
           <div className="flex items-center justify-center mt-8">
@@ -1569,8 +1575,9 @@ export default function EleicoesAnterioresPage() {
         <div className="mt-8 text-center text-sm text-gray-500">
           © 2025 86 Dynamics - Todos os direitos reservados
         </div>
-        </div>
-      </main>
+          </div>
+        </main>
+      </div>
     </div>
   );
 } 
