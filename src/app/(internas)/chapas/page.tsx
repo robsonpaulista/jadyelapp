@@ -218,11 +218,6 @@ export default function ChapasPage() {
       try {
         console.log('Carregando dados iniciais...');
         
-        // Carregar quociente eleitoral primeiro
-        const quocienteSalvo = await carregarQuocienteEleitoral();
-        setQuociente(quocienteSalvo);
-        setQuocienteCarregado(true);
-
         // SEMPRE carregar dados do Firestore primeiro
         console.log('Carregando dados do Firestore...');
         await carregarDadosFirestore();
@@ -233,7 +228,9 @@ export default function ChapasPage() {
           if (cenarioAtivo) {
             console.log('Cenário ativo encontrado:', cenarioAtivo.nome);
             setCenarioAtivo(cenarioAtivo);
-            // Não sobrescrever os dados já carregados, apenas atualizar o cenário
+            // Carregar o QE do cenário ativo
+            setQuociente(cenarioAtivo.quocienteEleitoral);
+            setQuocienteCarregado(true);
           }
         } catch (cenarioError) {
           console.log('Nenhum cenário ativo encontrado ou erro ao carregar cenário');
@@ -886,13 +883,15 @@ export default function ChapasPage() {
       try {
         const partidosConvertidos = converterPartidosParaCenario();
         await atualizarCenario(cenarioAtivo.id, partidosConvertidos, quociente);
-        console.log('Mudanças salvas no cenário:', cenarioAtivo.nome);
+        console.log('Mudanças salvas no cenário:', cenarioAtivo.nome, 'com QE:', quociente);
         
         // Feedback visual temporário
         setTimeout(() => setSalvandoMudancas(false), 2000);
+        mostrarNotificacaoAutoSave(`Mudanças salvas no cenário "${cenarioAtivo.nome}"`);
       } catch (error) {
         console.error('Erro ao salvar mudanças no cenário:', error);
         setSalvandoMudancas(false);
+        alert('Erro ao salvar mudanças. Tente novamente.');
       }
     }
   };
@@ -1065,43 +1064,14 @@ export default function ChapasPage() {
                   const num = Number(raw);
                   setQuociente(num || 0);
                 }}
-                onBlur={async () => {
-                  try {
-                    console.log('Salvando quociente eleitoral:', quociente);
-                    await salvarQuocienteEleitoral(quociente);
-                    console.log('Quociente salvo com sucesso');
-                    
-                    // Se há um cenário ativo, salvar também nele
-                    if (cenarioAtivo) {
-                      console.log('Atualizando cenário ativo:', cenarioAtivo.nome);
-                      const partidosConvertidos = converterPartidosParaCenario();
-                      await atualizarCenario(cenarioAtivo.id, partidosConvertidos, quociente);
-                      console.log('Cenário atualizado com sucesso');
-                    }
-                  } catch (error) {
-                    console.error('Erro ao salvar quociente eleitoral:', error);
-                    alert(`Erro ao salvar quociente eleitoral: ${error instanceof Error ? error.message : 'Erro desconhecido'}. Tente novamente.`);
-                  }
+                onBlur={() => {
+                  // Não salvar automaticamente - apenas atualizar o estado local
+                  console.log('Quociente eleitoral alterado para:', quociente);
                 }}
-                onKeyDown={async (e) => {
+                onKeyDown={(e) => {
                   if (e.key === 'Enter') {
-                    try {
-                      console.log('Salvando quociente eleitoral (Enter):', quociente);
-                      await salvarQuocienteEleitoral(quociente);
-                      console.log('Quociente salvo com sucesso (Enter)');
-                      
-                      // Se há um cenário ativo, salvar também nele
-                      if (cenarioAtivo) {
-                        console.log('Atualizando cenário ativo (Enter):', cenarioAtivo.nome);
-                        const partidosConvertidos = converterPartidosParaCenario();
-                        await atualizarCenario(cenarioAtivo.id, partidosConvertidos, quociente);
-                        console.log('Cenário atualizado com sucesso (Enter)');
-                      }
-                      e.currentTarget.blur();
-                    } catch (error) {
-                      console.error('Erro ao salvar quociente eleitoral (Enter):', error);
-                      alert(`Erro ao salvar quociente eleitoral: ${error instanceof Error ? error.message : 'Erro desconhecido'}. Tente novamente.`);
-                    }
+                    // Apenas sair do campo - não salvar automaticamente
+                    e.currentTarget.blur();
                   }
                 }}
                 className="text-sm font-bold text-gray-700 bg-transparent border-b border-gray-200 focus:border-blue-400 outline-none w-20 text-center px-1"
