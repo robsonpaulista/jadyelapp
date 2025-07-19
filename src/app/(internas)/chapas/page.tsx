@@ -1077,7 +1077,9 @@ export default function ChapasPage() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     // Apenas sair do campo - não salvar automaticamente
-                    e.currentTarget.blur();
+                    if (e.currentTarget) {
+                      e.currentTarget.blur();
+                    }
                   }
                 }}
                 className="text-sm font-bold text-gray-700 bg-transparent border-b border-gray-200 focus:border-blue-400 outline-none w-20 text-center px-1"

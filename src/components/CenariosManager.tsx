@@ -172,8 +172,14 @@ export default function CenariosManager({
       // Recarregar cenários para garantir consistência
       await carregarCenarios();
 
-      // Não carregar automaticamente o cenário - deixar o usuário clicar no card
-      console.log('Cenário ativado com sucesso:', cenarioId);
+      // Carregar automaticamente o cenário ativado
+      const cenarioCompleto = await carregarCenario(cenarioId);
+      if (cenarioCompleto) {
+        console.log('Cenário carregado automaticamente:', cenarioCompleto.nome);
+        onCenarioChange(cenarioCompleto);
+      } else {
+        console.error('Erro: não foi possível carregar o cenário ativado');
+      }
     } catch (error) {
       console.error('Erro ao ativar cenário:', error);
       alert('Erro ao ativar cenário. Tente novamente.');
