@@ -40,6 +40,7 @@ interface CenariosManagerProps {
   onCenarioChange: (cenario: CenarioCompleto) => void;
   onCenarioBaseCreated: () => void;
   onCenarioDeleted?: () => void;
+  onCenarioClick?: (cenarioId: string) => void;
 }
 
 export default function CenariosManager({ 
@@ -47,7 +48,8 @@ export default function CenariosManager({
   quocienteAtual, 
   onCenarioChange,
   onCenarioBaseCreated,
-  onCenarioDeleted
+  onCenarioDeleted,
+  onCenarioClick
 }: CenariosManagerProps) {
   const [cenarios, setCenarios] = useState<Cenario[]>([]);
   const [cenarioAtivo, setCenarioAtivo] = useState<Cenario | null>(null);
@@ -222,6 +224,13 @@ export default function CenariosManager({
     }
   };
 
+  // Carregar cenário ao clicar no card
+  const handleCenarioClick = async (cenarioId: string) => {
+    if (onCenarioClick) {
+      onCenarioClick(cenarioId);
+    }
+  };
+
   const formatarData = (data: string) => {
     return new Date(data).toLocaleDateString('pt-BR', {
       day: '2-digit',
@@ -332,11 +341,13 @@ export default function CenariosManager({
         {cenarios.map((cenario) => (
           <Card 
             key={cenario.id} 
-            className={`relative transition-all ${
+            className={`relative transition-all cursor-pointer group ${
               cenario.ativo 
                 ? 'ring-2 ring-blue-500 bg-blue-50' 
-                : 'hover:shadow-md'
+                : 'hover:shadow-md hover:ring-1 hover:ring-gray-300'
             }`}
+            onClick={() => handleCenarioClick(cenario.id)}
+            title="Clique para carregar este cenário"
           >
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
@@ -359,6 +370,10 @@ export default function CenariosManager({
                       {cenario.descricao}
                     </p>
                   )}
+                  {/* Indicador sutil de que o card é clicável */}
+                  <div className="text-xs text-gray-400 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    Clique para carregar
+                  </div>
                 </div>
               </div>
             </CardHeader>
@@ -378,6 +393,7 @@ export default function CenariosManager({
                       size="sm"
                       disabled={loading}
                       className="flex-1 bg-green-50 border-green-200 text-green-700"
+                      onClick={(e) => e.stopPropagation()}
                     >
                       <Check className="h-4 w-4 mr-1" />
                       Ativo
@@ -386,7 +402,10 @@ export default function CenariosManager({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleAtivarCenario(cenario.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAtivarCenario(cenario.id);
+                      }}
                       disabled={loading}
                       className="flex-1"
                     >
@@ -400,7 +419,10 @@ export default function CenariosManager({
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleDuplicarCenario(cenario)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDuplicarCenario(cenario);
+                        }}
                         disabled={loading}
                         className="flex-1"
                       >
@@ -415,6 +437,7 @@ export default function CenariosManager({
                             size="sm"
                             className="text-red-600 hover:text-red-700 hover:bg-red-50"
                             disabled={loading}
+                            onClick={(e) => e.stopPropagation()}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>

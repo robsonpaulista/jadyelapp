@@ -86,6 +86,7 @@ export default function ChapasPage() {
   const [votosLegendaTemp, setVotosLegendaTemp] = useState<{ [partido: string]: string }>({});
   const [salvandoMudancas, setSalvandoMudancas] = useState(false);
   const [notificacaoAutoSave, setNotificacaoAutoSave] = useState<string | null>(null);
+  const [carregandoCenario, setCarregandoCenario] = useState(false);
 
   const mostrarNotificacaoAutoSave = (mensagem: string) => {
     setNotificacaoAutoSave(mensagem);
@@ -772,6 +773,31 @@ export default function ChapasPage() {
     setQuociente(cenario.quocienteEleitoral);
   };
 
+  // Carregar cenário ao clicar no card
+  const handleCenarioClick = async (cenarioId: string) => {
+    if (carregandoCenario) return; // Evitar múltiplos cliques
+    
+    setCarregandoCenario(true);
+    try {
+      // Salvar mudanças do cenário atual antes de carregar o novo
+      if (cenarioAtivo && cenarioAtivo.id !== cenarioId) {
+        await salvarMudancasCenario();
+      }
+      
+      // Carregar o novo cenário
+      const novoCenario = await carregarCenario(cenarioId);
+      if (novoCenario) {
+        handleCenarioChange(novoCenario);
+        mostrarNotificacaoAutoSave(`Cenário "${novoCenario.nome}" carregado com sucesso`);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar cenário:', error);
+      alert('Erro ao carregar cenário. Tente novamente.');
+    } finally {
+      setCarregandoCenario(false);
+    }
+  };
+
   const handleCenarioBaseCreated = () => {
     // Recarregar cenário ativo após criar o base
     obterCenarioAtivo().then(cenario => {
@@ -962,6 +988,14 @@ export default function ChapasPage() {
               <Printer className="h-4 w-4 mr-1" />
               PDF
             </Button>
+            
+            {/* Indicador de carregamento de cenário */}
+            {carregandoCenario && (
+              <div className="flex items-center gap-2 text-sm text-blue-600">
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                <span>Carregando cenário...</span>
+              </div>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -1011,11 +1045,12 @@ export default function ChapasPage() {
         {modoCenarios && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
             <CenariosManager
-              partidosAtuais={partidos}
+              partidosAtuais={converterPartidosParaCenario()}
               quocienteAtual={quociente}
               onCenarioChange={handleCenarioChange}
               onCenarioBaseCreated={handleCenarioBaseCreated}
               onCenarioDeleted={handleCenarioDeleted}
+              onCenarioClick={handleCenarioClick}
             />
           </div>
         )}
