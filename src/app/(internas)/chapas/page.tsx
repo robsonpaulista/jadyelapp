@@ -6,7 +6,7 @@ import generatePDF from 'react-to-pdf';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { carregarQuocienteEleitoral, salvarQuocienteEleitoral, CenarioCompleto, PartidoCenario, obterCenarioAtivo, atualizarCenario, carregarCenario, criarCenarioBase, dadosIniciais } from "@/services/chapasService";
-import CenariosManager from "@/components/CenariosManager";
+import CenariosTabs from "@/components/CenariosTabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Card } from "@/components/ui/card";
@@ -1041,10 +1041,10 @@ export default function ChapasPage() {
 
         </div>
 
-        {/* Gerenciador de Cenários */}
+        {/* Gerenciador de Cenários com Abas */}
         {modoCenarios && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
-            <CenariosManager
+            <CenariosTabs
               partidosAtuais={converterPartidosParaCenario()}
               quocienteAtual={quociente}
               onCenarioChange={handleCenarioChange}

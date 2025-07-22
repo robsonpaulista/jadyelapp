@@ -6,6 +6,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* CSS para grid de abas responsivo */
+@layer utilities {
+  .grid-cols-auto-fit {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+}
+
 /* CSS personalizado para o Leaflet Popup */
 .leaflet-popup-content-wrapper {
   background: white !important;
