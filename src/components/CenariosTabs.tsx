@@ -13,7 +13,8 @@ import {
   AlertTriangle,
   Info,
   RefreshCw,
-  Settings
+  Settings,
+  RotateCcw
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,6 +44,9 @@ interface CenariosTabsProps {
   onCenarioBaseCreated: () => void;
   onCenarioDeleted?: () => void;
   onCenarioClick?: (cenarioId: string) => void;
+  onSalvarMudancas?: (cenarioId: string) => void;
+  onLimparCenario?: (cenarioId: string) => void;
+  salvandoMudancas?: boolean;
 }
 
 export default function CenariosTabs({ 
@@ -51,7 +55,10 @@ export default function CenariosTabs({
   onCenarioChange,
   onCenarioBaseCreated,
   onCenarioDeleted,
-  onCenarioClick
+  onCenarioClick,
+  onSalvarMudancas,
+  onLimparCenario,
+  salvandoMudancas = false
 }: CenariosTabsProps) {
   const [cenarios, setCenarios] = useState<Cenario[]>([]);
   const [cenarioAtivo, setCenarioAtivo] = useState<Cenario | null>(null);
@@ -420,6 +427,44 @@ export default function CenariosTabs({
                     title="Ativar"
                   >
                     <Check className="h-3 w-3" />
+                  </Button>
+                )}
+                
+                {/* Botão Salvar/Mudanças */}
+                {onSalvarMudancas && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSalvarMudancas(cenario.id);
+                    }}
+                    disabled={salvandoMudancas}
+                    className="h-5 w-5 p-0 text-xs hover:bg-green-100 text-green-600"
+                    title={cenario.tipo === 'base' ? 'Salvar' : 'Salvar Mudanças'}
+                  >
+                    {salvandoMudancas ? (
+                      <RefreshCw className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Save className="h-3 w-3" />
+                    )}
+                  </Button>
+                )}
+                
+                {/* Botão Limpar (apenas para cenário base) */}
+                {cenario.tipo === 'base' && onLimparCenario && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onLimparCenario(cenario.id);
+                    }}
+                    disabled={loading}
+                    className="h-5 w-5 p-0 text-xs hover:bg-orange-100 text-orange-600"
+                    title="Limpar Cenário"
+                  >
+                    <RotateCcw className="h-3 w-3" />
                   </Button>
                 )}
                 

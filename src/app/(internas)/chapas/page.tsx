@@ -998,37 +998,7 @@ export default function ChapasPage() {
             )}
 
 
-            {cenarioAtivo && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={salvarMudancasCenario}
-                disabled={salvandoMudancas}
-              >
-                {salvandoMudancas ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-1 animate-spin" />
-                    ...
-                  </>
-                ) : (
-                  cenarioAtivo.tipo === 'base' ? 'Salvar' : 'Mudanças'
-                )}
-              </Button>
-            )}
-            {cenarioAtivo && cenarioAtivo.tipo === 'base' && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={limparERecriarCenarioBase}
-              >
-                Limpar
-              </Button>
-            )}
-            {cenarioAtivo && (
-              <Badge variant={cenarioAtivo.tipo === 'base' ? 'default' : 'secondary'}>
-                {cenarioAtivo.nome}
-              </Badge>
-            )}
+
           </div>
 
 
@@ -1043,6 +1013,9 @@ export default function ChapasPage() {
             onCenarioBaseCreated={handleCenarioBaseCreated}
             onCenarioDeleted={handleCenarioDeleted}
             onCenarioClick={handleCenarioClick}
+            onSalvarMudancas={salvarMudancasCenario}
+            onLimparCenario={limparERecriarCenarioBase}
+            salvandoMudancas={salvandoMudancas}
           />
         </div>
 
