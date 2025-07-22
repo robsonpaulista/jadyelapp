@@ -980,15 +980,6 @@ export default function ChapasPage() {
         {/* Header com controles de cenários e quociente */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleImprimirPDF}
-            >
-              <Printer className="h-4 w-4 mr-1" />
-              PDF
-            </Button>
-            
             {/* Indicador de carregamento de cenário */}
             {carregandoCenario && (
               <div className="flex items-center gap-2 text-sm text-blue-600">
@@ -996,12 +987,7 @@ export default function ChapasPage() {
                 <span>Carregando cenário...</span>
               </div>
             )}
-
-
-
           </div>
-
-
         </div>
 
         {/* Gerenciador de Cenários com Abas */}
@@ -1015,6 +1001,7 @@ export default function ChapasPage() {
             onCenarioClick={handleCenarioClick}
             onSalvarMudancas={salvarMudancasCenario}
             onLimparCenario={limparERecriarCenarioBase}
+            onImprimirPDF={handleImprimirPDF}
             salvandoMudancas={salvandoMudancas}
           />
         </div>

@@ -14,7 +14,8 @@ import {
   Info,
   RefreshCw,
   Settings,
-  RotateCcw
+  RotateCcw,
+  Printer
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,6 +47,7 @@ interface CenariosTabsProps {
   onCenarioClick?: (cenarioId: string) => void;
   onSalvarMudancas?: (cenarioId: string) => void;
   onLimparCenario?: (cenarioId: string) => void;
+  onImprimirPDF?: (cenarioId: string) => void;
   salvandoMudancas?: boolean;
 }
 
@@ -58,6 +60,7 @@ export default function CenariosTabs({
   onCenarioClick,
   onSalvarMudancas,
   onLimparCenario,
+  onImprimirPDF,
   salvandoMudancas = false
 }: CenariosTabsProps) {
   const [cenarios, setCenarios] = useState<Cenario[]>([]);
@@ -465,6 +468,23 @@ export default function CenariosTabs({
                     title="Limpar Cenário"
                   >
                     <RotateCcw className="h-3 w-3" />
+                  </Button>
+                )}
+                
+                {/* Botão PDF */}
+                {onImprimirPDF && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onImprimirPDF(cenario.id);
+                    }}
+                    disabled={loading}
+                    className="h-5 w-5 p-0 text-xs hover:bg-purple-100 text-purple-600"
+                    title="Gerar PDF"
+                  >
+                    <Printer className="h-3 w-3" />
                   </Button>
                 )}
                 
