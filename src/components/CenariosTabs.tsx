@@ -384,68 +384,56 @@ export default function CenariosTabs({
 
       {/* Sistema de Abas Compacto */}
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="grid w-full grid-cols-auto-fit h-8">
+        <TabsList className="grid w-full grid-cols-auto-fit h-10">
           {cenarios.map((cenario) => (
             <TabsTrigger 
               key={cenario.id} 
               value={cenario.id}
-              className="flex items-center gap-1 px-2 py-1 text-xs"
+              className="flex items-center justify-between gap-1 px-2 py-1 text-xs relative group"
             >
-              <span className="truncate">{cenario.nome}</span>
-              {cenario.tipo === 'base' && (
-                <Badge variant="default" className="text-xs px-1 py-0 h-4">
-                  B
-                </Badge>
-              )}
-              {cenario.ativo && (
-                <Badge variant="secondary" className="text-xs px-1 py-0 h-4">
-                  A
-                </Badge>
-              )}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-
-        {cenarios.map((cenario) => (
-          <TabsContent key={cenario.id} value={cenario.id} className="mt-2">
-            <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-medium">{cenario.nome}</span>
-                {cenario.descricao && (
-                  <span className="text-xs text-gray-500 truncate max-w-40">
-                    {cenario.descricao}
-                  </span>
+              <div className="flex items-center gap-1 min-w-0 flex-1">
+                <span className="truncate">{cenario.nome}</span>
+                {cenario.tipo === 'base' && (
+                  <Badge variant="default" className="text-xs px-1 py-0 h-4">
+                    B
+                  </Badge>
                 )}
-                <span className="text-xs text-gray-500">
-                  QE: {cenario.quocienteEleitoral.toLocaleString('pt-BR')}
-                </span>
+                {cenario.ativo && (
+                  <Badge variant="secondary" className="text-xs px-1 py-0 h-4">
+                    A
+                  </Badge>
+                )}
               </div>
               
-              <div className="flex items-center gap-1">
-                {cenario.ativo ? (
-                  <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
-                    Ativo
-                  </Badge>
-                ) : (
+              {/* Botões de ação que aparecem no hover */}
+              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                {!cenario.ativo && (
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
-                    onClick={() => handleAtivarCenario(cenario.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAtivarCenario(cenario.id);
+                    }}
                     disabled={loading}
-                    className="h-6 px-2 text-xs"
+                    className="h-5 w-5 p-0 text-xs hover:bg-blue-100"
+                    title="Ativar"
                   >
-                    Ativar
+                    <Check className="h-3 w-3" />
                   </Button>
                 )}
                 
                 {cenario.tipo !== 'base' && (
                   <>
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
-                      onClick={() => handleDuplicarCenario(cenario)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDuplicarCenario(cenario);
+                      }}
                       disabled={loading}
-                      className="h-6 px-2 text-xs"
+                      className="h-5 w-5 p-0 text-xs hover:bg-blue-100"
                       title="Duplicar"
                     >
                       <Copy className="h-3 w-3" />
@@ -454,11 +442,12 @@ export default function CenariosTabs({
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
-                          className="h-6 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                          className="h-5 w-5 p-0 text-xs hover:bg-red-100 text-red-600"
                           disabled={loading}
                           title="Excluir"
+                          onClick={(e) => e.stopPropagation()}
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>
@@ -485,6 +474,17 @@ export default function CenariosTabs({
                   </>
                 )}
               </div>
+            </TabsTrigger>
+          ))}
+        </TabsList>
+
+        {cenarios.map((cenario) => (
+          <TabsContent key={cenario.id} value={cenario.id} className="mt-2">
+            <div className="text-center text-xs text-gray-500 py-2">
+              {cenario.descricao && (
+                <div className="mb-1">{cenario.descricao}</div>
+              )}
+              <div>QE: {cenario.quocienteEleitoral.toLocaleString('pt-BR')}</div>
             </div>
           </TabsContent>
         ))}
