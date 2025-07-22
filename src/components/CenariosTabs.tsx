@@ -480,12 +480,11 @@ export default function CenariosTabs({
 
         {cenarios.map((cenario) => (
           <TabsContent key={cenario.id} value={cenario.id} className="mt-2">
-            <div className="text-center text-xs text-gray-500 py-2">
-              {cenario.descricao && (
-                <div className="mb-1">{cenario.descricao}</div>
-              )}
-              <div>QE: {cenario.quocienteEleitoral.toLocaleString('pt-BR')}</div>
-            </div>
+            {cenario.descricao && (
+              <div className="text-center text-xs text-gray-500 py-2">
+                {cenario.descricao}
+              </div>
+            )}
           </TabsContent>
         ))}
       </Tabs>
