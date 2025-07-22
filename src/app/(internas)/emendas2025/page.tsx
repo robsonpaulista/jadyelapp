@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { LoadingOverlay } from "@/components/ui/loading";
+import { PageLoading } from "@/components/ui/loading";
 import { 
   ArrowUpDown, 
   ArrowUp, 
@@ -841,7 +841,7 @@ export default function Emendas2025() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       {isLoading ? (
-        <LoadingOverlay message="Carregando emendas..." />
+        <PageLoading message="Carregando emendas..." />
       ) : error ? (
         <div className="text-center text-red-500 mt-8">
           <p>{error}</p>
@@ -851,7 +851,7 @@ export default function Emendas2025() {
         </div>
       ) : (
         <>
-          {isRefreshing && <LoadingOverlay message="Atualizando emendas..." />}
+          {isRefreshing && <PageLoading message="Atualizando emendas..." />}
           <div className="flex flex-col gap-2">
             <div className="flex justify-between items-center py-2">
               <h1 className="text-lg font-semibold text-gray-900">Emendas 2025</h1>
