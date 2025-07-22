@@ -59,8 +59,6 @@ export default function CenariosTabs({
   const [dialogAberto, setDialogAberto] = useState(false);
   const [novoCenario, setNovoCenario] = useState({ nome: '', descricao: '', cenarioOrigem: '' });
   const [editandoCenario, setEditandoCenario] = useState<Cenario | null>(null);
-  const [modoComparacao, setModoComparacao] = useState(false);
-  const [cenarioComparacao, setCenarioComparacao] = useState<string>('');
   const [activeTab, setActiveTab] = useState<string>('');
 
   // Carregar cenários
@@ -304,33 +302,23 @@ export default function CenariosTabs({
 
   return (
     <div className="space-y-4">
-      {/* Header com controles */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h2 className="text-lg font-semibold text-gray-900">Cenários Eleitorais</h2>
+      {/* Header compacto */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-medium text-gray-700">Cenários</h3>
           {cenarioAtivo && (
-            <Badge variant={cenarioAtivo.tipo === 'base' ? 'default' : 'secondary'}>
+            <Badge variant={cenarioAtivo.tipo === 'base' ? 'default' : 'secondary'} className="text-xs">
               {cenarioAtivo.tipo === 'base' ? 'BASE' : 'SIMULAÇÃO'}
             </Badge>
           )}
         </div>
         
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setModoComparacao(!modoComparacao)}
-            className={modoComparacao ? 'bg-blue-50 border-blue-200' : ''}
-          >
-            <Eye className="h-4 w-4 mr-1" />
-            Comparar
-          </Button>
-          
+        <div className="flex items-center gap-1">
           <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
             <DialogTrigger asChild>
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-1" />
-                Novo Cenário
+              <Button size="sm" variant="outline" className="h-7 px-2">
+                <Plus className="h-3 w-3 mr-1" />
+                Novo
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
@@ -394,24 +382,24 @@ export default function CenariosTabs({
         </div>
       </div>
 
-      {/* Sistema de Abas */}
+      {/* Sistema de Abas Compacto */}
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="grid w-full grid-cols-auto-fit">
+        <TabsList className="grid w-full grid-cols-auto-fit h-8">
           {cenarios.map((cenario) => (
             <TabsTrigger 
               key={cenario.id} 
               value={cenario.id}
-              className="flex items-center gap-2 px-4 py-2 text-sm"
+              className="flex items-center gap-1 px-2 py-1 text-xs"
             >
               <span className="truncate">{cenario.nome}</span>
               {cenario.tipo === 'base' && (
-                <Badge variant="default" className="text-xs">
-                  BASE
+                <Badge variant="default" className="text-xs px-1 py-0 h-4">
+                  B
                 </Badge>
               )}
               {cenario.ativo && (
-                <Badge variant="secondary" className="text-xs">
-                  ATIVO
+                <Badge variant="secondary" className="text-xs px-1 py-0 h-4">
+                  A
                 </Badge>
               )}
             </TabsTrigger>
@@ -419,152 +407,90 @@ export default function CenariosTabs({
         </TabsList>
 
         {cenarios.map((cenario) => (
-          <TabsContent key={cenario.id} value={cenario.id} className="mt-4">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg">{cenario.nome}</CardTitle>
-                    {cenario.descricao && (
-                      <p className="text-sm text-gray-600 mt-1">
-                        {cenario.descricao}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {cenario.ativo ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={loading}
-                        className="bg-green-50 border-green-200 text-green-700"
-                      >
-                        <Check className="h-4 w-4 mr-1" />
-                        Ativo
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleAtivarCenario(cenario.id)}
-                        disabled={loading}
-                      >
-                        <Check className="h-4 w-4 mr-1" />
-                        Ativar
-                      </Button>
-                    )}
+          <TabsContent key={cenario.id} value={cenario.id} className="mt-2">
+            <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium">{cenario.nome}</span>
+                {cenario.descricao && (
+                  <span className="text-xs text-gray-500 truncate max-w-40">
+                    {cenario.descricao}
+                  </span>
+                )}
+                <span className="text-xs text-gray-500">
+                  QE: {cenario.quocienteEleitoral.toLocaleString('pt-BR')}
+                </span>
+              </div>
+              
+              <div className="flex items-center gap-1">
+                {cenario.ativo ? (
+                  <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
+                    Ativo
+                  </Badge>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleAtivarCenario(cenario.id)}
+                    disabled={loading}
+                    className="h-6 px-2 text-xs"
+                  >
+                    Ativar
+                  </Button>
+                )}
+                
+                {cenario.tipo !== 'base' && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDuplicarCenario(cenario)}
+                      disabled={loading}
+                      className="h-6 px-2 text-xs"
+                      title="Duplicar"
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
                     
-                    {cenario.tipo !== 'base' && (
-                      <>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleDuplicarCenario(cenario)}
+                          className="h-6 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
                           disabled={loading}
+                          title="Excluir"
                         >
-                          <Copy className="h-4 w-4 mr-1" />
-                          Duplicar
+                          <Trash2 className="h-3 w-3" />
                         </Button>
-                        
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                              disabled={loading}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Excluir Cenário</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Tem certeza que deseja excluir o cenário "{cenario.nome}"?
-                                Esta ação não pode ser desfeita.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleExcluirCenario(cenario.id)}
-                                className="bg-red-500 hover:bg-red-600 text-white"
-                              >
-                                Excluir
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </CardHeader>
-              
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                  <div>
-                    <span className="font-medium text-gray-700">Criado:</span>
-                    <div className="text-gray-600">{formatarData(cenario.criadoEm)}</div>
-                  </div>
-                  <div>
-                    <span className="font-medium text-gray-700">Atualizado:</span>
-                    <div className="text-gray-600">{formatarData(cenario.atualizadoEm)}</div>
-                  </div>
-                  <div>
-                    <span className="font-medium text-gray-700">Quociente:</span>
-                    <div className="text-gray-600">{cenario.quocienteEleitoral.toLocaleString('pt-BR')}</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Excluir Cenário</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Tem certeza que deseja excluir o cenário "{cenario.nome}"?
+                            Esta ação não pode ser desfeita.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleExcluirCenario(cenario.id)}
+                            className="bg-red-500 hover:bg-red-600 text-white"
+                          >
+                            Excluir
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </>
+                )}
+              </div>
+            </div>
           </TabsContent>
         ))}
       </Tabs>
 
-      {/* Modo de comparação */}
-      {modoComparacao && (
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle className="text-base">Comparar Cenários</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-4">
-              <div className="flex-1">
-                <label className="text-sm font-medium mb-2 block">Cenário para comparar</label>
-                <Select
-                  value={cenarioComparacao}
-                  onValueChange={setCenarioComparacao}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um cenário" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {cenarios
-                      .filter(c => c.id !== cenarioAtivo?.id)
-                      .map((cenario) => (
-                        <SelectItem key={cenario.id} value={cenario.id}>
-                          {cenario.nome}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setModoComparacao(false);
-                  setCenarioComparacao('');
-                }}
-              >
-                <X className="h-4 w-4 mr-1" />
-                Fechar
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+
     </div>
   );
 } 
