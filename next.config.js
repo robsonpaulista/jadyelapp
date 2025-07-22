@@ -37,11 +37,7 @@ const nextConfig = {
     domains: ['images.unsplash.com', 'placehold.co', 'firebasestorage.googleapis.com'],
   },
 
-  compiler: {
-    removeConsole: process.env.NODE_ENV === 'production' ? {
-      exclude: ['error', 'warn'],
-    } : false,
-  },
+
   async headers() {
     return [
       {
