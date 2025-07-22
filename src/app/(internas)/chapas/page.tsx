@@ -71,7 +71,7 @@ export default function ChapasPage() {
   const [quociente, setQuociente] = useState(initialQuociente);
   const [quocienteCarregado, setQuocienteCarregado] = useState(false);
   const [cenarioAtivo, setCenarioAtivo] = useState<CenarioCompleto | null>(null);
-  const [modoCenarios, setModoCenarios] = useState(false);
+
   const [editVoto, setEditVoto] = useState<{ partidoIdx: number; candidatoNome: string } | null>(null);
   const [hoveredRow, setHoveredRow] = useState<{ partidoIdx: number; candidatoNome: string } | null>(null);
   const [editingName, setEditingName] = useState<{ partidoIdx: number; candidatoNome: string; tempValue: string } | null>(null);
@@ -996,14 +996,7 @@ export default function ChapasPage() {
                 <span>Carregando cenário...</span>
               </div>
             )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setModoCenarios(!modoCenarios)}
-              className={modoCenarios ? 'bg-blue-50 border-blue-200' : ''}
-            >
-              {modoCenarios ? 'Fechar' : 'Cenários'}
-            </Button>
+
 
             {cenarioAtivo && (
               <Button
@@ -1042,18 +1035,16 @@ export default function ChapasPage() {
         </div>
 
         {/* Gerenciador de Cenários com Abas */}
-        {modoCenarios && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
-            <CenariosTabs
-              partidosAtuais={converterPartidosParaCenario()}
-              quocienteAtual={quociente}
-              onCenarioChange={handleCenarioChange}
-              onCenarioBaseCreated={handleCenarioBaseCreated}
-              onCenarioDeleted={handleCenarioDeleted}
-              onCenarioClick={handleCenarioClick}
-            />
-          </div>
-        )}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+          <CenariosTabs
+            partidosAtuais={converterPartidosParaCenario()}
+            quocienteAtual={quociente}
+            onCenarioChange={handleCenarioChange}
+            onCenarioBaseCreated={handleCenarioBaseCreated}
+            onCenarioDeleted={handleCenarioDeleted}
+            onCenarioClick={handleCenarioClick}
+          />
+        </div>
 
         {/* Resumo do Quociente Mínimo */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-3">
