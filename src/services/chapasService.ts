@@ -180,8 +180,8 @@ export async function carregarQuocienteEleitoral(): Promise<number> {
       return data.valor || 190000; // valor padrão se não existir
     }
     
-    // Se não existir, criar com valor padrão
-    await salvarQuocienteEleitoral(190000);
+    // Se não existir, retornar valor padrão sem criar
+    console.warn('Documento de quociente eleitoral não encontrado, retornando valor padrão');
     return 190000;
   } catch (error) {
     console.error('Erro ao carregar quociente eleitoral:', error);
@@ -234,7 +234,16 @@ export async function listarCenarios(): Promise<Cenario[]> {
   try {
     const q = query(collection(db, 'cenarios'), orderBy('criadoEm', 'desc'));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Cenario));
+    const cenarios = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Cenario));
+    
+    // Garantir que o cenário base sempre apareça primeiro
+    const cenariosOrdenados = cenarios.sort((a, b) => {
+      if (a.id === 'base') return -1; // Cenário base sempre primeiro
+      if (b.id === 'base') return 1;  // Cenário base sempre primeiro
+      return 0; // Manter ordem original para os outros
+    });
+    
+    return cenariosOrdenados;
   } catch (error) {
     console.error('Erro ao listar cenários:', error);
     return [];
@@ -279,10 +288,12 @@ export async function carregarCenario(cenarioId: string): Promise<CenarioComplet
 
     const partidos = Object.values(partidosMap);
 
-    return {
+    const resultado = {
       ...cenario,
       partidos
     };
+    
+    return resultado;
   } catch (error) {
     console.error('Erro ao carregar cenário:', error);
     return null;
@@ -349,11 +360,28 @@ export async function atualizarCenario(
   quociente: number
 ): Promise<void> {
   try {
-    // Atualizar dados do cenário
-    await setDoc(doc(db, 'cenarios', cenarioId), {
+    // Atualizar dados do cenário e ativar automaticamente
+    const dadosParaSalvar = {
       atualizadoEm: new Date().toISOString(),
-      quocienteEleitoral: quociente
-    }, { merge: true });
+      quocienteEleitoral: quociente,
+      ativo: true // Sempre ativar o cenário quando for salvo
+    };
+    
+    await setDoc(doc(db, 'cenarios', cenarioId), dadosParaSalvar, { merge: true });
+    
+    // Desativar outros cenários para garantir que apenas este esteja ativo
+    const qAtivos = query(collection(db, 'cenarios'), where('ativo', '==', true));
+    const snapshotAtivos = await getDocs(qAtivos);
+    const batchAtivos = writeBatch(db);
+    snapshotAtivos.docs.forEach(doc => {
+      if (doc.id !== cenarioId) {
+        batchAtivos.update(doc.ref, {
+          ativo: false,
+          atualizadoEm: new Date().toISOString()
+        });
+      }
+    });
+    await batchAtivos.commit();
 
     // Limpar partidos existentes
     const q = query(collection(db, 'cenarios_partidos'), where('cenarioId', '==', cenarioId));

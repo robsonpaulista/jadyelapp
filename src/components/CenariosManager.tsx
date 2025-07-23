@@ -84,8 +84,6 @@ export default function CenariosManager({
         const ativo = cenariosList.find(c => c.ativo);
         setCenarioAtivo(ativo || null);
       }
-      
-      console.log('Cenários carregados:', cenariosList.map(c => ({ nome: c.nome, ativo: c.ativo })));
     } catch (error) {
       console.error('Erro ao carregar cenários:', error);
     } finally {
@@ -97,25 +95,8 @@ export default function CenariosManager({
     carregarCenarios();
   }, []);
 
-  // Criar cenário base se não existir
-  const criarBaseSeNecessario = async () => {
-    if (cenarios.length === 0) {
-      setLoading(true);
-      try {
-        await criarCenarioBase(partidosAtuais, quocienteAtual);
-        await carregarCenarios();
-        onCenarioBaseCreated();
-      } catch (error) {
-        console.error('Erro ao criar cenário base:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-  };
-
-  useEffect(() => {
-    criarBaseSeNecessario();
-  }, [cenarios.length]);
+  // Removida a criação automática do cenário base
+  // O sistema agora apenas carrega dados do Firestore
 
   // Criar novo cenário
   const handleCriarCenario = async () => {
@@ -155,18 +136,15 @@ export default function CenariosManager({
   const handleAtivarCenario = async (cenarioId: string) => {
     setLoading(true);
     try {
-      console.log('Ativando cenário:', cenarioId);
       
       // Desativar todos os cenários primeiro
       for (const cenario of cenarios) {
         if (cenario.ativo) {
-          console.log('Desativando cenário:', cenario.nome);
           await ativarCenario(cenario.id, false);
         }
       }
 
       // Ativar o cenário selecionado
-      console.log('Ativando cenário selecionado:', cenarioId);
       await ativarCenario(cenarioId, true);
 
       // Recarregar cenários para garantir consistência
@@ -175,7 +153,6 @@ export default function CenariosManager({
       // Carregar automaticamente o cenário ativado
       const cenarioCompleto = await carregarCenario(cenarioId);
       if (cenarioCompleto) {
-        console.log('Cenário carregado automaticamente:', cenarioCompleto.nome);
         onCenarioChange(cenarioCompleto);
       } else {
         console.error('Erro: não foi possível carregar o cenário ativado');
@@ -201,7 +178,6 @@ export default function CenariosManager({
       
       // Se o cenário excluído era o ativo, ativar o cenário base
       if (eraCenarioAtivo) {
-        console.log('Cenário ativo foi excluído, ativando cenário base...');
         await ativarCenario('base', true);
         
         // Carregar o cenário base como ativo
@@ -262,19 +238,70 @@ export default function CenariosManager({
     });
   };
 
+  if (loading && cenarios.length === 0) {
+    return (
+      <div className="space-y-4">
+        {/* Header com loading */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-semibold text-gray-900">Cenários Eleitorais</h2>
+            <div className="flex items-center gap-1">
+              <RefreshCw className="h-4 w-4 animate-spin text-blue-600" />
+              <span className="text-sm text-gray-500">Carregando...</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Skeleton loader para os cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="animate-pulse">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="h-5 bg-gray-200 rounded mb-2"></div>
+                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="space-y-2">
+                  <div className="space-y-1">
+                    <div className="h-3 bg-gray-200 rounded"></div>
+                    <div className="h-3 bg-gray-200 rounded"></div>
+                    <div className="h-3 bg-gray-200 rounded"></div>
+                  </div>
+                  <div className="h-8 bg-gray-200 rounded"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {/* Header com controles */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <h2 className="text-lg font-semibold text-gray-900">Cenários Eleitorais</h2>
-          <Badge variant={cenarioAtivo?.tipo === 'base' ? 'default' : 'secondary'}>
-            {cenarioAtivo?.tipo === 'base' ? 'BASE' : 'SIMULAÇÃO'}
-          </Badge>
-          {cenarioAtivo && (
-            <span className="text-sm text-gray-600">
-              Ativo: {cenarioAtivo.nome}
-            </span>
+          {loading && (
+            <div className="flex items-center gap-1">
+              <RefreshCw className="h-4 w-4 animate-spin text-blue-600" />
+              <span className="text-sm text-gray-500">Carregando...</span>
+            </div>
+          )}
+          {cenarioAtivo && !loading && (
+            <>
+              <Badge variant={cenarioAtivo.tipo === 'base' ? 'default' : 'secondary'}>
+                {cenarioAtivo.tipo === 'base' ? 'BASE' : 'SIMULAÇÃO'}
+              </Badge>
+              <span className="text-sm text-gray-600">
+                Ativo: {cenarioAtivo.nome}
+              </span>
+            </>
           )}
         </div>
         
@@ -375,12 +402,15 @@ export default function CenariosManager({
                 <div className="flex-1">
                   <CardTitle className="text-base flex items-center gap-2">
                     {cenario.nome}
-                    {cenario.tipo === 'base' && (
+                    {loading && (
+                      <RefreshCw className="h-3 w-3 animate-spin text-blue-600" />
+                    )}
+                    {cenario.tipo === 'base' && !loading && (
                       <Badge variant="default" className="text-xs">
                         BASE
                       </Badge>
                     )}
-                    {cenario.ativo && (
+                    {cenario.ativo && !loading && (
                       <Badge variant="secondary" className="text-xs">
                         ATIVO
                       </Badge>

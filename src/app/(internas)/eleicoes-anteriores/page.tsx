@@ -687,12 +687,12 @@ export default function EleicoesAnterioresPage() {
                   <button
                     onClick={buscarDados}
                     disabled={loading || !cidade}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-white hover:bg-orange-50 text-orange-500 cursor-pointer border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                    className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-white hover:bg-blue-50 text-blue-600 cursor-pointer border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                   >
                     {loading ? (
-                      <RefreshCw className="h-4 w-4 animate-spin text-orange-500" />
+                      <RefreshCw className="h-4 w-4 animate-spin text-blue-600" />
                     ) : (
-                      <RefreshCw className="h-4 w-4 text-orange-500" />
+                      <RefreshCw className="h-4 w-4 text-blue-600" />
                     )}
                     Buscar
                   </button>
@@ -722,7 +722,7 @@ export default function EleicoesAnterioresPage() {
                       <button
                         onClick={buscarDemandasLideranca}
                         disabled={!liderancaSelecionada || loadingDemandas}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-orange-500 hover:bg-orange-600 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto justify-center"
+                        className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-blue-600 hover:bg-blue-700 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto justify-center"
                       >
                         {loadingDemandas ? (
                           <RefreshCw className="h-4 w-4 animate-spin" />
@@ -737,7 +737,7 @@ export default function EleicoesAnterioresPage() {
                           buscarNoticiasCidade();
                         }}
                         disabled={!cidade}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-orange-500 hover:bg-orange-600 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto justify-center"
+                        className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-blue-600 hover:bg-blue-700 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto justify-center"
                       >
                         {loadingNoticias ? (
                           <RefreshCw className="h-4 w-4 animate-spin" />
@@ -848,7 +848,7 @@ export default function EleicoesAnterioresPage() {
                                   <td className="py-0.5 px-2">
                                     <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                                       item.liderancasAtuais > 0 
-                                        ? 'bg-green-100 text-green-800' 
+                                        ? 'bg-blue-100 text-blue-800' 
                                         : 'bg-gray-100 text-gray-800'
                                 }`}
                                 onClick={() => handleExpectativaClick({ municipio: item.municipio })}
@@ -867,7 +867,7 @@ export default function EleicoesAnterioresPage() {
                                   <td className="py-0.5 px-2 text-right">
                                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                                       crescimento > 0 
-                                        ? 'bg-green-100 text-green-800'
+                                        ? 'bg-blue-100 text-blue-800'
                                         : crescimento < 0
                                         ? 'bg-red-100 text-red-800'
                                         : 'bg-gray-100 text-gray-800'
@@ -881,9 +881,9 @@ export default function EleicoesAnterioresPage() {
                                   <td className="py-0.5 px-2 text-right">
                                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                                       percentualAlcance >= 50
-                                        ? 'bg-green-100 text-green-800'
+                                        ? 'bg-blue-100 text-blue-800'
                                         : percentualAlcance >= 30
-                                        ? 'bg-yellow-100 text-yellow-800'
+                                        ? 'bg-blue-50 text-blue-700'
                                         : 'bg-red-100 text-red-800'
                                     }`}>
                                       {percentualAlcance.toFixed(1)}%
@@ -1019,7 +1019,7 @@ export default function EleicoesAnterioresPage() {
                                     ) : (
                                       tipo === 'deputado_federal' && 
                                       item.nomeUrnaCandidato?.toUpperCase() === 'JADYEL DA JUPI' ? (
-                                      <span className="inline-flex items-center px-1 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                      <span className="inline-flex items-center px-1 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                           {item.nomeUrnaCandidato}
                                         </span>
                                       ) : (
@@ -1042,9 +1042,9 @@ export default function EleicoesAnterioresPage() {
                                   <td className="py-0.5 px-1 text-center">
                                     <span className={`inline-flex items-center px-1 py-0.5 rounded-full text-xs font-medium ${
                                         item.situacao?.toLowerCase().includes('eleito') 
-                                          ? 'bg-green-100 text-green-800'
+                                          ? 'bg-blue-100 text-blue-800'
                                           : item.situacao?.toLowerCase().includes('suplente')
-                                          ? 'bg-yellow-100 text-yellow-800'
+                                          ? 'bg-blue-50 text-blue-700'
                                           : 'bg-gray-100 text-gray-800'
                                       }`}>
                                         {item.situacao}

@@ -125,13 +125,13 @@ export default function ChapasPage() {
         [partido.nome]: votos
       }));
 
-      // Salvar no cenário base (fonte única de verdade)
+      // Salvar apenas os partidos, sem alterar o QE
       if (!cenarioAtivo) {
         throw new Error('Cenário base não encontrado');
       }
       
       const partidosConvertidos = converterPartidosParaCenario();
-      await atualizarCenario(cenarioAtivo.id, partidosConvertidos, quociente);
+      await atualizarCenario(cenarioAtivo.id, partidosConvertidos, cenarioAtivo.quocienteEleitoral);
 
       mostrarNotificacaoAutoSave(`Votos de legenda do ${partido.nome} salvos`);
     } catch (error) {
@@ -144,20 +144,16 @@ export default function ChapasPage() {
 
   // Função para carregar dados do cenário base (fonte única de verdade)
   const carregarDadosFirestore = async () => {
-    console.log('Carregando dados do cenário base...');
-    
     try {
-      // SEMPRE carregar do cenário base
+      // Tentar carregar do cenário base
       const cenarioBase = await carregarCenario('base');
-      
       if (cenarioBase) {
-        console.log('Cenário base encontrado:', cenarioBase.nome);
         setCenarioAtivo(cenarioBase);
         const partidosOrdenados = ordenarPartidos(cenarioBase.partidos);
         setPartidos(partidosOrdenados);
-        setQuociente(cenarioBase.quocienteEleitoral);
-        
-        // Carregar votos de legenda do cenário
+        if (!quocienteCarregado) {
+          setQuociente(cenarioBase.quocienteEleitoral);
+        }
         const votosLegendaTemp: { [partido: string]: number } = {};
         cenarioBase.partidos.forEach(partido => {
           if (partido.votosLegenda) {
@@ -165,40 +161,9 @@ export default function ChapasPage() {
           }
         });
         setVotosLegenda(votosLegendaTemp);
-        
-        console.log('Dados carregados do cenário base com sucesso');
       } else {
-        console.log('Cenário base não encontrado, criando...');
-        // Se não existe cenário base, criar com dados iniciais
-        const partidosParaCenario = criarPartidosIniciais().map(partido => {
-          // Usar dados iniciais do arquivo de serviço
-          const candidatosIniciais = dadosIniciais
-            .filter(chapa => chapa.partido === partido.nome && chapa.nome !== "VOTOS LEGENDA")
-            .map(chapa => ({
-              nome: chapa.nome,
-              votos: chapa.votos,
-              genero: 'homem' // valor padrão
-            }));
-          
-          return {
-            ...partido,
-            candidatos: candidatosIniciais
-          };
-        });
-        
-        // Criar cenário base
-        await criarCenarioBase(partidosParaCenario, quociente);
-        
-        // Carregar o cenário recém-criado
-        const cenarioBaseCriado = await carregarCenario('base');
-        if (cenarioBaseCriado) {
-          setCenarioAtivo(cenarioBaseCriado);
-          const partidosOrdenados = ordenarPartidos(cenarioBaseCriado.partidos);
-          setPartidos(partidosOrdenados);
-          console.log('Cenário base criado e carregado com sucesso');
-        }
+        console.warn('Cenário base não encontrado no Firestore. Nenhuma ação será tomada.');
       }
-      
       mostrarNotificacaoAutoSave('Dados carregados com sucesso');
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
@@ -216,27 +181,34 @@ export default function ChapasPage() {
   useEffect(() => {
     async function carregarDadosIniciais() {
       try {
-        console.log('Carregando dados iniciais...');
-        
-        // SEMPRE carregar dados do Firestore primeiro
-        console.log('Carregando dados do Firestore...');
-        await carregarDadosFirestore();
-        
-        // Depois tentar carregar cenário ativo (se existir)
+        // Primeiro tentar carregar cenário ativo (se existir)
         try {
           const cenarioAtivo = await obterCenarioAtivo();
           if (cenarioAtivo) {
-            console.log('Cenário ativo encontrado:', cenarioAtivo.nome);
             setCenarioAtivo(cenarioAtivo);
+            const partidosOrdenados = ordenarPartidos(cenarioAtivo.partidos);
+            setPartidos(partidosOrdenados);
             // Carregar o QE do cenário ativo
             setQuociente(cenarioAtivo.quocienteEleitoral);
             setQuocienteCarregado(true);
+            
+            // Carregar votos de legenda do cenário ativo
+            const votosLegendaTemp: { [partido: string]: number } = {};
+            cenarioAtivo.partidos.forEach(partido => {
+              if (partido.votosLegenda) {
+                votosLegendaTemp[partido.nome] = partido.votosLegenda;
+              }
+            });
+            setVotosLegenda(votosLegendaTemp);
+            
+            return; // Sair da função se encontrou cenário ativo
           }
         } catch (cenarioError) {
-          console.log('Nenhum cenário ativo encontrado ou erro ao carregar cenário');
+          // Nenhum cenário ativo encontrado, carregando cenário base
         }
         
-        console.log('Carregamento inicial concluído');
+        // Se não há cenário ativo, carregar o cenário base
+        await carregarDadosFirestore();
       } catch (error) {
         console.error('Erro ao carregar dados iniciais:', error);
         alert('Erro ao carregar dados iniciais. Recarregue a página.');
@@ -328,15 +300,15 @@ export default function ChapasPage() {
           };
         }));
 
-        // Salvar no cenário base (fonte única de verdade)
+        // Salvar apenas os partidos, sem alterar o QE
         if (!cenarioAtivo) {
           throw new Error('Cenário base não encontrado');
         }
         
         const partidosConvertidos = converterPartidosParaCenario();
-        await atualizarCenario(cenarioAtivo.id, partidosConvertidos, quociente);
+        await atualizarCenario(cenarioAtivo.id, partidosConvertidos, cenarioAtivo.quocienteEleitoral);
 
-        console.log(`Nome alterado de "${oldNome}" para "${newNome}" no partido ${partidoIdx}`);
+
       } catch (error) {
         console.error('Erro ao salvar nome:', error);
         // Reverter mudança em caso de erro
@@ -375,13 +347,13 @@ export default function ChapasPage() {
         };
       }));
       
-      // Salvar no cenário base (fonte única de verdade)
+      // Salvar apenas os partidos, sem alterar o QE
       if (!cenarioAtivo) {
         throw new Error('Cenário base não encontrado');
       }
       
       const partidosConvertidos = converterPartidosParaCenario();
-      await atualizarCenario(cenarioAtivo.id, partidosConvertidos, quociente);
+      await atualizarCenario(cenarioAtivo.id, partidosConvertidos, cenarioAtivo.quocienteEleitoral);
     } catch (error) {
       console.error('Erro ao salvar votos:', error);
     }
@@ -639,7 +611,7 @@ export default function ChapasPage() {
       return;
     }
     
-    console.log(`Iniciando exclusão: partido=${partido.nome}, candidato=${candidatoNome}`);
+    
     
     try {
       // Excluir apenas do cenário base (fonte única de verdade)
@@ -656,13 +628,10 @@ export default function ChapasPage() {
         };
       }));
 
-      // Salvar no cenário base
+      // Salvar apenas os partidos, sem alterar o QE
       const partidosConvertidos = converterPartidosParaCenario();
-      await atualizarCenario(cenarioAtivo.id, partidosConvertidos, quociente);
-      console.log('Candidato excluído do cenário base com sucesso');
+      await atualizarCenario(cenarioAtivo.id, partidosConvertidos, cenarioAtivo.quocienteEleitoral);
       mostrarNotificacaoAutoSave(`Candidato excluído com sucesso`);
-      
-      console.log('Exclusão concluída com sucesso');
     } catch (error) {
       console.error('Erro ao excluir candidato:', error);
       
@@ -670,7 +639,6 @@ export default function ChapasPage() {
       console.error('Erro ao excluir candidato:', error);
       
       // Sempre recarregar dados do Firestore em caso de erro
-      console.log('Erro na exclusão, recarregando dados do Firestore...');
       await carregarDadosFirestore();
       alert('Candidato não encontrado. Dados foram recarregados automaticamente.');
     }
@@ -744,9 +712,9 @@ export default function ChapasPage() {
         };
       }));
 
-      // Salvar no cenário base
+      // Salvar apenas os partidos, sem alterar o QE
       const partidosConvertidos = converterPartidosParaCenario();
-      await atualizarCenario(cenarioAtivo.id, partidosConvertidos, quociente);
+      await atualizarCenario(cenarioAtivo.id, partidosConvertidos, cenarioAtivo.quocienteEleitoral);
 
       // Limpar formulário e fechar dialog
       setNovoCandidato({ nome: '', votos: 0, genero: 'homem' });
@@ -763,13 +731,11 @@ export default function ChapasPage() {
 
   // Funções para gerenciar cenários
   const handleCenarioChange = (cenario: CenarioCompleto) => {
-    console.log('Mudando para cenário:', cenario.nome, cenario.tipo);
-    console.log('QE do cenário carregado:', cenario.quocienteEleitoral);
     setCenarioAtivo(cenario);
     const partidosOrdenados = ordenarPartidos(cenario.partidos);
     setPartidos(partidosOrdenados);
     setQuociente(cenario.quocienteEleitoral);
-    console.log('QE definido no estado:', cenario.quocienteEleitoral);
+
   };
 
   // Carregar cenário ao clicar no card
@@ -806,12 +772,12 @@ export default function ChapasPage() {
 
   const handleCenarioDeleted = () => {
     // Recarregar cenário ativo após exclusão
-    console.log('Cenário excluído, recarregando cenário ativo...');
+    
     
     // Forçar recarregamento do cenário base do Firestore
     carregarCenario('base').then((cenario: CenarioCompleto | null) => {
       if (cenario) {
-        console.log('Cenário base recarregado:', cenario.nome);
+
         setCenarioAtivo(cenario);
         const partidosOrdenados = ordenarPartidos(cenario.partidos);
         setPartidos(partidosOrdenados);
@@ -822,37 +788,8 @@ export default function ChapasPage() {
     });
   };
 
-  // Função para limpar e recriar o cenário base (resolver problemas de dados corrompidos)
-  const limparERecriarCenarioBase = async () => {
-    if (!confirm('Isso irá limpar completamente o cenário base e recriar com dados limpos. Tem certeza?')) {
-      return;
-    }
-
-    try {
-      console.log('Limpando e recriando cenário base...');
-      
-      // Limpar estado local
-      const partidosLimpos = criarPartidosIniciais();
-      setPartidos(partidosLimpos);
-      setVotosLegenda({});
-      
-      // Recriar cenário base
-      await criarCenarioBase(partidosLimpos, quociente);
-      
-      // Recarregar o cenário recém-criado
-      const cenarioBaseRecriado = await carregarCenario('base');
-      if (cenarioBaseRecriado) {
-        setCenarioAtivo(cenarioBaseRecriado);
-        const partidosOrdenados = ordenarPartidos(cenarioBaseRecriado.partidos);
-        setPartidos(partidosOrdenados);
-        console.log('Cenário base recriado com sucesso');
-        mostrarNotificacaoAutoSave('Cenário base limpo e recriado com sucesso');
-      }
-    } catch (error) {
-      console.error('Erro ao limpar cenário base:', error);
-      alert('Erro ao limpar cenário base. Tente novamente.');
-    }
-  };
+  // Função removida - não há criação automática de cenários
+  // O sistema apenas carrega dados do Firestore
 
   // Função para ordenar partidos na ordem fixa
   const ordenarPartidos = <T extends { nome: string }>(partidosParaOrdenar: T[]): T[] => {
@@ -883,22 +820,32 @@ export default function ChapasPage() {
     if (cenarioAtivo) {
       setSalvandoMudancas(true);
       try {
-        console.log('Salvando mudanças no cenário:', cenarioAtivo.nome);
-        console.log('QE atual no estado:', quociente);
-        console.log('QE do cenário ativo:', cenarioAtivo.quocienteEleitoral);
-        
         const partidosConvertidos = converterPartidosParaCenario();
         await atualizarCenario(cenarioAtivo.id, partidosConvertidos, quociente);
-        console.log('Mudanças salvas no cenário:', cenarioAtivo.nome, 'com QE:', quociente);
+        
+        // O cenário será automaticamente ativado pelo serviço
+        
+        // Verificar se o QE foi realmente salvo
+        const cenarioVerificado = await carregarCenario(cenarioAtivo.id);
+        if (cenarioVerificado) {
+          if (cenarioVerificado.quocienteEleitoral !== quociente) {
+            console.error('ERRO: QE não foi salvo corretamente!');
+            console.error('QE esperado:', quociente);
+            console.error('QE salvo:', cenarioVerificado.quocienteEleitoral);
+          }
+        }
         
         // Feedback visual temporário
         setTimeout(() => setSalvandoMudancas(false), 2000);
-        mostrarNotificacaoAutoSave(`Mudanças salvas no cenário "${cenarioAtivo.nome}"`);
+        mostrarNotificacaoAutoSave(`Mudanças salvas no cenário "${cenarioAtivo.nome}" com QE: ${quociente.toLocaleString('pt-BR')}`);
       } catch (error) {
         console.error('Erro ao salvar mudanças no cenário:', error);
         setSalvandoMudancas(false);
         alert('Erro ao salvar mudanças. Tente novamente.');
       }
+    } else {
+      console.error('Nenhum cenário ativo encontrado para salvar');
+      alert('Nenhum cenário ativo encontrado. Tente selecionar um cenário primeiro.');
     }
   };
 
@@ -1000,7 +947,7 @@ export default function ChapasPage() {
             onCenarioDeleted={handleCenarioDeleted}
             onCenarioClick={handleCenarioClick}
             onSalvarMudancas={salvarMudancasCenario}
-            onLimparCenario={limparERecriarCenarioBase}
+            onLimparCenario={undefined}
             onImprimirPDF={handleImprimirPDF}
             salvandoMudancas={salvandoMudancas}
           />
@@ -1019,15 +966,16 @@ export default function ChapasPage() {
                 onChange={e => {
                   const raw = e.target.value.replace(/\./g, '');
                   const num = Number(raw);
-                  setQuociente(num || 0);
+                  if (!isNaN(num) && num >= 0) {
+                    setQuociente(num);
+                  }
                 }}
                 onBlur={() => {
-                  // Não salvar automaticamente - apenas atualizar o estado local
-                  console.log('Quociente eleitoral alterado para:', quociente);
+                  // Atualizar o estado local quando sair do campo
                 }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
-                    // Apenas sair do campo - não salvar automaticamente
+                    // Sair do campo quando pressionar Enter
                     if (e.currentTarget) {
                       e.currentTarget.blur();
                     }

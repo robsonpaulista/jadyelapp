@@ -8,6 +8,7 @@ export default function ApplicationsDashboard() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -15,6 +16,16 @@ export default function ApplicationsDashboard() {
     document.body.style.height = '100vh';
     document.documentElement.style.height = '100vh';
     setIsLoaded(true);
+    
+    // Carregar dados do usuário
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      try {
+        setUser(JSON.parse(userData));
+      } catch (error) {
+        console.warn('Erro ao carregar dados do usuário:', error);
+      }
+    }
     
     return () => {
       document.body.style.overflow = '';
@@ -34,8 +45,8 @@ export default function ApplicationsDashboard() {
       tagline: "Portal Integrado de Gestão",
       description: "Plataforma tecnológica avançada que centraliza todas as ferramentas essenciais para uma gestão política e administrativa de excelência.",
       features: ["Monitoramento de mídia em tempo real", "Base de lideranças integrada", "Análise de cenários políticos", "Formação de chapas 2026"],
-      gradient: "from-orange-500 via-red-500 to-pink-600",
-      accentColor: "orange"
+      gradient: "from-blue-600 via-blue-500 to-indigo-600",
+      accentColor: "blue"
     },
     {
       id: 2,
@@ -46,8 +57,8 @@ export default function ApplicationsDashboard() {
       tagline: "Inteligência de Dados",
       description: "Sistema de analytics de última geração para análise profunda de dados eleitorais, pesquisas e projeções estratégicas.",
       features: ["Pesquisas eleitorais detalhadas", "Análise preditiva de tendências", "Projeções municipais IA", "Dashboards interativos"],
-      gradient: "from-orange-500 via-red-500 to-pink-600",
-      accentColor: "orange"
+      gradient: "from-blue-600 via-blue-500 to-indigo-600",
+      accentColor: "blue"
     },
     {
       id: 3,
@@ -58,8 +69,8 @@ export default function ApplicationsDashboard() {
       tagline: "Automação Administrativa",
       description: "Suite completa de ferramentas para gestão automatizada de emendas, obras públicas e recursos governamentais.",
       features: ["Gestão automatizada de emendas", "Controle inteligente de obras", "Dashboard de municípios", "Workflow de demandas"],
-      gradient: "from-orange-500 via-red-500 to-pink-600",
-      accentColor: "orange"
+      gradient: "from-blue-600 via-blue-500 to-indigo-600",
+      accentColor: "blue"
     },
     {
       id: 4,
@@ -70,8 +81,8 @@ export default function ApplicationsDashboard() {
       tagline: "Comunicação Digital",
       description: "Plataforma de inteligência social com análise avançada de redes sociais e estratégias de comunicação digital.",
       features: ["Instagram Analytics Pro", "Métricas de engajamento IA", "Monitoramento de sentimentos", "Estratégias automatizadas"],
-      gradient: "from-orange-500 via-red-500 to-pink-600",
-      accentColor: "orange"
+      gradient: "from-blue-600 via-blue-500 to-indigo-600",
+      accentColor: "blue"
     }
   ];
 
@@ -101,13 +112,35 @@ export default function ApplicationsDashboard() {
     <div className="min-h-screen bg-white overflow-x-hidden">
       {/* Animated Background Elements */}
       <div className="absolute inset-0">
-        <div className="absolute top-10 left-2 sm:left-10 w-32 h-32 sm:w-72 sm:h-72 bg-blue-500/5 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute top-32 right-2 sm:right-20 w-40 h-40 sm:w-96 sm:h-96 bg-purple-500/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute bottom-20 left-1/3 w-32 h-32 sm:w-80 sm:h-80 bg-pink-500/5 rounded-full blur-3xl animate-pulse delay-2000"></div>
-          </div>
+        <div className="absolute top-10 left-2 sm:left-10 w-32 h-32 sm:w-72 sm:h-72 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute top-32 right-2 sm:right-20 w-40 h-40 sm:w-96 sm:h-96 bg-indigo-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute bottom-20 left-1/3 w-32 h-32 sm:w-80 sm:h-80 bg-blue-400/10 rounded-full blur-3xl animate-pulse delay-2000"></div>
+        
+        {/* Floating Elements similar to login page */}
+        <div className="absolute top-1/4 left-1/4 w-72 h-72 md:w-80 md:h-80 lg:w-96 lg:h-96 bg-white rounded-full mix-blend-overlay filter blur-3xl opacity-10 animate-float"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-72 h-72 md:w-80 md:h-80 lg:w-96 lg:h-96 bg-blue-200 rounded-full mix-blend-overlay filter blur-3xl opacity-10 animate-float-delayed"></div>
+      </div>
 
       {/* Main Content Area */}
       <main className="relative z-10 min-h-screen flex flex-col">
+        {/* Welcome Message */}
+        <div className="absolute top-20 left-0 right-0 z-20">
+          <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2 text-sm text-gray-600 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full shadow-sm">
+                <span>👋</span>
+                <span className="font-medium">Bem-vindo,</span>
+                <span className="font-semibold text-blue-600">
+                  {user?.nome?.split(' ')[0] || user?.name?.split(' ')[0] || 'Usuário'}
+                </span>
+                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full ml-1">
+                  {user?.level || 'admin'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
         <div className="flex-1 flex flex-col">
           {/* Carousel Container */}
           <div 
@@ -135,14 +168,14 @@ export default function ApplicationsDashboard() {
                     >
                       {/* Main Content */}
               <div className="flex-1">
-                        <div className="max-w-none mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 w-full">
-                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 xl:gap-10 items-start max-w-7xl mx-auto w-full">
+                        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 w-full">
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 xl:gap-10 items-start w-full">
                             {/* Text Content */}
                             <div className="space-y-3 sm:space-y-4 lg:space-y-6 order-2 lg:order-1">
                               {/* Header without icon */}
                               <div className="space-y-2 sm:space-y-3">
                                 <div>
-                                  <p className={`text-xs sm:text-sm font-bold text-${slide.accentColor}-600 uppercase tracking-widest mb-1 sm:mb-2 transform transition-all duration-500 ${isActive ? 'translate-x-0 opacity-100' : 'translate-x-4 opacity-0'}`}>
+                                  <p className={`text-xs sm:text-sm font-bold text-blue-600 uppercase tracking-widest mb-1 sm:mb-2 transform transition-all duration-500 ${isActive ? 'translate-x-0 opacity-100' : 'translate-x-4 opacity-0'}`}>
                                     {slide.tagline}
                                   </p>
                                   <h1 className={`text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black bg-gradient-to-r ${slide.gradient} bg-clip-text text-transparent transform transition-all duration-700 leading-tight ${isActive ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
@@ -285,9 +318,9 @@ export default function ApplicationsDashboard() {
                                   {/* Previous Button */}
                                   <button
                                     onClick={prevSlide}
-                                    className="p-2 sm:p-3 rounded-full bg-white/90 backdrop-blur-md border border-orange-200 shadow-xl hover:bg-orange-500 hover:border-orange-400 transition-all duration-300 group hover:scale-110"
+                                    className="p-2 sm:p-3 rounded-full bg-white/90 backdrop-blur-md border border-blue-200 shadow-xl hover:bg-blue-500 hover:border-blue-400 transition-all duration-300 group hover:scale-110"
                                   >
-                                    <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600 group-hover:text-white transition-colors duration-300" />
+                                    <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 group-hover:text-white transition-colors duration-300" />
                                   </button>
 
                                   {/* Slide Indicators */}
@@ -303,7 +336,7 @@ export default function ApplicationsDashboard() {
                                         <div className={`w-8 h-2 sm:w-12 sm:h-3 lg:w-16 lg:h-3 rounded-full transition-all duration-300 relative overflow-hidden ${
                                           currentSlide === index
                                             ? `bg-gradient-to-r ${slide.gradient} shadow-lg`
-                                            : 'bg-white/20 hover:bg-white/30'
+                                            : 'bg-gray-300 hover:bg-gray-400'
                                         }`}>
                                           {/* Base layer for all slides */}
                                           <div className="absolute inset-0 bg-black/5 rounded-full"></div>
@@ -330,9 +363,9 @@ export default function ApplicationsDashboard() {
                                   {/* Next Button */}
                                   <button
                                     onClick={nextSlide}
-                                    className="p-2 sm:p-3 rounded-full bg-white/90 backdrop-blur-md border border-orange-200 shadow-xl hover:bg-orange-500 hover:border-orange-400 transition-all duration-300 group hover:scale-110"
+                                    className="p-2 sm:p-3 rounded-full bg-white/90 backdrop-blur-md border border-blue-200 shadow-xl hover:bg-blue-500 hover:border-blue-400 transition-all duration-300 group hover:scale-110"
                                   >
-                                    <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600 group-hover:text-white transition-colors duration-300" />
+                                    <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 group-hover:text-white transition-colors duration-300" />
                                   </button>
               </div>
               </div>
@@ -359,12 +392,25 @@ export default function ApplicationsDashboard() {
         }
         
         @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-20px); }
+          0%, 100% { transform: translateY(0px) translateX(0px); }
+          25% { transform: translateY(-20px) translateX(20px); }
+          50% { transform: translateY(-10px) translateX(40px); }
+          75% { transform: translateY(10px) translateX(20px); }
+        }
+        
+        @keyframes float-delayed {
+          0%, 100% { transform: translateY(0px) translateX(0px); }
+          25% { transform: translateY(20px) translateX(-20px); }
+          50% { transform: translateY(10px) translateX(-40px); }
+          75% { transform: translateY(-10px) translateX(-20px); }
         }
         
         .animate-float {
-          animation: float 3s ease-in-out infinite;
+          animation: float 20s ease-in-out infinite;
+        }
+        
+        .animate-float-delayed {
+          animation: float-delayed 25s ease-in-out infinite;
         }
       `}</style>
     </div>

@@ -403,7 +403,7 @@ export default function Emendas2025() {
     const is100Percent = percentual >= 100;
     
     // Definir cor da barra baseada no tipo e se está 100%
-    let barColor = "bg-gradient-to-r from-orange-500 to-red-500";
+    let barColor = "bg-gradient-to-r from-blue-600 to-blue-700";
     if (isPago && is100Percent) {
       barColor = "bg-gradient-to-r from-green-500 to-green-600";
     }
@@ -412,8 +412,13 @@ export default function Emendas2025() {
       <div className="w-full max-w-full overflow-hidden">
         <div className={`w-full bg-gray-200 rounded-full mt-1 overflow-hidden ${isSmall ? 'h-1' : 'h-1.5'} ${className.replace('h-1', '')}`}>
           <div 
-            className={`${barColor} rounded-full transition-all duration-300 ease-in-out ${isSmall ? 'h-1' : 'h-1.5'}`}
-            style={{ width: `${Math.min(percentual, 100)}%`, maxWidth: '100%' }}
+            className={`${barColor} rounded-full ${isSmall ? 'h-1' : 'h-1.5'}`}
+            style={{ 
+              width: '0%',
+              maxWidth: '100%',
+              '--final-width': `${Math.min(percentual, 100)}%`,
+              animation: 'progress-fill 1.5s ease-out 0.5s forwards'
+            } as React.CSSProperties}
           ></div>
         </div>
         <div className={`text-xs mt-1 break-words overflow-hidden ${isPago && is100Percent ? 'text-green-600 font-medium' : 'text-gray-500'}`}>
@@ -839,19 +844,20 @@ export default function Emendas2025() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      {isLoading ? (
-        <PageLoading message="Carregando emendas..." />
-      ) : error ? (
-        <div className="text-center text-red-500 mt-8">
-          <p>{error}</p>
-          <Button onClick={() => fetchEmendas(true)} className="mt-4">
-            Tentar novamente
-          </Button>
-        </div>
-      ) : (
-        <>
-          {isRefreshing && <PageLoading message="Atualizando emendas..." />}
+    <>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {isLoading ? (
+          <PageLoading message="Carregando emendas..." />
+        ) : error ? (
+          <div className="text-center text-red-500 mt-8">
+            <p>{error}</p>
+            <Button onClick={() => fetchEmendas(true)} className="mt-4">
+              Tentar novamente
+            </Button>
+          </div>
+        ) : (
+          <>
+            {isRefreshing && <PageLoading message="Atualizando emendas..." />}
           <div className="flex flex-col gap-2">
             <div className="flex justify-between items-center py-2">
               <h1 className="text-lg font-semibold text-gray-900">Emendas 2025</h1>
@@ -1580,6 +1586,18 @@ export default function Emendas2025() {
           )}
         </>
       )}
-    </div>
+      </div>
+
+      <style jsx>{`
+        @keyframes progress-fill {
+          from {
+            width: 0%;
+          }
+          to {
+            width: var(--final-width);
+          }
+        }
+      `}</style>
+    </>
   );
 } 

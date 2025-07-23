@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 import { 
   Settings, Users, BarChart, ListTree, FileText, Building2, UserCheck, Instagram, 
   MapPin, ArrowLeft, LogOut, Newspaper, BarChart2, Building, Coins, Users2,
@@ -124,34 +125,42 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 bg-gradient-to-r from-orange-500 to-red-500 text-white z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-14">
+      <nav className="fixed top-0 left-0 right-0 bg-gradient-to-br from-blue-600 via-blue-500 to-blue-700 text-white z-50">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
+          <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
-              <Link href="/painel-aplicacoes" className="text-lg font-semibold mr-8">
-                Dynamics Integration
+              <Link href="/painel-aplicacoes" className="flex items-center gap-2 text-lg font-semibold mr-4">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                  className="flex items-center"
+                >
+                  <span className="text-3xl font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent drop-shadow-sm">+55</span>
+                  <span className="text-white ml-1 text-xl font-semibold">Dynamics</span>
+                </motion.div>
               </Link>
-              <Link href="/painel-aplicacoes" className="flex items-center gap-2 text-sm font-medium hover:bg-orange-600 px-3 py-2 rounded-lg transition-colors mr-6">
+              <Link href="/painel-aplicacoes" className="flex items-center gap-2 text-sm font-medium hover:bg-blue-700 px-3 py-2 rounded-lg transition-colors mr-4">
                 <Home className="h-5 w-5" />
                 <span>Home</span>
               </Link>
             </div>
 
-            <div className="hidden lg:flex gap-8 flex-1">
+            <div className="hidden lg:flex gap-4 flex-1">
               {visibleMenus.map(menu => {
                 const visibleSubmenus = getVisibleSubmenus(menu.submenus);
                 
                 return (
                   <div key={menu.label || 'config'} className="relative group">
                     {menu.href === '#' ? (
-                      <button className="flex items-center gap-2 text-sm font-medium hover:bg-orange-600 px-3 py-2 rounded-lg transition-colors">
+                      <button className="flex items-center gap-2 text-sm font-medium hover:bg-blue-700 px-3 py-2 rounded-lg transition-colors">
                         {menu.icon}
                         <span>{menu.label || 'Configurações'}</span>
                       </button>
                     ) : (
                       <Link 
                         href={menu.href} 
-                        className="flex items-center gap-2 text-sm font-medium hover:bg-orange-600 px-3 py-2 rounded-lg transition-colors"
+                        className="flex items-center gap-2 text-sm font-medium hover:bg-blue-700 px-3 py-2 rounded-lg transition-colors"
                       >
                       {menu.icon}
                         <span>{menu.label || 'Configurações'}</span>
@@ -180,26 +189,12 @@ export default function Navbar() {
             </div>
 
             <div className="flex items-center gap-2 ml-auto">
-              {user && (
-                <div className="mr-2 hidden sm:block">
-                  <div className="flex items-center text-xs lg:text-sm text-white">
-                    <span className="hidden lg:inline">Usuário: </span>
-                    {user.name?.split(' ')[0] || (user as any).nome?.split(' ')[0] || user.email?.split('@')[0] || 'Admin'}
-                    {userLevel && (
-                      <Badge variant="secondary" className="ml-1 lg:ml-2 text-xs">
-                        {userLevel}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              )}
-              
               <div className="hidden lg:flex items-center gap-2">
                 <Button 
                   onClick={() => router.back()} 
                   variant="ghost" 
                   size="sm"
-                  className="text-white hover:text-white hover:bg-orange-600"
+                  className="text-white hover:text-white hover:bg-blue-700"
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Voltar
@@ -208,7 +203,7 @@ export default function Navbar() {
                   onClick={handleLogout} 
                   variant="ghost" 
                   size="sm"
-                  className="text-white hover:text-white hover:bg-orange-600"
+                  className="text-white hover:text-white hover:bg-blue-700"
                 >
                   <LogOut className="w-4 h-4 mr-2" />
                   Sair
@@ -218,7 +213,7 @@ export default function Navbar() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="lg:hidden text-white hover:text-white hover:bg-orange-600 p-2"
+                className="lg:hidden text-white hover:text-white hover:bg-blue-700 p-2"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               >
                 {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
@@ -234,20 +229,30 @@ export default function Navbar() {
             className="fixed top-0 right-0 h-full w-80 max-w-[90vw] bg-white shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="bg-gradient-to-r from-orange-500 to-red-500 p-4 text-white">
+            <div className="bg-gradient-to-br from-blue-600 via-blue-500 to-blue-700 p-4 text-white">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold">Menu</h3>
+                <div className="flex items-center gap-2">
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                    className="flex items-center"
+                  >
+                    <span className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent drop-shadow-sm">+55</span>
+                    <span className="text-white ml-1 text-lg font-semibold">Dynamics</span>
+                  </motion.div>
+                </div>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-white hover:text-white hover:bg-orange-600 p-1"
+                  className="text-white hover:text-white hover:bg-blue-700 p-1"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <X size={20} />
                 </Button>
               </div>
               {user && (
-                <div className="mt-2 pt-2 border-t border-orange-400">
+                <div className="mt-2 pt-2 border-t border-blue-400">
                   <p className="text-sm">
                     {user.name?.split(' ')[0] || (user as any).nome?.split(' ')[0] || user.email?.split('@')[0] || 'Admin'}
                     {userLevel && (
@@ -274,7 +279,7 @@ export default function Navbar() {
                     ) : (
                       <Link 
                         href={menu.href} 
-                        className="flex items-center gap-3 p-3 text-gray-700 hover:bg-blue-50 rounded-lg transition"
+                        className="flex items-center gap-3 p-3 text-gray-700 hover:bg-blue-100 rounded-lg transition"
                         onClick={handleMobileLinkClick}
                       >
                         {menu.icon}

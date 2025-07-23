@@ -97,8 +97,6 @@ export default function CenariosTabs({
         setCenarioAtivo(ativo || null);
         setActiveTab(ativo?.id || '');
       }
-      
-      console.log('Cenários carregados:', cenariosList.map(c => ({ nome: c.nome, ativo: c.ativo })));
     } catch (error) {
       console.error('Erro ao carregar cenários:', error);
     } finally {
@@ -110,25 +108,8 @@ export default function CenariosTabs({
     carregarCenarios();
   }, []);
 
-  // Criar cenário base se não existir
-  const criarBaseSeNecessario = async () => {
-    if (cenarios.length === 0) {
-      setLoading(true);
-      try {
-        await criarCenarioBase(partidosAtuais, quocienteAtual);
-        await carregarCenarios();
-        onCenarioBaseCreated();
-      } catch (error) {
-        console.error('Erro ao criar cenário base:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-  };
-
-  useEffect(() => {
-    criarBaseSeNecessario();
-  }, [cenarios.length]);
+  // Removida a criação automática do cenário base
+  // O sistema agora apenas carrega dados do Firestore
 
   // Criar novo cenário
   const handleCriarCenario = async () => {
@@ -168,18 +149,15 @@ export default function CenariosTabs({
   const handleAtivarCenario = async (cenarioId: string) => {
     setLoading(true);
     try {
-      console.log('Ativando cenário:', cenarioId);
       
       // Desativar todos os cenários primeiro
       for (const cenario of cenarios) {
         if (cenario.ativo) {
-          console.log('Desativando cenário:', cenario.nome);
           await ativarCenario(cenario.id, false);
         }
       }
 
       // Ativar o cenário selecionado
-      console.log('Ativando cenário selecionado:', cenarioId);
       await ativarCenario(cenarioId, true);
 
       // Recarregar cenários para garantir consistência
@@ -188,7 +166,6 @@ export default function CenariosTabs({
       // Carregar automaticamente o cenário ativado
       const cenarioCompleto = await carregarCenario(cenarioId);
       if (cenarioCompleto) {
-        console.log('Cenário carregado automaticamente:', cenarioCompleto.nome);
         onCenarioChange(cenarioCompleto);
       } else {
         console.error('Erro: não foi possível carregar o cenário ativado');
@@ -214,7 +191,6 @@ export default function CenariosTabs({
       
       // Se o cenário excluído era o ativo, ativar o cenário base
       if (eraCenarioAtivo) {
-        console.log('Cenário ativo foi excluído, ativando cenário base...');
         await ativarCenario('base', true);
         
         // Carregar o cenário base como ativo
@@ -283,9 +259,33 @@ export default function CenariosTabs({
 
   if (loading && cenarios.length === 0) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <RefreshCw className="h-6 w-6 animate-spin text-blue-600 mr-2" />
-        <span className="text-gray-600">Carregando cenários...</span>
+      <div className="space-y-4">
+        {/* Header compacto com loading */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-medium text-gray-700">Cenários</h3>
+            <div className="flex items-center gap-2">
+              <RefreshCw className="h-4 w-4 animate-spin text-blue-600" />
+              <span className="text-xs text-gray-500">Carregando...</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Skeleton loader para as tabs */}
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="h-4 w-20 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-4 w-16 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+          
+          {/* Skeleton para o conteúdo */}
+          <div className="space-y-3">
+            <div className="h-8 bg-gray-100 rounded animate-pulse"></div>
+            <div className="h-8 bg-gray-100 rounded animate-pulse"></div>
+            <div className="h-8 bg-gray-100 rounded animate-pulse"></div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -316,7 +316,13 @@ export default function CenariosTabs({
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-medium text-gray-700">Cenários</h3>
-          {cenarioAtivo && (
+          {loading && (
+            <div className="flex items-center gap-1">
+              <RefreshCw className="h-3 w-3 animate-spin text-blue-600" />
+              <span className="text-xs text-gray-500">Atualizando...</span>
+            </div>
+          )}
+          {cenarioAtivo && !loading && (
             <Badge variant={cenarioAtivo.tipo === 'base' ? 'default' : 'secondary'} className="text-xs">
               {cenarioAtivo.tipo === 'base' ? 'BASE' : 'SIMULAÇÃO'}
             </Badge>
@@ -403,35 +409,42 @@ export default function CenariosTabs({
             >
               <div className="flex items-center gap-1 min-w-0 flex-1">
                 <span className="truncate">{cenario.nome}</span>
-                {cenario.tipo === 'base' && (
+                {loading && (
+                  <RefreshCw className="h-3 w-3 animate-spin text-blue-600" />
+                )}
+                {cenario.tipo === 'base' && !loading && (
                   <Badge variant="default" className="text-xs px-1 py-0 h-4">
                     B
                   </Badge>
                 )}
-                {cenario.ativo && (
+                {cenario.ativo && !loading && (
                   <Badge variant="secondary" className="text-xs px-1 py-0 h-4">
                     A
                   </Badge>
                 )}
               </div>
               
-              {/* Botões de ação que aparecem no hover */}
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                {!cenario.ativo && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleAtivarCenario(cenario.id);
-                    }}
-                    disabled={loading}
-                    className="h-5 w-5 p-0 text-xs hover:bg-blue-100"
-                    title="Ativar"
-                  >
-                    <Check className="h-3 w-3" />
-                  </Button>
-                )}
+              {/* Botões de ação que aparecem no hover ou quando ativo */}
+              <div className={`flex items-center gap-1 transition-opacity ${
+                cenario.ativo || activeTab === cenario.id 
+                  ? 'opacity-100' 
+                  : 'opacity-0 group-hover:opacity-100'
+              }`}>
+                                  {!cenario.ativo && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAtivarCenario(cenario.id);
+                      }}
+                      disabled={loading}
+                      className="h-5 w-5 p-0 text-xs hover:bg-blue-100 text-blue-600"
+                      title="Ativar"
+                    >
+                      <Check className="h-3 w-3" />
+                    </Button>
+                  )}
                 
                 {/* Botão Salvar/Mudanças */}
                 {onSalvarMudancas && (
@@ -443,7 +456,7 @@ export default function CenariosTabs({
                       onSalvarMudancas(cenario.id);
                     }}
                     disabled={salvandoMudancas}
-                    className="h-5 w-5 p-0 text-xs hover:bg-green-100 text-green-600"
+                    className="h-5 w-5 p-0 text-xs hover:bg-blue-100 text-blue-600"
                     title={cenario.tipo === 'base' ? 'Salvar' : 'Salvar Mudanças'}
                   >
                     {salvandoMudancas ? (
@@ -464,7 +477,7 @@ export default function CenariosTabs({
                       onLimparCenario(cenario.id);
                     }}
                     disabled={loading}
-                    className="h-5 w-5 p-0 text-xs hover:bg-orange-100 text-orange-600"
+                    className="h-5 w-5 p-0 text-xs hover:bg-blue-100 text-blue-600"
                     title="Limpar Cenário"
                   >
                     <RotateCcw className="h-3 w-3" />
@@ -481,7 +494,7 @@ export default function CenariosTabs({
                       onImprimirPDF(cenario.id);
                     }}
                     disabled={loading}
-                    className="h-5 w-5 p-0 text-xs hover:bg-purple-100 text-purple-600"
+                    className="h-5 w-5 p-0 text-xs hover:bg-blue-100 text-blue-600"
                     title="Gerar PDF"
                   >
                     <Printer className="h-3 w-3" />
@@ -498,7 +511,7 @@ export default function CenariosTabs({
                         handleDuplicarCenario(cenario);
                       }}
                       disabled={loading}
-                      className="h-5 w-5 p-0 text-xs hover:bg-blue-100"
+                      className="h-5 w-5 p-0 text-xs hover:bg-blue-100 text-blue-600"
                       title="Duplicar"
                     >
                       <Copy className="h-3 w-3" />
@@ -553,8 +566,6 @@ export default function CenariosTabs({
           </TabsContent>
         ))}
       </Tabs>
-
-
     </div>
   );
 } 
