@@ -420,7 +420,7 @@ export default function ChapasPage() {
       return {
         partido: partido.nome,
         votosTotal,
-        vagasObtidas: vagasDiretas,
+        vagasObtidas: vagasDiretas, // Inicialmente igual às vagas diretas
         vagasDiretas: vagasDiretas
       };
     });
@@ -1726,16 +1726,31 @@ export default function ChapasPage() {
                           // Calcular os quocientes partidários para esta rodada
                           const quocientesRodada = simulacao.partidosComVagas
                             .filter(p => p.vagasObtidas > 0 || index === 0) // Mostrar apenas partidos com vagas ou na primeira rodada
-                            .map(p => ({
-                              partido: p.partido,
-                              votos: p.votosTotal,
-                              vagasAntes: index === 0 ? p.vagasDiretas : p.vagasObtidas - (p.partido === sobra.partido ? 1 : 0),
-                              quocientePartidario: index === 0 
-                                ? p.votosTotal / (p.vagasDiretas + 1)
-                                : p.partido === sobra.partido 
-                                  ? p.votosTotal / p.vagasObtidas
-                                  : p.votosTotal / (p.vagasObtidas + 1)
-                            }))
+                            .map(p => {
+                              // Calcular quantas vagas o partido tinha ANTES desta rodada
+                              let vagasAntes: number;
+                              if (index === 0) {
+                                // Primeira rodada: usar vagas diretas
+                                vagasAntes = p.vagasDiretas;
+                              } else {
+                                // Rodadas subsequentes: calcular vagas antes desta rodada
+                                // Precisamos rastrear as vagas que cada partido ganhou até esta rodada
+                                let vagasGanhasAteAgora = 0;
+                                for (let j = 0; j < index; j++) {
+                                  if (simulacao.historicoSobras[j].partido === p.partido) {
+                                    vagasGanhasAteAgora++;
+                                  }
+                                }
+                                vagasAntes = p.vagasDiretas + vagasGanhasAteAgora;
+                              }
+                              
+                              return {
+                                partido: p.partido,
+                                votos: p.votosTotal,
+                                vagasAntes: vagasAntes,
+                                quocientePartidario: p.votosTotal / (vagasAntes + 1)
+                              };
+                            })
                             .sort((a, b) => b.quocientePartidario - a.quocientePartidario);
 
                           return (
