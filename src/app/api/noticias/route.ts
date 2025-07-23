@@ -1,24 +1,26 @@
 import { NextRequest } from 'next/server';
 import { fetchRssFeed } from '@/lib/rssFeedParser';
 
-const GOOGLE_FEED = 'https://www.google.com/alerts/feeds/17804356194972672813/9708043366942196058';
+const GOOGLE_FEED_JADYEL = 'https://www.google.com/alerts/feeds/17804356194972672813/9708043366942196058';
+const GOOGLE_FEED_DEPUTADOS = 'https://www.google.com.br/alerts/feeds/17804356194972672813/16104795190635819439';
 const TALKWALKER_FEED = 'https://www.talkwalker.com/alerts/rss/YJOKITOAE6MRGBCKK7ZPOARQSR7XVFFNZNAHON7IXIAWNBVA3KJK3CVVVGAY4WZCAXCU4OZ6B7QSA67I3LHBFMGJHNF2YIZF6TWIZHW4SJUAMYHDGR4RRK4S4OOHSTH2';
 
 // Cache em memória para otimização
-let newsCache: any = null;
-let lastFetchTime: number = 0;
+let newsCache: { [key: string]: any } = {};
+let lastFetchTime: { [key: string]: number } = {};
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
 
 export async function GET(req: NextRequest) {
   try {
     const url = new URL(req.url);
     const forceRefresh = url.searchParams.get('refresh') === 'true';
+    const feedType = url.searchParams.get('feed') || 'jadyel';
     const now = Date.now();
     
     // Se tiver cache válido e não for forçar atualização, retorna o cache
-    if (!forceRefresh && newsCache && (now - lastFetchTime) < CACHE_DURATION) {
-      console.log('Retornando notícias do cache');
-      return new Response(JSON.stringify(newsCache), {
+    if (!forceRefresh && newsCache[feedType] && (now - (lastFetchTime[feedType] || 0)) < CACHE_DURATION) {
+      console.log(`Retornando notícias do cache para ${feedType}`);
+      return new Response(JSON.stringify(newsCache[feedType]), {
         headers: {
           'Content-Type': 'application/json',
           'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
@@ -28,7 +30,7 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    console.log('Buscando feeds RSS...');
+    console.log(`Buscando feeds RSS para ${feedType}...`);
     
     // Buscar feeds em paralelo com timeout
     const timeout = 10000; // 10 segundos
@@ -46,10 +48,29 @@ export async function GET(req: NextRequest) {
       }
     };
     
-    const [googleNews, talkwalkerNews] = await Promise.all([
-      fetchWithTimeout(GOOGLE_FEED, 'Google Alertas'),
-      fetchWithTimeout(TALKWALKER_FEED, 'Talkwalker Alerts')
-    ]);
+    let feeds = [];
+    
+    if (feedType === 'jadyel') {
+      // Feed original do Jadyel
+      feeds = [
+        fetchWithTimeout(GOOGLE_FEED_JADYEL, 'Google Alertas'),
+        fetchWithTimeout(TALKWALKER_FEED, 'Talkwalker Alerts')
+      ];
+    } else if (feedType === 'deputados') {
+      // Feed de deputados do Piauí
+      feeds = [
+        fetchWithTimeout(GOOGLE_FEED_DEPUTADOS, 'Google Alertas'),
+        fetchWithTimeout(TALKWALKER_FEED, 'Talkwalker Alerts')
+      ];
+    } else {
+      // Fallback para o feed original
+      feeds = [
+        fetchWithTimeout(GOOGLE_FEED_JADYEL, 'Google Alertas'),
+        fetchWithTimeout(TALKWALKER_FEED, 'Talkwalker Alerts')
+      ];
+    }
+    
+    const [googleNews, talkwalkerNews] = await Promise.all(feeds);
     
     // Combinar e ordenar as notícias por data
     const news = [...googleNews, ...talkwalkerNews].sort((a, b) => {
@@ -58,16 +79,16 @@ export async function GET(req: NextRequest) {
       return new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime();
     });
     
-    console.log(`Total de notícias combinadas: ${news.length}`);
+    console.log(`Total de notícias combinadas para ${feedType}: ${news.length}`);
     console.log(`Google: ${googleNews.length}, Talkwalker: ${talkwalkerNews.length}`);
     
     if (news.length === 0) {
-      console.warn('Nenhuma notícia encontrada em nenhum dos feeds');
+      console.warn(`Nenhuma notícia encontrada em nenhum dos feeds para ${feedType}`);
     }
     
-    // Atualiza o cache
-    newsCache = news;
-    lastFetchTime = now;
+    // Atualiza o cache para o tipo específico
+    newsCache[feedType] = news;
+    lastFetchTime[feedType] = now;
     
     // Retorna as notícias com headers anti-cache
     return new Response(JSON.stringify(news), {
