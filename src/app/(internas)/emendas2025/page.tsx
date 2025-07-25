@@ -300,7 +300,11 @@ export default function Emendas2025() {
     });
 
     // Ordenar blocos
-    blocosProcessados.sort((a, b) => a.bloco.localeCompare(b.bloco));
+    blocosProcessados.sort((a, b) => a.bloco.localeCompare(b.bloco, 'pt-BR', { 
+      sensitivity: 'base', 
+      ignorePunctuation: true,
+      numeric: true 
+    }));
     setBlocos(blocosProcessados);
   };
 
@@ -475,7 +479,11 @@ export default function Emendas2025() {
   };
 
   // Obter listas para filtros - usando emendas não filtradas para os dropdowns
-  const blocosDisponiveis = Array.from(new Set(emendas.map(e => e.bloco).filter((bloco): bloco is string => Boolean(bloco)))).sort();
+  const blocosDisponiveis = Array.from(new Set(emendas.map(e => e.bloco).filter((bloco): bloco is string => Boolean(bloco)))).sort((a, b) => a.localeCompare(b, 'pt-BR', { 
+    sensitivity: 'base', 
+    ignorePunctuation: true,
+    numeric: true 
+  }));
   
   // Normaliza os municípios antes de criar o Set para evitar duplicatas por case ou espaços
   const municipiosNormalizados = emendas
@@ -484,9 +492,17 @@ export default function Emendas2025() {
   const municipiosUnicos = Array.from(new Set(municipiosNormalizados));
   const municipiosDisponiveis = municipiosUnicos
     .map(m => emendas.find(e => e.municipioBeneficiario?.trim().toUpperCase() === m)?.municipioBeneficiario?.trim() || m)
-    .sort();
+    .sort((a, b) => a.localeCompare(b, 'pt-BR', { 
+      sensitivity: 'base', 
+      ignorePunctuation: true,
+      numeric: true 
+    }));
   
-  const emendasDisponiveis = Array.from(new Set(emendas.map(e => e.emenda).filter((emenda): emenda is string => Boolean(emenda)))).sort();
+  const emendasDisponiveis = Array.from(new Set(emendas.map(e => e.emenda).filter((emenda): emenda is string => Boolean(emenda)))).sort((a, b) => a.localeCompare(b, 'pt-BR', { 
+    sensitivity: 'base', 
+    ignorePunctuation: true,
+    numeric: true 
+  }));
 
   // Função utilitária para corrigir todos os valores a empenhar já preenchidos
   const corrigirValoresAEmpenhar = async () => {
@@ -1025,7 +1041,11 @@ export default function Emendas2025() {
                               municipio !== null && municipio !== undefined && municipio !== ''
                             )
                           ))
-                          .sort()
+                          .sort((a, b) => a.localeCompare(b, 'pt-BR', { 
+                            sensitivity: 'base', 
+                            ignorePunctuation: true,
+                            numeric: true 
+                          }))
                           .map(municipio => {
                             // Encontrar a primeira ocorrência do município para manter a capitalização original
                             const municipioOriginal = emendas.find(e => 
