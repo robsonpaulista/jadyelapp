@@ -67,10 +67,10 @@ export default function Emendas2025() {
   const [skipNextFilterProcessing, setSkipNextFilterProcessing] = useState(false);
   
   // Filtros
-  const [filtroTexto, setFiltroTexto] = useState('');
   const [filtroBloco, setFiltroBloco] = useState('TODOS_BLOCOS');
   const [filtroMunicipio, setFiltroMunicipio] = useState('TODOS_MUNICIPIOS');
   const [filtroEmenda, setFiltroEmenda] = useState('TODAS_EMENDAS');
+  const [filtroStatusEmpenho, setFiltroStatusEmpenho] = useState('TODOS_STATUS');
   
   // Ordenação
   const [ordenacaoAtual, setOrdenacaoAtual] = useState<{campo: string, direcao: 'asc' | 'desc'} | null>(null);
@@ -336,16 +336,6 @@ export default function Emendas2025() {
       // Aplica os demais filtros nas emendas do bloco
       let emendasFiltradas = [...emendasDoBloco];
 
-      // Filtro por texto
-      if (filtroTexto) {
-        emendasFiltradas = emendasFiltradas.filter(emenda => 
-          emenda.emenda?.toLowerCase().includes(filtroTexto.toLowerCase()) ||
-          emenda.municipioBeneficiario?.toLowerCase().includes(filtroTexto.toLowerCase()) ||
-          emenda.liderancas?.toLowerCase().includes(filtroTexto.toLowerCase()) ||
-          emenda.objeto?.toLowerCase().includes(filtroTexto.toLowerCase())
-        );
-      }
-
       // Filtro por município
       if (filtroMunicipio && filtroMunicipio !== 'TODOS_MUNICIPIOS') {
         emendasFiltradas = emendasFiltradas.filter(emenda => 
@@ -362,13 +352,29 @@ export default function Emendas2025() {
         );
       }
 
+      // Filtro por status de empenho
+      if (filtroStatusEmpenho && filtroStatusEmpenho !== 'TODOS_STATUS') {
+        emendasFiltradas = emendasFiltradas.filter(emenda => {
+          switch (filtroStatusEmpenho) {
+            case 'EMPENHADO':
+              return (emenda.valorEmpenhado || 0) > 0;
+            case 'A_EMPENHAR':
+              return (emenda.valorAEmpenhar || 0) > 0;
+            case 'PAGO':
+              return (emenda.valorPago || 0) > 0;
+            default:
+              return true;
+          }
+        });
+      }
+
       // Adiciona as emendas filtradas ao resultado final
       dadosFiltrados.push(...emendasFiltradas);
     });
 
     setEmendasFiltradas(dadosFiltrados);
     processarBlocos(dadosFiltrados);
-  }, [emendas, filtroTexto, filtroBloco, filtroMunicipio, filtroEmenda, ordenacaoAtual, skipNextFilterProcessing]);
+  }, [emendas, filtroBloco, filtroMunicipio, filtroEmenda, filtroStatusEmpenho, ordenacaoAtual, skipNextFilterProcessing]);
 
   // Carregar dados iniciais
   useEffect(() => {
@@ -456,10 +462,10 @@ export default function Emendas2025() {
   };
 
   const limparFiltros = () => {
-    setFiltroTexto('');
     setFiltroBloco('TODOS_BLOCOS');
     setFiltroMunicipio('TODOS_MUNICIPIOS');
     setFiltroEmenda('TODAS_EMENDAS');
+    setFiltroStatusEmpenho('TODOS_STATUS');
     setOrdenacaoAtual(null);
   };
 
@@ -992,17 +998,6 @@ export default function Emendas2025() {
                 <CardContent className="pt-2">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="flex items-center gap-2">
-                      <Search className="h-4 w-4 text-gray-500" />
-                      <Input
-                        placeholder="Buscar..."
-                        value={filtroTexto}
-                        onChange={(e) => setFiltroTexto(e.target.value)}
-                        disabled={isRefreshing}
-                        className="w-full"
-                      />
-                    </div>
-
-                    <div className="flex items-center gap-2">
                       <Filter className="h-4 w-4 text-gray-500" />
                       <Select
                         value={filtroBloco}
@@ -1063,15 +1058,43 @@ export default function Emendas2025() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        onClick={limparFiltros}
+                      <Filter className="h-4 w-4 text-gray-500" />
+                      <Select
+                        value={filtroEmenda}
+                        onValueChange={setFiltroEmenda}
                         disabled={isRefreshing}
-                        className="w-full justify-center"
                       >
-                        <X className="h-4 w-4" />
-                        <span className="ml-2">Limpar Filtros</span>
-                      </Button>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Filtrar por emenda" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="TODAS_EMENDAS">Todas as emendas</SelectItem>
+                          {emendasDisponiveis.map(emenda => (
+                            <SelectItem key={emenda} value={emenda}>
+                              {emenda}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Filter className="h-4 w-4 text-gray-500" />
+                      <Select
+                        value={filtroStatusEmpenho}
+                        onValueChange={setFiltroStatusEmpenho}
+                        disabled={isRefreshing}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Status do Empenho" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="TODOS_STATUS">Todos os status</SelectItem>
+                          <SelectItem value="EMPENHADO">Empenhado</SelectItem>
+                          <SelectItem value="A_EMPENHAR">A Empenhar</SelectItem>
+                          <SelectItem value="PAGO">Pago</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                 </CardContent>
