@@ -49,6 +49,7 @@ const MENUS: Menu[] = [
     submenus: [
       { label: 'Demandas', href: '/obras_demandas', icon: <Building size={16} /> },
       { label: 'Emendas 2025', href: '/emendas2025', icon: <Coins size={16} /> },
+      { label: 'Análise Territorial', href: '/analise-territorial', icon: <BarChart2 size={16} /> },
       { label: 'Consultar Tetos', href: '/consultar-tetos', icon: <BarChart2 size={16} /> },
       { label: 'Lideranças', href: '/baseliderancas', icon: <Users2 size={16} /> }
     ]
