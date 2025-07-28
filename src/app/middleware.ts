@@ -8,6 +8,7 @@ const protectedRoutes = [
   '/configuracoes',
   '/baseliderancas',
   '/emendas2025',
+  '/analise-territorial',
   '/projecao2026',
   '/instagram-analytics',
   '/acoes',

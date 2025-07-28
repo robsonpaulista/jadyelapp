@@ -29,6 +29,7 @@ export const ROUTE_PERMISSIONS: Record<UserLevel, string[]> = {
     '/instagram-analytics',
     '/obras_demandas',
     '/emendas2025',
+    '/analise-territorial',
     '/consultar-tetos',
     '/baseliderancas',
     '/projecao2026',
@@ -58,6 +59,7 @@ export const ROUTE_PERMISSIONS: Record<UserLevel, string[]> = {
     '/acoes/[id]/editar',
     '/monitoramento-noticias',
     '/instagram-analytics',
+    '/analise-territorial',
     '/projecao2026',
     '/chapas',
     '/pesquisas-eleitorais',
@@ -70,7 +72,8 @@ export const ROUTE_PERMISSIONS: Record<UserLevel, string[]> = {
     '/',
     '/painel-aplicacoes',
     '/consultar-tetos',
-    '/emendas2025'
+    '/emendas2025',
+    '/analise-territorial'
   ],
   gabinetejuridico: [
     '/',
