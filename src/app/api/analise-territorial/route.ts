@@ -3,7 +3,9 @@ import {
   buscarDadosIBGEBatch, 
   processarDadosEleitoraisBatch,
   buscarDadosPortalTransparenciaBatch,
-  calcularMetricasExecucao
+  calcularMetricasExecucao,
+  buscarDadosCAUCBatch,
+  calcularRisco
 } from '@/services/analiseTerritorioService';
 
 // Lista de municípios do Piauí para teste
@@ -27,11 +29,12 @@ const EMENDAS_TESTE = [
 
 export async function GET() {
   try {
-    // Buscar dados do IBGE, eleitorais e de execução em paralelo
-    const [dadosIBGE, dadosEleitorais, dadosExecucao] = await Promise.all([
+    // Buscar dados do IBGE, eleitorais, execução e CAUC em paralelo
+    const [dadosIBGE, dadosEleitorais, dadosExecucao, dadosCAUC] = await Promise.all([
       buscarDadosIBGEBatch(MUNICIPIOS_PIAUI),
       processarDadosEleitoraisBatch(MUNICIPIOS_PIAUI.map(m => m.toString())),
-      buscarDadosPortalTransparenciaBatch(EMENDAS_TESTE)
+      buscarDadosPortalTransparenciaBatch(EMENDAS_TESTE),
+      buscarDadosCAUCBatch(MUNICIPIOS_PIAUI)
     ]);
 
     // Calcular métricas
@@ -56,6 +59,10 @@ export async function GET() {
       return acc;
     }, {} as { [municipio: string]: typeof todasEmendas });
 
+    // Calcular métricas de risco
+    const municipiosIrregulares = Object.values(dadosCAUC).filter(m => m.situacao === 'IRREGULAR').length;
+    const percentualIrregulares = (municipiosIrregulares / Object.keys(dadosCAUC).length) * 100;
+
     const mockData = {
       success: true,
       data: {
@@ -66,6 +73,9 @@ export async function GET() {
 
           const emendasMunicipio = emendasPorMunicipio[m.municipio.nome] || [];
           const metricasMunicipio = calcularMetricasExecucao(emendasMunicipio);
+
+          const dadosCAUCMunicipio = dadosCAUC[m.municipio.id];
+          const indicadorRisco = dadosCAUCMunicipio ? calcularRisco(dadosCAUCMunicipio) : null;
 
           return {
             id: m.municipio.id,
@@ -86,7 +96,14 @@ export async function GET() {
               percentualPago: metricasMunicipio.percentualPago,
               quantidadeEmendas: emendasMunicipio.length,
               tempoMedioExecucao: metricasMunicipio.tempoMedioExecucao
-            }
+            },
+            risco: indicadorRisco ? {
+              nivel: indicadorRisco.nivel,
+              score: indicadorRisco.score,
+              alertas: indicadorRisco.alertas,
+              situacaoCAUC: dadosCAUCMunicipio.situacao,
+              ultimaAtualizacao: dadosCAUCMunicipio.ultimaAtualizacao
+            } : null
           };
         }),
         metricas: {
@@ -113,9 +130,11 @@ export async function GET() {
             percentualPago: metricasExecucao.percentualPago,
             tempoMedioExecucao: metricasExecucao.tempoMedioExecucao
           },
-          baseEleitoral: {
-            overlapTop30: 85.5,
-            crescimentoNovasBases: 15.2
+          risco: {
+            municipiosIrregulares,
+            percentualIrregulares,
+            valorEmRisco: metricasExecucao.valorTotal * (percentualIrregulares / 100),
+            tempoMedioRegularizacao: 15 // TODO: Calcular média real
           }
         }
       }

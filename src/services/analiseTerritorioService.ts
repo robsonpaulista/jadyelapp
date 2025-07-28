@@ -26,9 +26,13 @@ interface DadosExecucao {
 }
 
 interface DadosCAUC {
-  municipio: string;
-  situacao: 'REGULAR' | 'IRREGULAR' | 'PENDENTE';
-  bloqueios: string[];
+  codigo: string;
+  nome: string;
+  uf: string;
+  situacao: 'REGULAR' | 'IRREGULAR';
+  itens: ItemCAUC[];
+  historico: EventoCAUC[];
+  ultimaAtualizacao: string;
 }
 
 // Nova interface para dados eleitorais processados
@@ -54,11 +58,39 @@ interface DadosExecucaoPortal {
   funcionalProgramatica: string;
 }
 
+// Interfaces para o CAUC
+interface ItemCAUC {
+  codigo: string;
+  nome: string;
+  situacao: 'REGULAR' | 'IRREGULAR' | 'DISPENSADO';
+  dataVerificacao: string;
+  validade: string | null;
+  observacao?: string;
+}
+
+interface EventoCAUC {
+  data: string;
+  evento: 'REGULARIZAÇÃO' | 'IRREGULARIDADE';
+  item: string;
+  observacao?: string;
+}
+
+interface IndicadorRisco {
+  nivel: 'BAIXO' | 'MEDIO' | 'ALTO' | 'CRITICO';
+  score: number; // 0 a 100
+  alertas: string[];
+  recomendacoes: string[];
+}
+
 // Cache em memória para dados do IBGE (evitar chamadas repetidas)
 const cacheIBGE: { [key: string]: DadosIBGE } = {};
 
 // Cache em memória para dados do Portal da Transparência
 const cachePortal: { [key: string]: DadosExecucaoPortal[] } = {};
+
+// Cache em memória para dados do CAUC
+const cacheCAUC: { [key: string]: { dados: DadosCAUC; timestamp: number } } = {};
+const CACHE_DURATION = 1000 * 60 * 60; // 1 hora
 
 // Funções de integração com APIs externas
 export async function buscarDadosIBGE(codigoMunicipio: string): Promise<DadosIBGE | null> {
@@ -166,15 +198,62 @@ export async function buscarDadosExecucao(codigoEmenda: string): Promise<DadosEx
 
 export async function buscarDadosCAUC(codigoMunicipio: string): Promise<DadosCAUC | null> {
   try {
-    // TODO: Implementar integração com Tesouro Transparente
-    // const url = `https://apidadosabertos.tesouro.gov.br/cauc/municipios/${codigoMunicipio}`;
+    // Verificar cache
+    const agora = Date.now();
+    const dadosCache = cacheCAUC[codigoMunicipio];
+    if (dadosCache && (agora - dadosCache.timestamp) < CACHE_DURATION) {
+      return dadosCache.dados;
+    }
+
+    // TODO: Implementar chamada real à API do Tesouro Transparente
+    // const url = `https://apidadosabertos.tesouro.gov.br/cauc/v1/municipios/${codigoMunicipio}`;
     // const response = await fetch(url);
     // const data = await response.json();
-    
-    return null;
+
+    // Por enquanto, retornando dados simulados
+    const dadosSimulados: DadosCAUC = {
+      codigo: codigoMunicipio,
+      nome: 'TERESINA',
+      uf: 'PI',
+      situacao: Math.random() > 0.7 ? 'IRREGULAR' : 'REGULAR',
+      itens: [],
+      historico: [],
+      ultimaAtualizacao: new Date().toISOString()
+    };
+
+    // Salvar no cache
+    cacheCAUC[codigoMunicipio] = {
+      dados: dadosSimulados,
+      timestamp: agora
+    };
+
+    return dadosSimulados;
   } catch (error) {
     console.error('Erro ao buscar dados do CAUC:', error);
     return null;
+  }
+}
+
+export async function buscarDadosCAUCBatch(
+  codigosMunicipios: string[]
+): Promise<{ [codigo: string]: DadosCAUC }> {
+  try {
+    const resultados: { [codigo: string]: DadosCAUC } = {};
+    
+    // Usar Promise.all para fazer requisições em paralelo
+    await Promise.all(
+      codigosMunicipios.map(async (codigo) => {
+        const dados = await buscarDadosCAUC(codigo);
+        if (dados) {
+          resultados[codigo] = dados;
+        }
+      })
+    );
+
+    return resultados;
+  } catch (error) {
+    console.error('Erro ao buscar dados do CAUC em lote:', error);
+    return {};
   }
 }
 
@@ -389,4 +468,58 @@ export function calcularTempoMedioExecucao(
   });
   
   return tempos.reduce((a, b) => a + b, 0) / tempos.length;
+} 
+
+export function calcularRisco(dadosCAUC: DadosCAUC): IndicadorRisco {
+  const alertas: string[] = [];
+  const recomendacoes: string[] = [];
+  let score = 100;
+
+  // Verificar situação geral
+  if (dadosCAUC.situacao === 'IRREGULAR') {
+    score -= 30;
+    alertas.push('Município em situação irregular no CAUC');
+    recomendacoes.push('Regularizar pendências no CAUC antes de novas transferências');
+  }
+
+  // Verificar itens específicos
+  const itensIrregulares = dadosCAUC.itens.filter((i: ItemCAUC) => i.situacao === 'IRREGULAR');
+  if (itensIrregulares.length > 0) {
+    score -= 10 * itensIrregulares.length;
+    itensIrregulares.forEach((item: ItemCAUC) => {
+      alertas.push(`Item ${item.codigo} (${item.nome}) irregular`);
+      recomendacoes.push(`Regularizar ${item.nome}`);
+    });
+  }
+
+  // Verificar histórico recente (últimos 90 dias)
+  const dataLimite = new Date();
+  dataLimite.setDate(dataLimite.getDate() - 90);
+  
+  const irregularidadesRecentes = dadosCAUC.historico.filter((e: EventoCAUC) => 
+    e.evento === 'IRREGULARIDADE' && new Date(e.data) > dataLimite
+  );
+
+  if (irregularidadesRecentes.length > 0) {
+    score -= 5 * irregularidadesRecentes.length;
+    alertas.push(`${irregularidadesRecentes.length} irregularidades nos últimos 90 dias`);
+    recomendacoes.push('Monitorar regularidade para evitar novas pendências');
+  }
+
+  // Normalizar score entre 0 e 100
+  score = Math.max(0, Math.min(100, score));
+
+  // Determinar nível de risco
+  let nivel: 'BAIXO' | 'MEDIO' | 'ALTO' | 'CRITICO';
+  if (score >= 80) nivel = 'BAIXO';
+  else if (score >= 60) nivel = 'MEDIO';
+  else if (score >= 40) nivel = 'ALTO';
+  else nivel = 'CRITICO';
+
+  return {
+    nivel,
+    score,
+    alertas,
+    recomendacoes
+  };
 } 

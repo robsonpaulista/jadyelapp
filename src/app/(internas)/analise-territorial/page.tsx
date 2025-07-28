@@ -5,7 +5,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Map, TrendingUp, Users, Building2, AlertTriangle } from 'lucide-react';
+import { 
+  Loader2, 
+  Map, 
+  TrendingUp, 
+  Users, 
+  Building2, 
+  AlertTriangle,
+  AlertCircle,
+  ShieldAlert,
+  ShieldCheck,
+  Clock
+} from 'lucide-react';
+import { Badge } from "@/components/ui/badge";
 
 // Interfaces
 interface AnaliseTerritorioData {
@@ -35,7 +47,10 @@ interface AnaliseTerritorioData {
     situacaoCAUC: 'REGULAR' | 'IRREGULAR' | 'PENDENTE';
     bloqueios: string[];
     ultimaAtualizacao: string;
-  };
+    nivel: string;
+    score: number;
+    alertas: string[];
+  } | null;
 }
 
 interface MetricasGerais {
@@ -60,6 +75,34 @@ interface MetricasGerais {
     overlapTop30: number;
     crescimentoNovasBases: number;
   };
+  risco: {
+    municipiosIrregulares: number;
+    percentualIrregulares: number;
+    valorEmRisco: number;
+    tempoMedioRegularizacao: number;
+  };
+}
+
+// Função auxiliar para cor do nível de risco
+function getRiscoColor(nivel: string): string {
+  switch (nivel) {
+    case 'BAIXO': return 'bg-green-100 text-green-800';
+    case 'MEDIO': return 'bg-yellow-100 text-yellow-800';
+    case 'ALTO': return 'bg-orange-100 text-orange-800';
+    case 'CRITICO': return 'bg-red-100 text-red-800';
+    default: return 'bg-gray-100 text-gray-800';
+  }
+}
+
+// Função auxiliar para ícone do nível de risco
+function getRiscoIcon(nivel: string) {
+  switch (nivel) {
+    case 'BAIXO': return <ShieldCheck className="h-4 w-4 text-green-600" />;
+    case 'MEDIO': return <AlertCircle className="h-4 w-4 text-yellow-600" />;
+    case 'ALTO': return <AlertTriangle className="h-4 w-4 text-orange-600" />;
+    case 'CRITICO': return <ShieldAlert className="h-4 w-4 text-red-600" />;
+    default: return null;
+  }
 }
 
 export default function AnaliseTerritorioPage() {
@@ -109,6 +152,12 @@ export default function AnaliseTerritorioPage() {
         baseEleitoral: {
           overlapTop30: 85.5,
           crescimentoNovasBases: 15.2
+        },
+        risco: {
+          municipiosIrregulares: 15,
+          percentualIrregulares: 8.3,
+          valorEmRisco: 5000000,
+          tempoMedioRegularizacao: 90
         }
       };
 
@@ -164,6 +213,7 @@ export default function AnaliseTerritorioPage() {
           <TabsTrigger value="mapa">Mapa</TabsTrigger>
           <TabsTrigger value="metricas">Métricas</TabsTrigger>
           <TabsTrigger value="municipios">Municípios</TabsTrigger>
+          <TabsTrigger value="risco">Análise de Risco</TabsTrigger>
         </TabsList>
 
         <TabsContent value="visao-geral" className="space-y-4">
@@ -411,6 +461,146 @@ export default function AnaliseTerritorioPage() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="risco">
+          <div className="space-y-6">
+            {/* Card de métricas de risco */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Métricas de Risco</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <AlertTriangle className="h-5 w-5 text-red-600" />
+                      <h3 className="font-medium">Municípios Irregulares</h3>
+                    </div>
+                    <p className="text-2xl font-bold">{metricas?.risco.municipiosIrregulares}</p>
+                    <p className="text-sm text-gray-500">
+                      {metricas?.risco.percentualIrregulares.toFixed(1)}% do total
+                    </p>
+                  </div>
+
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <AlertCircle className="h-5 w-5 text-orange-600" />
+                      <h3 className="font-medium">Valor em Risco</h3>
+                    </div>
+                    <p className="text-2xl font-bold">
+                      {metricas?.risco.valorEmRisco.toLocaleString('pt-BR', {
+                        style: 'currency',
+                        currency: 'BRL'
+                      })}
+                    </p>
+                    <p className="text-sm text-gray-500">em emendas para municípios irregulares</p>
+                  </div>
+
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Clock className="h-5 w-5 text-blue-600" />
+                      <h3 className="font-medium">Tempo Médio Regularização</h3>
+                    </div>
+                    <p className="text-2xl font-bold">{metricas?.risco.tempoMedioRegularizacao} dias</p>
+                    <p className="text-sm text-gray-500">para resolver pendências</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Lista de municípios com risco */}
+            <Card>
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-semibold">Municípios por Nível de Risco</h3>
+                  </div>
+
+                  <div className="relative overflow-x-auto">
+                    <table className="w-full text-sm text-left text-gray-500">
+                      <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+                        <tr>
+                          <th scope="col" className="px-6 py-3">Município</th>
+                          <th scope="col" className="px-6 py-3">Nível de Risco</th>
+                          <th scope="col" className="px-6 py-3">Score</th>
+                          <th scope="col" className="px-6 py-3">Situação CAUC</th>
+                          <th scope="col" className="px-6 py-3">Alertas</th>
+                          <th scope="col" className="px-6 py-3">Última Atualização</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {dados
+                          .filter(m => !municipioSelecionado || m.municipio.id === municipioSelecionado)
+                          .sort((a, b) => {
+                            if (!a.risco || !b.risco) return 0;
+                            return a.risco.score - b.risco.score;
+                          })
+                          .map((municipio) => (
+                            <tr key={municipio.municipio.id} className="bg-white border-b hover:bg-gray-50">
+                              <td className="px-6 py-4 font-medium text-gray-900">
+                                {municipio.municipio.nome}
+                              </td>
+                              <td className="px-6 py-4">
+                                {municipio.risco && (
+                                  <div className="flex items-center gap-2">
+                                    {getRiscoIcon(municipio.risco.nivel)}
+                                    <Badge className={getRiscoColor(municipio.risco.nivel)}>
+                                      {municipio.risco.nivel}
+                                    </Badge>
+                                  </div>
+                                )}
+                              </td>
+                              <td className="px-6 py-4">
+                                {municipio.risco && (
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex-1 bg-gray-200 rounded-full h-2">
+                                      <div
+                                        className={`h-2 rounded-full ${
+                                          municipio.risco.score >= 80 ? 'bg-green-600' :
+                                          municipio.risco.score >= 60 ? 'bg-yellow-600' :
+                                          municipio.risco.score >= 40 ? 'bg-orange-600' :
+                                          'bg-red-600'
+                                        }`}
+                                        style={{ width: `${municipio.risco.score}%` }}
+                                      />
+                                    </div>
+                                    <span className="text-xs font-medium">
+                                      {municipio.risco.score}
+                                    </span>
+                                  </div>
+                                )}
+                              </td>
+                              <td className="px-6 py-4">
+                                {municipio.risco && (
+                                  <Badge className={
+                                    municipio.risco.situacaoCAUC === 'REGULAR' 
+                                      ? 'bg-green-100 text-green-800'
+                                      : 'bg-red-100 text-red-800'
+                                  }>
+                                    {municipio.risco.situacaoCAUC}
+                                  </Badge>
+                                )}
+                              </td>
+                              <td className="px-6 py-4">
+                                {municipio.risco?.alertas.map((alerta, idx) => (
+                                  <div key={idx} className="text-xs text-gray-600">
+                                    • {alerta}
+                                  </div>
+                                ))}
+                              </td>
+                              <td className="px-6 py-4 text-xs text-gray-500">
+                                {municipio.risco?.ultimaAtualizacao && new Date(municipio.risco.ultimaAtualizacao).toLocaleDateString()}
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
