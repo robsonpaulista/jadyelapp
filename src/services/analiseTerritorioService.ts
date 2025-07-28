@@ -1,3 +1,5 @@
+import { buscarResultadosDeputadoFederal2022 } from './resultadoEleicoesService';
+
 // Interfaces
 interface DadosIBGE {
   municipio: {
@@ -27,6 +29,15 @@ interface DadosCAUC {
   municipio: string;
   situacao: 'REGULAR' | 'IRREGULAR' | 'PENDENTE';
   bloqueios: string[];
+}
+
+// Nova interface para dados eleitorais processados
+interface DadosEleitoraisProcessados {
+  municipio: string;
+  votosDeputado: number;
+  ranking: number;
+  percentualVotos: number;
+  crescimento: number;
 }
 
 // Cache em memória para dados do IBGE (evitar chamadas repetidas)
@@ -147,6 +158,78 @@ export async function buscarDadosCAUC(codigoMunicipio: string): Promise<DadosCAU
   } catch (error) {
     console.error('Erro ao buscar dados do CAUC:', error);
     return null;
+  }
+}
+
+// Nova função para processar dados eleitorais
+export async function processarDadosEleitorais(municipio: string): Promise<DadosEleitoraisProcessados | null> {
+  try {
+    // Buscar resultados usando a função existente
+    const resultados = await buscarResultadosDeputadoFederal2022();
+    
+    if (!resultados || resultados.length === 0) {
+      return null;
+    }
+
+    // Filtrar resultados do município
+    const resultadosMunicipio = resultados.filter(r => 
+      r.municipio.toUpperCase() === municipio.toUpperCase()
+    );
+
+    if (resultadosMunicipio.length === 0) {
+      return null;
+    }
+
+    // Calcular total de votos no município
+    const totalVotosMunicipio = resultadosMunicipio.reduce((acc, r) => 
+      acc + parseInt(r.quantidadeVotosNominais || '0', 10), 0
+    );
+
+    // Ordenar municípios por votos para calcular ranking
+    const municipiosOrdenados = Array.from(new Set(resultados.map(r => r.municipio)))
+      .map(mun => ({
+        municipio: mun,
+        votos: resultados
+          .filter(r => r.municipio === mun)
+          .reduce((acc, r) => acc + parseInt(r.quantidadeVotosNominais || '0', 10), 0)
+      }))
+      .sort((a, b) => b.votos - a.votos);
+
+    const ranking = municipiosOrdenados.findIndex(m => 
+      m.municipio.toUpperCase() === municipio.toUpperCase()
+    ) + 1;
+
+    // Calcular percentual dos votos totais
+    const totalVotosGeral = municipiosOrdenados.reduce((acc, m) => acc + m.votos, 0);
+    const percentualVotos = (totalVotosMunicipio / totalVotosGeral) * 100;
+
+    // Por enquanto, crescimento será 0 até implementarmos comparação com eleição anterior
+    const crescimento = 0;
+
+    return {
+      municipio,
+      votosDeputado: totalVotosMunicipio,
+      ranking,
+      percentualVotos,
+      crescimento
+    };
+  } catch (error) {
+    console.error('Erro ao processar dados eleitorais:', error);
+    return null;
+  }
+}
+
+// Nova função para processar dados eleitorais em lote
+export async function processarDadosEleitoraisBatch(municipios: string[]): Promise<DadosEleitoraisProcessados[]> {
+  try {
+    const resultados = await Promise.all(
+      municipios.map(municipio => processarDadosEleitorais(municipio))
+    );
+
+    return resultados.filter((r): r is DadosEleitoraisProcessados => r !== null);
+  } catch (error) {
+    console.error('Erro ao processar dados eleitorais em lote:', error);
+    return [];
   }
 }
 

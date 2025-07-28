@@ -19,10 +19,11 @@ interface AnaliseTerritorioData {
     densidade: number;
   };
   politica: {
-    votosDeputado2022: number;
-    posicaoRanking2022: number;
-    crescimentoVotos: number;
-  };
+    votosDeputado: number;
+    ranking: number;
+    percentualVotos: number;
+    crescimento: number;
+  } | null;
   emendas: {
     valorTotal: number;
     valorPerCapita: number;
@@ -320,6 +321,9 @@ export default function AnaliseTerritorioPage() {
                         <th scope="col" className="px-6 py-3">Município</th>
                         <th scope="col" className="px-6 py-3">População</th>
                         <th scope="col" className="px-6 py-3">Densidade</th>
+                        <th scope="col" className="px-6 py-3">Votos 2022</th>
+                        <th scope="col" className="px-6 py-3">Ranking</th>
+                        <th scope="col" className="px-6 py-3">% Votos</th>
                         <th scope="col" className="px-6 py-3">Valor em Emendas</th>
                         <th scope="col" className="px-6 py-3">R$ per capita</th>
                         <th scope="col" className="px-6 py-3">% Executado</th>
@@ -338,6 +342,25 @@ export default function AnaliseTerritorioPage() {
                             </td>
                             <td className="px-6 py-4">
                               {municipio.demografia.densidade.toFixed(2)} hab/km²
+                            </td>
+                            <td className="px-6 py-4">
+                              {municipio.politica ? (
+                                municipio.politica.votosDeputado.toLocaleString()
+                              ) : '-'}
+                            </td>
+                            <td className="px-6 py-4">
+                              {municipio.politica ? (
+                                <span className={`font-medium ${
+                                  municipio.politica.ranking <= 30 ? 'text-green-600' : 'text-gray-900'
+                                }`}>
+                                  {municipio.politica.ranking}º
+                                </span>
+                              ) : '-'}
+                            </td>
+                            <td className="px-6 py-4">
+                              {municipio.politica ? (
+                                `${municipio.politica.percentualVotos.toFixed(2)}%`
+                              ) : '-'}
                             </td>
                             <td className="px-6 py-4">
                               {municipio.emendas.valorTotal.toLocaleString('pt-BR', {
