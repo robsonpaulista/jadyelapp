@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server';
-import { buscarDadosIBGEBatch, processarDadosEleitoraisBatch } from '@/services/analiseTerritorioService';
+import { 
+  buscarDadosIBGEBatch, 
+  processarDadosEleitoraisBatch,
+  buscarDadosPortalTransparenciaBatch,
+  calcularMetricasExecucao
+} from '@/services/analiseTerritorioService';
 
 // Lista de municípios do Piauí para teste
 const MUNICIPIOS_PIAUI = [
@@ -11,12 +16,22 @@ const MUNICIPIOS_PIAUI = [
   // Adicionar mais municípios conforme necessário
 ];
 
+// Lista simulada de códigos de emendas
+const EMENDAS_TESTE = [
+  '202420000001',
+  '202420000002',
+  '202420000003',
+  '202420000004',
+  '202420000005'
+];
+
 export async function GET() {
   try {
-    // Buscar dados do IBGE e eleitorais em paralelo
-    const [dadosIBGE, dadosEleitorais] = await Promise.all([
+    // Buscar dados do IBGE, eleitorais e de execução em paralelo
+    const [dadosIBGE, dadosEleitorais, dadosExecucao] = await Promise.all([
       buscarDadosIBGEBatch(MUNICIPIOS_PIAUI),
-      processarDadosEleitoraisBatch(MUNICIPIOS_PIAUI.map(m => m.toString()))
+      processarDadosEleitoraisBatch(MUNICIPIOS_PIAUI.map(m => m.toString())),
+      buscarDadosPortalTransparenciaBatch(EMENDAS_TESTE)
     ]);
 
     // Calcular métricas
@@ -28,6 +43,19 @@ export async function GET() {
     const votosTotal = dadosEleitorais.reduce((acc, m) => acc + m.votosDeputado, 0);
     const mediaVotosPorMunicipio = votosTotal / dadosEleitorais.length;
 
+    // Calcular métricas de execução
+    const todasEmendas = Object.values(dadosExecucao).flat();
+    const metricasExecucao = calcularMetricasExecucao(todasEmendas);
+
+    // Agrupar emendas por município
+    const emendasPorMunicipio = todasEmendas.reduce((acc, emenda) => {
+      if (!acc[emenda.municipio]) {
+        acc[emenda.municipio] = [];
+      }
+      acc[emenda.municipio].push(emenda);
+      return acc;
+    }, {} as { [municipio: string]: typeof todasEmendas });
+
     const mockData = {
       success: true,
       data: {
@@ -35,6 +63,9 @@ export async function GET() {
           const dadosEleitoraisMunicipio = dadosEleitorais.find(
             e => e.municipio === m.municipio.nome
           );
+
+          const emendasMunicipio = emendasPorMunicipio[m.municipio.nome] || [];
+          const metricasMunicipio = calcularMetricasExecucao(emendasMunicipio);
 
           return {
             id: m.municipio.id,
@@ -50,10 +81,11 @@ export async function GET() {
               crescimento: dadosEleitoraisMunicipio.crescimento
             } : null,
             emendas: {
-              valorTotal: 0, // Será preenchido com dados reais depois
-              valorPerCapita: 0,
-              percentualPago: 0,
-              quantidadeEmendas: 0
+              valorTotal: metricasMunicipio.valorTotal,
+              valorPerCapita: m.populacao > 0 ? metricasMunicipio.valorTotal / m.populacao : 0,
+              percentualPago: metricasMunicipio.percentualPago,
+              quantidadeEmendas: emendasMunicipio.length,
+              tempoMedioExecucao: metricasMunicipio.tempoMedioExecucao
             }
           };
         }),
@@ -71,14 +103,15 @@ export async function GET() {
             percentualMunicipiosComVotos: (dadosEleitorais.length / MUNICIPIOS_PIAUI.length) * 100
           },
           investimento: {
-            valorTotalEmendas: 150000000,
-            mediaPerCapita: 250.45,
-            indiceConcentracao: 0.45
+            valorTotalEmendas: metricasExecucao.valorTotal,
+            mediaPerCapita: populacaoTotal > 0 ? metricasExecucao.valorTotal / populacaoTotal : 0,
+            indiceConcentracao: 0.45 // TODO: Calcular índice de Gini
           },
           execucao: {
-            percentualEmpenhado: 65.4,
-            percentualPago: 45.2,
-            tempoMedioExecucao: 120
+            percentualEmpenhado: metricasExecucao.percentualEmpenhado,
+            percentualLiquidado: metricasExecucao.percentualLiquidado,
+            percentualPago: metricasExecucao.percentualPago,
+            tempoMedioExecucao: metricasExecucao.tempoMedioExecucao
           },
           baseEleitoral: {
             overlapTop30: 85.5,

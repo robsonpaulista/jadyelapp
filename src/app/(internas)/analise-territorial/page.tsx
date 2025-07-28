@@ -52,6 +52,7 @@ interface MetricasGerais {
   };
   execucao: {
     percentualEmpenhado: number;
+    percentualLiquidado: number;
     percentualPago: number;
     tempoMedioExecucao: number;
   };
@@ -101,6 +102,7 @@ export default function AnaliseTerritorioPage() {
         },
         execucao: {
           percentualEmpenhado: 65.4,
+          percentualLiquidado: 50.0,
           percentualPago: 45.2,
           tempoMedioExecucao: 120
         },
@@ -256,11 +258,19 @@ export default function AnaliseTerritorioPage() {
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-500">Empenhado</span>
-                    <span className="font-semibold">{metricas?.execucao.percentualEmpenhado}%</span>
+                    <span className="font-semibold">{metricas?.execucao.percentualEmpenhado.toFixed(1)}%</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-500">Liquidado</span>
+                    <span className="font-semibold">{metricas?.execucao.percentualLiquidado.toFixed(1)}%</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-500">Pago</span>
-                    <span className="font-semibold">{metricas?.execucao.percentualPago}%</span>
+                    <span className="font-semibold">{metricas?.execucao.percentualPago.toFixed(1)}%</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-500">Tempo médio</span>
+                    <span className="font-semibold">{metricas?.execucao.tempoMedioExecucao.toFixed(0)} dias</span>
                   </div>
                 </div>
               </CardContent>
@@ -326,7 +336,8 @@ export default function AnaliseTerritorioPage() {
                         <th scope="col" className="px-6 py-3">% Votos</th>
                         <th scope="col" className="px-6 py-3">Valor em Emendas</th>
                         <th scope="col" className="px-6 py-3">R$ per capita</th>
-                        <th scope="col" className="px-6 py-3">% Executado</th>
+                        <th scope="col" className="px-6 py-3">% Pago</th>
+                        <th scope="col" className="px-6 py-3">Tempo Médio</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -375,7 +386,22 @@ export default function AnaliseTerritorioPage() {
                               })}
                             </td>
                             <td className="px-6 py-4">
-                              {municipio.emendas.percentualPago}%
+                              <div className="flex items-center gap-2">
+                                <div className="flex-1 bg-gray-200 rounded-full h-2">
+                                  <div
+                                    className="bg-green-600 h-2 rounded-full"
+                                    style={{ width: `${municipio.emendas.percentualPago}%` }}
+                                  />
+                                </div>
+                                <span className="text-xs font-medium">
+                                  {municipio.emendas.percentualPago.toFixed(1)}%
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              {municipio.emendas.tempoMedioExecucao > 0 ? (
+                                `${municipio.emendas.tempoMedioExecucao.toFixed(0)} dias`
+                              ) : '-'}
                             </td>
                           </tr>
                         ))}

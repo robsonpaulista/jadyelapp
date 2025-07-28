@@ -40,8 +40,25 @@ interface DadosEleitoraisProcessados {
   crescimento: number;
 }
 
+// Nova interface para dados de execução do Portal da Transparência
+interface DadosExecucaoPortal {
+  codigoEmenda: string;
+  municipio: string;
+  valorEmpenhado: number;
+  valorLiquidado: number;
+  valorPago: number;
+  dataEmpenho: string;
+  dataLiquidacao: string | null;
+  dataPagamento: string | null;
+  objetoGasto: string;
+  funcionalProgramatica: string;
+}
+
 // Cache em memória para dados do IBGE (evitar chamadas repetidas)
 const cacheIBGE: { [key: string]: DadosIBGE } = {};
+
+// Cache em memória para dados do Portal da Transparência
+const cachePortal: { [key: string]: DadosExecucaoPortal[] } = {};
 
 // Funções de integração com APIs externas
 export async function buscarDadosIBGE(codigoMunicipio: string): Promise<DadosIBGE | null> {
@@ -159,6 +176,107 @@ export async function buscarDadosCAUC(codigoMunicipio: string): Promise<DadosCAU
     console.error('Erro ao buscar dados do CAUC:', error);
     return null;
   }
+}
+
+// Nova função para buscar dados do Portal da Transparência
+export async function buscarDadosPortalTransparencia(codigoEmenda: string): Promise<DadosExecucaoPortal[] | null> {
+  try {
+    // Verificar cache primeiro
+    if (cachePortal[codigoEmenda]) {
+      return cachePortal[codigoEmenda];
+    }
+
+    // TODO: Implementar chamada real à API do Portal da Transparência
+    // Por enquanto, retornando dados simulados
+    const dadosSimulados: DadosExecucaoPortal[] = [{
+      codigoEmenda,
+      municipio: 'TERESINA',
+      valorEmpenhado: 500000,
+      valorLiquidado: 300000,
+      valorPago: 200000,
+      dataEmpenho: '2024-01-15',
+      dataLiquidacao: '2024-02-01',
+      dataPagamento: '2024-02-15',
+      objetoGasto: 'Aquisição de equipamentos hospitalares',
+      funcionalProgramatica: '10.302.5019.0000'
+    }];
+
+    // Salvar no cache
+    cachePortal[codigoEmenda] = dadosSimulados;
+
+    return dadosSimulados;
+  } catch (error) {
+    console.error('Erro ao buscar dados do Portal da Transparência:', error);
+    return null;
+  }
+}
+
+// Nova função para buscar dados de múltiplas emendas
+export async function buscarDadosPortalTransparenciaBatch(
+  codigosEmendas: string[]
+): Promise<{ [codigoEmenda: string]: DadosExecucaoPortal[] }> {
+  try {
+    const resultados: { [codigoEmenda: string]: DadosExecucaoPortal[] } = {};
+    
+    // Usar Promise.all para fazer requisições em paralelo
+    await Promise.all(
+      codigosEmendas.map(async (codigo) => {
+        const dados = await buscarDadosPortalTransparencia(codigo);
+        if (dados) {
+          resultados[codigo] = dados;
+        }
+      })
+    );
+
+    return resultados;
+  } catch (error) {
+    console.error('Erro ao buscar dados do Portal da Transparência em lote:', error);
+    return {};
+  }
+}
+
+// Nova função para calcular métricas de execução
+export function calcularMetricasExecucao(dados: DadosExecucaoPortal[]): {
+  percentualEmpenhado: number;
+  percentualLiquidado: number;
+  percentualPago: number;
+  tempoMedioExecucao: number;
+  valorTotal: number;
+} {
+  if (!dados || dados.length === 0) {
+    return {
+      percentualEmpenhado: 0,
+      percentualLiquidado: 0,
+      percentualPago: 0,
+      tempoMedioExecucao: 0,
+      valorTotal: 0
+    };
+  }
+
+  const valorTotal = dados.reduce((acc, d) => acc + d.valorEmpenhado, 0);
+  const valorLiquidadoTotal = dados.reduce((acc, d) => acc + d.valorLiquidado, 0);
+  const valorPagoTotal = dados.reduce((acc, d) => acc + d.valorPago, 0);
+
+  // Calcular tempo médio entre empenho e pagamento
+  const tempos = dados
+    .filter(d => d.dataEmpenho && d.dataPagamento)
+    .map(d => {
+      const empenho = new Date(d.dataEmpenho);
+      const pagamento = new Date(d.dataPagamento!);
+      return (pagamento.getTime() - empenho.getTime()) / (1000 * 60 * 60 * 24); // dias
+    });
+
+  const tempoMedio = tempos.length > 0
+    ? tempos.reduce((acc, t) => acc + t, 0) / tempos.length
+    : 0;
+
+  return {
+    percentualEmpenhado: valorTotal > 0 ? 100 : 0,
+    percentualLiquidado: valorTotal > 0 ? (valorLiquidadoTotal / valorTotal) * 100 : 0,
+    percentualPago: valorTotal > 0 ? (valorPagoTotal / valorTotal) * 100 : 0,
+    tempoMedioExecucao: tempoMedio,
+    valorTotal
+  };
 }
 
 // Nova função para processar dados eleitorais
