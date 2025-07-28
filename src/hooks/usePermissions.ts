@@ -123,12 +123,24 @@ export function usePermissions() {
 
   const getDefaultRoute = useCallback((): string => {
     try {
-      return '/painel-aplicacoes';
+      if (!userLevel) return '/';
+      
+      switch (userLevel) {
+        case 'admin':
+        case 'user':
+          return '/painel-aplicacoes';
+        case 'gabineteemendas':
+          return '/emendas2025';
+        case 'gabinetejuridico':
+          return '/projetos';
+        default:
+          return '/painel-aplicacoes';
+      }
     } catch (error) {
       console.error('Erro em getDefaultRoute:', error);
       return '/painel-aplicacoes';
     }
-  }, []);
+  }, [userLevel]);
 
   return {
     userLevel,
