@@ -5,7 +5,9 @@ import {
   buscarDadosPortalTransparenciaBatch,
   calcularMetricasExecucao,
   buscarDadosCAUCBatch,
-  calcularRisco
+  calcularRisco,
+  buscarDadosTransferegovBatch,
+  calcularMetricasTransferencias
 } from '@/services/analiseTerritorioService';
 
 // Lista de municípios do Piauí para teste
@@ -29,12 +31,13 @@ const EMENDAS_TESTE = [
 
 export async function GET() {
   try {
-    // Buscar dados do IBGE, eleitorais, execução e CAUC em paralelo
-    const [dadosIBGE, dadosEleitorais, dadosExecucao, dadosCAUC] = await Promise.all([
+    // Buscar dados do IBGE, eleitorais, execução, CAUC e Transferegov em paralelo
+    const [dadosIBGE, dadosEleitorais, dadosExecucao, dadosCAUC, dadosTransferegov] = await Promise.all([
       buscarDadosIBGEBatch(MUNICIPIOS_PIAUI),
       processarDadosEleitoraisBatch(MUNICIPIOS_PIAUI.map(m => m.toString())),
       buscarDadosPortalTransparenciaBatch(EMENDAS_TESTE),
-      buscarDadosCAUCBatch(MUNICIPIOS_PIAUI)
+      buscarDadosCAUCBatch(MUNICIPIOS_PIAUI),
+      buscarDadosTransferegovBatch(MUNICIPIOS_PIAUI)
     ]);
 
     // Calcular métricas
@@ -63,6 +66,19 @@ export async function GET() {
     const municipiosIrregulares = Object.values(dadosCAUC).filter(m => m.situacao === 'IRREGULAR').length;
     const percentualIrregulares = (municipiosIrregulares / Object.keys(dadosCAUC).length) * 100;
 
+    // Calcular métricas de transferências
+    const todasTransferencias = Object.values(dadosTransferegov).flat();
+    const metricasTransferencias = calcularMetricasTransferencias(todasTransferencias);
+
+    // Agrupar transferências por município
+    const transferenciasPorMunicipio = todasTransferencias.reduce((acc, transferencia) => {
+      if (!acc[transferencia.municipio]) {
+        acc[transferencia.municipio] = [];
+      }
+      acc[transferencia.municipio].push(transferencia);
+      return acc;
+    }, {} as { [municipio: string]: typeof todasTransferencias });
+
     const mockData = {
       success: true,
       data: {
@@ -76,6 +92,9 @@ export async function GET() {
 
           const dadosCAUCMunicipio = dadosCAUC[m.municipio.id];
           const indicadorRisco = dadosCAUCMunicipio ? calcularRisco(dadosCAUCMunicipio) : null;
+
+          const transferenciasMunicipio = transferenciasPorMunicipio[m.municipio.nome] || [];
+          const metricasTransferenciasMunicipio = calcularMetricasTransferencias(transferenciasMunicipio);
 
           return {
             id: m.municipio.id,
@@ -96,6 +115,16 @@ export async function GET() {
               percentualPago: metricasMunicipio.percentualPago,
               quantidadeEmendas: emendasMunicipio.length,
               tempoMedioExecucao: metricasMunicipio.tempoMedioExecucao
+            },
+            transferencias: {
+              valorTotalAutorizado: metricasTransferenciasMunicipio.valorTotalAutorizado,
+              valorTotalEmpenhado: metricasTransferenciasMunicipio.valorTotalEmpenhado,
+              valorTotalPago: metricasTransferenciasMunicipio.valorTotalPago,
+              percentualEmpenhado: metricasTransferenciasMunicipio.percentualEmpenhado,
+              percentualPago: metricasTransferenciasMunicipio.percentualPago,
+              quantidadeTransferencias: transferenciasMunicipio.length,
+              tempoMedioExecucao: metricasTransferenciasMunicipio.tempoMedioExecucao,
+              distribuicaoInstrumentos: metricasTransferenciasMunicipio.distribuicaoInstrumentos
             },
             risco: indicadorRisco ? {
               nivel: indicadorRisco.nivel,
@@ -135,6 +164,17 @@ export async function GET() {
             percentualIrregulares,
             valorEmRisco: metricasExecucao.valorTotal * (percentualIrregulares / 100),
             tempoMedioRegularizacao: 15 // TODO: Calcular média real
+          },
+          transferencias: {
+            valorTotalAutorizado: metricasTransferencias.valorTotalAutorizado,
+            valorTotalEmpenhado: metricasTransferencias.valorTotalEmpenhado,
+            valorTotalPago: metricasTransferencias.valorTotalPago,
+            percentualEmpenhado: metricasTransferencias.percentualEmpenhado,
+            percentualPago: metricasTransferencias.percentualPago,
+            quantidadeTransferencias: todasTransferencias.length,
+            tempoMedioExecucao: metricasTransferencias.tempoMedioExecucao,
+            distribuicaoInstrumentos: metricasTransferencias.distribuicaoInstrumentos,
+            distribuicaoSituacao: metricasTransferencias.distribuicaoSituacao
           }
         }
       }
