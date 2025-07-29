@@ -363,7 +363,7 @@ export default function AnaliseTerritorioPage() {
                         <SelectValue placeholder="Selecionar município" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Todos os municípios</SelectItem>
+                        <SelectItem value="todos">Todos os municípios</SelectItem>
                         {dados.map((municipio) => (
                           <SelectItem key={municipio.municipio.id} value={municipio.municipio.id}>
                             {municipio.municipio.nome}
@@ -392,7 +392,7 @@ export default function AnaliseTerritorioPage() {
                     </thead>
                     <tbody>
                       {dados
-                        .filter(m => !municipioSelecionado || m.municipio.id === municipioSelecionado)
+                        .filter(m => municipioSelecionado === 'todos' || !municipioSelecionado || m.municipio.id === municipioSelecionado)
                         .map((municipio) => (
                           <tr key={municipio.municipio.id} className="bg-white border-b hover:bg-gray-50">
                             <td className="px-6 py-4 font-medium text-gray-900">
@@ -531,7 +531,7 @@ export default function AnaliseTerritorioPage() {
                       </thead>
                       <tbody>
                         {dados
-                          .filter(m => !municipioSelecionado || m.municipio.id === municipioSelecionado)
+                          .filter(m => municipioSelecionado === 'todos' || !municipioSelecionado || m.municipio.id === municipioSelecionado)
                           .sort((a, b) => {
                             if (!a.risco || !b.risco) return 0;
                             return a.risco.score - b.risco.score;
