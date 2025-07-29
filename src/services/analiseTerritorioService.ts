@@ -355,7 +355,8 @@ export async function buscarDadosPortalTransparencia(codigoEmenda: string): Prom
     const params = new URLSearchParams({
       codigoEmenda: codigoEmenda,
       ano: '2024',
-      pagina: '1'
+      pagina: '1',
+      uf: 'PI' // Filtrar especificamente pelo Piauí
     });
 
     const response = await fetch(`${url}?${params}`, {
@@ -675,7 +676,12 @@ export async function buscarDadosTransferegov(codigoMunicipio: string): Promise<
     // Implementação real da API do Transferegov
     const url = `https://api.transferegov.gestao.gov.br/v1/transferencias/municipio/${codigoMunicipio}`;
     
-    const response = await fetch(url, {
+    const params = new URLSearchParams({
+      uf: 'PI', // Filtrar especificamente pelo Piauí
+      ano: '2024'
+    });
+    
+    const response = await fetch(`${url}?${params}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
