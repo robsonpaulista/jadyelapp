@@ -1,45 +1,26 @@
-import { google } from 'googleapis';
 import { ProjecaoData } from '@/types/projecao';
-
-// Inicializar o cliente do Google Sheets
-let sheets: any = null;
-
-async function initializeSheets() {
-  if (!sheets) {
-    // Configurar credenciais diretamente
-    const auth = new google.auth.JWT(
-      process.env.OBRAS_SHEET_CLIENT_EMAIL,
-      undefined,
-      process.env.OBRAS_SHEET_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      ['https://www.googleapis.com/auth/spreadsheets.readonly']
-    );
-    sheets = google.sheets({ version: 'v4', auth });
-  }
-  return sheets;
-}
+import { getDoc, OBRAS_SHEET_ID, OBRAS_SHEET_NAME } from './obrasConfig';
+import { GoogleSpreadsheet, GoogleSpreadsheetWorksheet } from 'google-spreadsheet';
 
 // Função para testar a conexão com o Google Sheets
 export async function testeConexao() {
   try {
     console.log('=== TESTANDO CONEXÃO COM GOOGLE SHEETS ===');
-    console.log('Client Email:', process.env.OBRAS_SHEET_CLIENT_EMAIL);
-    console.log('Project ID:', process.env.OBRAS_SHEET_PROJECT_ID);
-    console.log('Private Key configurada:', process.env.OBRAS_SHEET_PRIVATE_KEY ? 'Sim' : 'Não');
+    console.log('Client Email: potalaplicacoesobras@portalaplicacoesobras.iam.gserviceaccount.com');
+    console.log('Project ID: portalaplicacoesobras');
+    console.log('Private Key configurada: Sim');
 
-    const sheets = await initializeSheets();
-    const response = await sheets.spreadsheets.get({
-      spreadsheetId: process.env.OBRAS_SHEET_ID,
-    });
-
+    const doc = await getDoc();
+    
     console.log('Conexão bem sucedida!');
     console.log('Informações da planilha:', {
-      spreadsheetId: response.data.spreadsheetId,
-      title: response.data.properties?.title,
-      locale: response.data.properties?.locale,
-      timeZone: response.data.properties?.timeZone,
+      spreadsheetId: doc.spreadsheetId,
+      title: doc.title,
+      locale: doc.locale,
+      timeZone: doc.timeZone,
     });
 
-    return { success: true, data: response.data };
+    return true;
   } catch (error: any) {
     console.error('Erro ao testar conexão:', {
       message: error?.message,
@@ -49,30 +30,17 @@ export async function testeConexao() {
       responseData: error?.response?.data,
       stack: error?.stack
     });
-    return { success: false, error };
+    return false;
   }
-}
-
-// Interface para o tipo sheet
-interface SheetProperties {
-  properties?: {
-    title?: string;
-  };
 }
 
 // Função para listar as abas da planilha
 export async function listarAbas(sheetId?: string): Promise<string[]> {
   try {
     console.log('Listando abas da planilha...');
-    const idToUse = sheetId || process.env.OBRAS_SHEET_ID;
-    console.log('ID da planilha:', idToUse);
-    
-    const sheets = await initializeSheets();
-    const response = await sheets.spreadsheets.get({
-      spreadsheetId: idToUse,
-    });
-    
-    const abas = response.data.sheets?.map((sheet: SheetProperties) => sheet.properties?.title || '') || [];
+    const doc = await getDoc();
+    const sheets = doc.sheetsByIndex;
+    const abas = sheets.map(sheet => sheet.title);
     console.log('Abas encontradas:', abas);
     return abas;
   } catch (error) {
@@ -83,13 +51,11 @@ export async function listarAbas(sheetId?: string): Promise<string[]> {
 
 // Função para obter dados da planilha
 async function getSheetData(spreadsheetId: string, range: string) {
-  const sheets = await initializeSheets();
-      const response = await sheets.spreadsheets.values.get({
-        spreadsheetId,
-        range,
-      });
-      
-  return response.data.values;
+  const doc = await getDoc();
+  const sheet = doc.sheetsByTitle[range.split('!')[0]];
+  await sheet.loadCells();
+  const rows = await sheet.getRows();
+  return rows.map(row => row.toObject());
 }
 
 // Função para obter dados de projeção de votos
@@ -158,9 +124,7 @@ export async function getProjecaoVotos() {
   }
 }
 
-// Interface simples para qualquer dado da planilha
 export interface ObraDemanda {
-  'Coluna 1'?: string;
   'ID': string;
   'DATA DEMANDA': string;
   'STATUS': string;
@@ -181,51 +145,44 @@ export interface ObraDemanda {
 
 export async function getObrasDemandas(): Promise<ObraDemanda[]> {
   try {
-    const sheetId = process.env.OBRAS_SHEET_ID;
-    const sheetName = process.env.OBRAS_SHEET_NAME || 'Cadastro de demandas';
-
-    if (!sheetId) {
-      throw new Error('ID da planilha não configurado');
+    const doc = await getDoc();
+    const sheet = doc.sheetsByTitle[OBRAS_SHEET_NAME];
+    if (!sheet) {
+      throw new Error(`Aba "${OBRAS_SHEET_NAME}" não encontrada`);
     }
 
-    // Pegar todos os dados da planilha
-    const data = await getSheetData(sheetId, `${sheetName}!A:Z`);
-
-    if (!data || data.length <= 1) {
+    await sheet.loadCells();
+    const rows = await sheet.getRows();
+    
+    if (!rows || rows.length === 0) {
       throw new Error('Nenhum dado encontrado na planilha');
     }
 
     // Pegar os headers da primeira linha
-    const headers = data[0] as string[];
+    const headers = Object.keys(rows[0].toObject());
     console.log('\nColunas na planilha:', headers);
 
-    // Converter os dados em objetos usando os headers exatos da planilha
-    const obras = data.slice(1).map((row: string[]) => {
+    // Converter os dados em objetos
+    const obras = rows.map(row => {
+      const rowData = row.toObject();
       const obra: ObraDemanda = {
-        'ID': '',
-        'DATA DEMANDA': '',
-        'STATUS': '',
-        'SOLICITAÇÃO': '',
-        'OBS STATUS': '',
-        'MUNICIPIO': '',
-        'LIDERANÇA': '',
-        'LIDERANÇA URNA': '',
-        'PAUTA': '',
-        'AÇÃO/OBJETO': '',
-        'NÍVEL ESPAÇO': '',
-        'ESFERA': '',
-        'VALOR ': '',
-        'ÓRGAO ': '',
-        'PREVISÃO': '',
-        'USUÁRIO': ''
+        'ID': rowData['ID'] || '',
+        'DATA DEMANDA': rowData['DATA DEMANDA'] || '',
+        'STATUS': rowData['STATUS'] || '',
+        'SOLICITAÇÃO': rowData['SOLICITAÇÃO'] || '',
+        'OBS STATUS': rowData['OBS STATUS'] || '',
+        'MUNICIPIO': rowData['MUNICIPIO'] || '',
+        'LIDERANÇA': rowData['LIDERANÇA'] || '',
+        'LIDERANÇA URNA': rowData['LIDERANÇA URNA'] || '',
+        'PAUTA': rowData['PAUTA'] || '',
+        'AÇÃO/OBJETO': rowData['AÇÃO/OBJETO'] || '',
+        'NÍVEL ESPAÇO': rowData['NÍVEL ESPAÇO'] || '',
+        'ESFERA': rowData['ESFERA'] || '',
+        'VALOR ': rowData['VALOR '] || '',
+        'ÓRGAO ': rowData['ÓRGAO '] || '',
+        'PREVISÃO': rowData['PREVISÃO'] || '',
+        'USUÁRIO': rowData['USUÁRIO'] || ''
       };
-      
-      headers.forEach((header: string, index: number) => {
-        if (header && header.trim() && row[index]) {
-          (obra as any)[header] = row[index];
-        }
-      });
-
       return obra;
     });
 

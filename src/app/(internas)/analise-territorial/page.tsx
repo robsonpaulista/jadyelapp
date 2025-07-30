@@ -15,90 +15,52 @@ import {
   AlertCircle,
   ShieldAlert,
   ShieldCheck,
-  Clock
+  Clock,
+  User,
+  FileText
 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
+import { DeputadoComEmendas } from '@/services/camaraService';
 
-// Dados mockados simples
+// Dados mockados como fallback
 const DADOS_MOCKADOS = {
-  municipios: [
+  deputados: [
     {
-      id: '2210979',
-      nome: 'Teresina',
-      populacao: 868075,
-      densidade: 747.1,
-      votosDeputado: 125000,
-      ranking: 1,
-      percentualVotos: 15.2,
-      valorEmendas: 25000000,
-      percentualPago: 65.4,
-      situacaoCAUC: 'REGULAR',
-      nivelRisco: 'BAIXO'
-    },
-    {
-      id: '2207702',
-      nome: 'Parnaíba',
-      populacao: 153482,
-      densidade: 352.4,
-      votosDeputado: 45000,
-      ranking: 2,
-      percentualVotos: 8.7,
-      valorEmendas: 15000000,
-      percentualPago: 72.1,
-      situacaoCAUC: 'REGULAR',
-      nivelRisco: 'BAIXO'
-    },
-    {
-      id: '2208007',
-      nome: 'Picos',
-      populacao: 78334,
-      densidade: 135.8,
-      votosDeputado: 32000,
-      ranking: 3,
-      percentualVotos: 6.2,
-      valorEmendas: 8000000,
-      percentualPago: 58.9,
-      situacaoCAUC: 'IRREGULAR',
-      nivelRisco: 'MEDIO'
-    },
-    {
-      id: '2203909',
-      nome: 'Floriano',
-      populacao: 60911,
-      densidade: 17.9,
-      votosDeputado: 28000,
-      ranking: 4,
-      percentualVotos: 5.4,
-      valorEmendas: 6000000,
-      percentualPago: 45.2,
-      situacaoCAUC: 'REGULAR',
-      nivelRisco: 'BAIXO'
-    },
-    {
-      id: '2208403',
-      nome: 'Piripiri',
-      populacao: 63642,
-      densidade: 45.2,
-      votosDeputado: 25000,
-      ranking: 5,
-      percentualVotos: 4.8,
-      valorEmendas: 5000000,
-      percentualPago: 38.7,
-      situacaoCAUC: 'IRREGULAR',
-      nivelRisco: 'ALTO'
+      deputado: {
+        id: 123456,
+        nome: 'Deputado Exemplo',
+        siglaPartido: 'PARTIDO',
+        siglaUf: 'PI',
+        urlFoto: '',
+        email: 'deputado@camara.leg.br'
+      },
+      emendas: [
+        {
+          id: 1,
+          numero: '2025/001',
+          valor: 1000000,
+          municipio: 'Teresina',
+          objeto: 'Aquisição de equipamentos',
+          exercicio: 2025,
+          tipo: 'Individual'
+        }
+      ],
+      totalEmendas: 1,
+      valorTotal: 1000000
     }
   ],
   metricas: {
     cobertura: {
+      deputadosAtivos: 8,
       municipiosAtendidos: 180,
       percentualMunicipios: 80.5,
-      populacaoAtingida: 2500000,
-      percentualPopulacao: 75.8
+      populacaoAtingida: 2500000
     },
     investimento: {
       valorTotalEmendas: 150000000,
-      mediaPerCapita: 250.45,
-      indiceConcentracao: 0.45
+      mediaPorDeputado: 18750000,
+      mediaPorEmenda: 2500000,
+      totalEmendas: 60
     },
     execucao: {
       percentualEmpenhado: 65.4,
@@ -143,32 +105,89 @@ function getRiscoIcon(nivel: string) {
 
 export default function AnaliseTerritorioPage() {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [tabAtiva, setTabAtiva] = useState('visao-geral');
-  const [municipioSelecionado, setMunicipioSelecionado] = useState<string>('todos');
-  const [dados, setDados] = useState(DADOS_MOCKADOS.municipios);
+  const [deputadoSelecionado, setDeputadoSelecionado] = useState<string>('todos');
+  const [dados, setDados] = useState<DeputadoComEmendas[]>(DADOS_MOCKADOS.deputados);
   const [metricas, setMetricas] = useState(DADOS_MOCKADOS.metricas);
 
-  // Filtrar municípios baseado na seleção
-  const municipiosFiltrados = dados.filter(m => 
-    municipioSelecionado === 'todos' || m.id === municipioSelecionado
+  // Carregar dados da API da Câmara
+  const carregarDados = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch('/api/camara?ano=2025');
+      const result = await response.json();
+      
+      if (result.success) {
+        setDados(result.dados);
+        
+        // Calcular métricas baseadas nos dados reais
+        const totalEmendas = result.dados.reduce((acc: number, deputado: DeputadoComEmendas) => 
+          acc + deputado.totalEmendas, 0);
+        const valorTotal = result.dados.reduce((acc: number, deputado: DeputadoComEmendas) => 
+          acc + deputado.valorTotal, 0);
+        
+        setMetricas({
+          ...metricas,
+          investimento: {
+            valorTotalEmendas: valorTotal,
+            mediaPorDeputado: result.dados.length > 0 ? valorTotal / result.dados.length : 0,
+            mediaPorEmenda: totalEmendas > 0 ? valorTotal / totalEmendas : 0,
+            totalEmendas: totalEmendas
+          },
+          cobertura: {
+            ...metricas.cobertura,
+            deputadosAtivos: result.dados.length
+          }
+        });
+      } else {
+        setError('Erro ao carregar dados da API');
+      }
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error);
+      setError('Erro de conexão com a API');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    carregarDados();
+  }, []);
+
+  // Filtrar deputados baseado na seleção
+  const deputadosFiltrados = dados.filter(d => 
+    deputadoSelecionado === 'todos' || d.deputado.id.toString() === deputadoSelecionado
   );
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Análise Territorial - Piauí</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Análise Territorial - Deputados Federais Piauí</h1>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => window.location.reload()}>
-            Atualizar dados
+          {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+          <Button variant="outline" onClick={carregarDados} disabled={loading}>
+            {loading ? 'Carregando...' : 'Atualizar dados'}
           </Button>
         </div>
       </div>
 
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-red-600" />
+            <span className="text-red-800">{error}</span>
+          </div>
+        </div>
+      )}
+
       <Tabs value={tabAtiva} onValueChange={setTabAtiva} className="space-y-4">
         <TabsList>
           <TabsTrigger value="visao-geral">Visão Geral</TabsTrigger>
-          <TabsTrigger value="municipios">Municípios</TabsTrigger>
-          <TabsTrigger value="risco">Análise de Risco</TabsTrigger>
+          <TabsTrigger value="deputados">Deputados</TabsTrigger>
+          <TabsTrigger value="emendas">Emendas</TabsTrigger>
         </TabsList>
 
         <TabsContent value="visao-geral" className="space-y-4">
@@ -217,9 +236,9 @@ export default function AnaliseTerritorioPage() {
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-500">Média per capita</span>
+                    <span className="text-sm text-gray-500">Média por deputado</span>
                     <span className="font-semibold">
-                      {metricas.investimento.mediaPerCapita.toLocaleString('pt-BR', {
+                      {metricas.investimento.mediaPorDeputado.toLocaleString('pt-BR', {
                         style: 'currency',
                         currency: 'BRL'
                       })}
@@ -275,17 +294,17 @@ export default function AnaliseTerritorioPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="municipios" className="space-y-4">
+        <TabsContent value="deputados" className="space-y-4">
           <div className="flex items-center gap-4 mb-4">
-            <Select value={municipioSelecionado} onValueChange={setMunicipioSelecionado}>
+            <Select value={deputadoSelecionado} onValueChange={setDeputadoSelecionado}>
               <SelectTrigger className="w-64">
-                <SelectValue placeholder="Filtrar por município" />
+                <SelectValue placeholder="Filtrar por deputado" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="todos">Todos os municípios</SelectItem>
-                {dados.map(municipio => (
-                  <SelectItem key={municipio.id} value={municipio.id}>
-                    {municipio.nome}
+                <SelectItem value="todos">Todos os deputados</SelectItem>
+                {dados.map(deputado => (
+                  <SelectItem key={deputado.deputado.id} value={deputado.deputado.id.toString()}>
+                    {deputado.deputado.nome} ({deputado.deputado.siglaPartido})
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -298,70 +317,68 @@ export default function AnaliseTerritorioPage() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Município
+                      Deputado
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      População
+                      Partido
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Votos 2022
+                      Total Emendas
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Ranking
+                      Valor Total
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      % Votos
+                      Média por Emenda
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Emendas
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      % Pago
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Risco
+                      Status
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {municipiosFiltrados.map((municipio) => (
-                    <tr key={municipio.id} className="hover:bg-gray-50">
+                  {deputadosFiltrados.map((deputado) => (
+                    <tr key={deputado.deputado.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {municipio.nome}
+                        <div className="flex items-center gap-3">
+                          {deputado.deputado.urlFoto && (
+                            <img 
+                              src={deputado.deputado.urlFoto} 
+                              alt={deputado.deputado.nome}
+                              className="w-8 h-8 rounded-full"
+                            />
+                          )}
+                          <div>
+                            <div className="font-medium">{deputado.deputado.nome}</div>
+                            <div className="text-xs text-gray-500">{deputado.deputado.email}</div>
+                          </div>
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {municipio.populacao.toLocaleString()}
+                        <Badge variant="outline">{deputado.deputado.siglaPartido}</Badge>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {municipio.votosDeputado.toLocaleString()}
+                        {deputado.totalEmendas}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        #{municipio.ranking}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {municipio.percentualVotos}%
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {municipio.valorEmendas.toLocaleString('pt-BR', {
+                        {deputado.valorTotal.toLocaleString('pt-BR', {
                           style: 'currency',
                           currency: 'BRL'
                         })}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <div className="flex items-center gap-2">
-                          <div className="w-16 bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="bg-blue-600 h-2 rounded-full" 
-                              style={{ width: `${municipio.percentualPago}%` }}
-                            ></div>
-                          </div>
-                          <span>{municipio.percentualPago}%</span>
-                        </div>
+                        {deputado.totalEmendas > 0 
+                          ? (deputado.valorTotal / deputado.totalEmendas).toLocaleString('pt-BR', {
+                              style: 'currency',
+                              currency: 'BRL'
+                            })
+                          : 'R$ 0,00'
+                        }
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <Badge className={getRiscoColor(municipio.nivelRisco)}>
-                          {getRiscoIcon(municipio.nivelRisco)}
-                          {municipio.nivelRisco}
+                        <Badge className="bg-green-100 text-green-800">
+                          <User className="h-3 w-3 mr-1" />
+                          Ativo
                         </Badge>
                       </td>
                     </tr>
@@ -372,65 +389,77 @@ export default function AnaliseTerritorioPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="risco" className="space-y-4">
+        <TabsContent value="emendas" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* Métricas de Risco */}
+            {/* Resumo de Emendas */}
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <ShieldAlert className="h-4 w-4 text-red-600" />
-                  Métricas de Risco
+                  <FileText className="h-4 w-4 text-blue-600" />
+                  Resumo de Emendas
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-500">Municípios Irregulares</span>
-                    <span className="font-semibold">{metricas.risco.municipiosIrregulares}</span>
+                    <span className="text-sm text-gray-500">Total de Emendas</span>
+                    <span className="font-semibold">{metricas.investimento.totalEmendas}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-500">% Irregulares</span>
-                    <span className="font-semibold">{metricas.risco.percentualIrregulares}%</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-500">Valor em Risco</span>
+                    <span className="text-sm text-gray-500">Média por Emenda</span>
                     <span className="font-semibold">
-                      {metricas.risco.valorEmRisco.toLocaleString('pt-BR', {
+                      {metricas.investimento.mediaPorEmenda.toLocaleString('pt-BR', {
                         style: 'currency',
                         currency: 'BRL'
                       })}
                     </span>
                   </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-500">Deputados Ativos</span>
+                    <span className="font-semibold">{metricas.cobertura.deputadosAtivos}</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Municípios por Nível de Risco */}
+            {/* Lista de Emendas */}
             <Card className="md:col-span-2">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-orange-600" />
-                  Municípios por Nível de Risco
+                  <FileText className="h-4 w-4 text-green-600" />
+                  Detalhes das Emendas
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {municipiosFiltrados.map((municipio) => (
-                    <div key={municipio.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        {getRiscoIcon(municipio.nivelRisco)}
-                        <div>
-                          <div className="font-medium text-sm">{municipio.nome}</div>
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {deputadosFiltrados.map((deputado) => 
+                    deputado.emendas.map((emenda) => (
+                      <div key={emenda.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <FileText className="h-4 w-4 text-blue-600" />
+                          <div>
+                            <div className="font-medium text-sm">
+                              {emenda.numero} - {emenda.objeto}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {deputado.deputado.nome} • {emenda.municipio}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-semibold text-sm">
+                            {emenda.valor.toLocaleString('pt-BR', {
+                              style: 'currency',
+                              currency: 'BRL'
+                            })}
+                          </div>
                           <div className="text-xs text-gray-500">
-                            CAUC: {municipio.situacaoCAUC}
+                            {emenda.tipo}
                           </div>
                         </div>
                       </div>
-                      <Badge className={getRiscoColor(municipio.nivelRisco)}>
-                        {municipio.nivelRisco}
-                      </Badge>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>

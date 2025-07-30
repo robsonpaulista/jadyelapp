@@ -87,6 +87,7 @@ export default function ChapasPage() {
   const [salvandoMudancas, setSalvandoMudancas] = useState(false);
   const [notificacaoAutoSave, setNotificacaoAutoSave] = useState<string | null>(null);
   const [carregandoCenario, setCarregandoCenario] = useState(false);
+  const [numVagas, setNumVagas] = useState(8); // Novo estado para número de vagas
 
   const mostrarNotificacaoAutoSave = (mensagem: string) => {
     setNotificacaoAutoSave(mensagem);
@@ -407,7 +408,8 @@ export default function ChapasPage() {
 
   // MÉTODO D'HONDT CORRETO - Legislação Brasileira
   const calcularDistribuicaoDHondt = () => {
-    const VAGAS_TOTAIS = 8;
+    // Usar o estado numVagas em vez da constante
+    const VAGAS_TOTAIS = numVagas;
     
     // Filtrar apenas partidos que atingiram o mínimo de 80% do quociente
     const partidosElegiveis = partidos.filter(partido => partidoAtingiuMinimo(partido.nome));
@@ -849,6 +851,11 @@ export default function ChapasPage() {
     }
   };
 
+  // Função para verificar se o candidato atingiu 20% do quociente
+  const candidatoAtingiuMinimo = (votos: number) => {
+    return votos >= (quociente * 0.2);
+  };
+
   // Função para calcular os candidatos eleitos baseado nos votos
   const calcularCandidatosEleitos = () => {
     try {
@@ -859,6 +866,7 @@ export default function ChapasPage() {
         votos: number;
         posicao: number;
         tipoEleicao: 'direta' | 'sobra';
+        atingiuMinimo: boolean;
       }> = [];
 
       // Verificar se simulacao e partidosComVagas existem
@@ -880,41 +888,71 @@ export default function ChapasPage() {
         // Filtrar candidatos (excluir votos de legenda)
         const candidatosValidos = partido.candidatos.filter(c => c.nome !== "VOTOS LEGENDA");
         
-        // Ordenar candidatos por votos (maior para menor)
-        const candidatosOrdenados = [...candidatosValidos].sort((a, b) => b.votos - a.votos);
+        // Primeiro, tentar preencher com candidatos que atingiram 20% do quociente
+        const candidatosComMinimo = candidatosValidos.filter(c => candidatoAtingiuMinimo(c.votos));
+        const candidatosSemMinimo = candidatosValidos.filter(c => !candidatoAtingiuMinimo(c.votos));
         
-        // Pegar os candidatos com mais votos até o número de vagas
-        for (let i = 0; i < partidoInfo.vagasObtidas && i < candidatosOrdenados.length; i++) {
-          const candidato = candidatosOrdenados[i];
+        // Ordenar candidatos por votos (maior para menor)
+        const candidatosComMinimoOrdenados = [...candidatosComMinimo].sort((a, b) => b.votos - a.votos);
+        const candidatosSemMinimoOrdenados = [...candidatosSemMinimo].sort((a, b) => b.votos - a.votos);
+        
+        // Primeiro, preencher com candidatos que atingiram o mínimo
+        let candidatosSelecionados: Array<{candidato: any, atingiuMinimo: boolean}> = [];
+        
+        for (let i = 0; i < partidoInfo.vagasObtidas && i < candidatosComMinimoOrdenados.length; i++) {
+          candidatosSelecionados.push({
+            candidato: candidatosComMinimoOrdenados[i],
+            atingiuMinimo: true
+          });
+        }
+        
+        // Se ainda há vagas disponíveis, preencher com candidatos que não atingiram o mínimo
+        const vagasRestantes = partidoInfo.vagasObtidas - candidatosSelecionados.length;
+        if (vagasRestantes > 0) {
+          for (let i = 0; i < vagasRestantes && i < candidatosSemMinimoOrdenados.length; i++) {
+            candidatosSelecionados.push({
+              candidato: candidatosSemMinimoOrdenados[i],
+              atingiuMinimo: false
+            });
+          }
+        }
+        
+        // Adicionar candidatos eleitos à lista
+        candidatosSelecionados.forEach((selecao, index) => {
+          const candidato = selecao.candidato;
           if (candidato && candidato.nome) {
             candidatosEleitos.push({
               partido: partido.nome,
               nome: candidato.nome,
               votos: candidato.votos || 0,
-              posicao: i + 1,
-              tipoEleicao: i < calcularVagasDiretas(partidoInfo.votosTotal || 0) ? 'direta' : 'sobra'
+              posicao: index + 1,
+              tipoEleicao: index < calcularVagasDiretas(partidoInfo.votosTotal || 0) ? 'direta' : 'sobra',
+              atingiuMinimo: selecao.atingiuMinimo
             });
           }
-        }
+        });
       });
 
       // Ordenar por partido e depois por votos (dentro do partido)
       return candidatosEleitos.sort((a, b) => {
-        if (a.partido !== b.partido) {
-          // Ordenar partidos: PT, PSD/MDB, PP, REPUBLICANOS
-          const ordemPartidos = ['PT', 'PSD/MDB', 'PP', 'REPUBLICANOS'];
-          return ordemPartidos.indexOf(a.partido) - ordemPartidos.indexOf(b.partido);
-        }
+        if (a.partido !== b.partido) return a.partido.localeCompare(b.partido);
         return b.votos - a.votos;
       });
     } catch (error) {
       console.error('Erro ao calcular candidatos eleitos:', error);
       return [];
     }
-  }
+  };
+
+  // Função para calcular o total de votos válidos
+  const getTotalVotosValidos = () => {
+    return partidos.reduce((total, partido) => {
+      return total + getVotosProjetados(partido.candidatos, partido.nome);
+    }, 0);
+  };
 
   return (
-    <div className="flex-1 flex flex-col min-h-screen bg-gray-50">
+    <div className="container mx-auto p-4">
       {/* Notificação de auto-save */}
       {notificacaoAutoSave && (
         <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2">
@@ -957,6 +995,18 @@ export default function ChapasPage() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-3">
           <div className="flex flex-wrap items-center gap-4 text-xs">
             <div className="flex items-center gap-2">
+              <span className="font-semibold text-gray-700">Número de Vagas:</span>
+              <input
+                type="number"
+                value={numVagas}
+                onChange={(e) => setNumVagas(Math.max(1, parseInt(e.target.value) || 8))}
+                className="text-sm font-bold text-gray-700 bg-transparent border-b border-gray-200 focus:border-blue-400 outline-none w-20 text-center px-1"
+                min="1"
+                max="20"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
               <span className="font-semibold text-gray-700">QE 2026:</span>
               <input
                 type="text"
@@ -970,24 +1020,15 @@ export default function ChapasPage() {
                     setQuociente(num);
                   }
                 }}
-                onBlur={() => {
-                  // Atualizar o estado local quando sair do campo
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    // Sair do campo quando pressionar Enter
-                    if (e.currentTarget) {
-                      e.currentTarget.blur();
-                    }
-                  }
-                }}
                 className="text-sm font-bold text-gray-700 bg-transparent border-b border-gray-200 focus:border-blue-400 outline-none w-20 text-center px-1"
               />
             </div>
+
             <div className="flex items-center gap-2">
               <span className="font-semibold text-gray-700">Mínimo:</span>
               <span className="text-sm font-bold text-gray-700">{getQuocienteMinimo().toLocaleString('pt-BR')}</span>
             </div>
+
             <div className="flex items-center gap-2">
               <span className="font-semibold text-gray-700">Elegíveis:</span>
               <span className="text-sm font-bold text-gray-700">
