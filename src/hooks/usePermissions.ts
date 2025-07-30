@@ -56,6 +56,15 @@ export function usePermissions() {
       // Sempre permitir acesso à página inicial e login
       if (route === '/' || route === '/login') return true;
       
+      // Debug log para chapas-estaduais
+      if (route === '/chapas-estaduais') {
+        console.log('Debug usePermissions hasAccess - route:', route);
+        console.log('Debug usePermissions hasAccess - userLevel:', userLevel);
+        const result = hasRoutePermission(userLevel, route);
+        console.log('Debug usePermissions hasAccess - result:', result);
+        return result;
+      }
+      
       return hasRoutePermission(userLevel, route);
     } catch (error) {
       console.error('Erro em hasAccess:', error);

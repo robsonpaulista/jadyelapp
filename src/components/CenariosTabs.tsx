@@ -49,6 +49,15 @@ interface CenariosTabsProps {
   onLimparCenario?: (cenarioId: string) => void;
   onImprimirPDF?: (cenarioId: string) => void;
   salvandoMudancas?: boolean;
+  // Adicionar prop para o serviço
+  service?: {
+    listarCenarios: typeof listarCenarios;
+    carregarCenario: typeof carregarCenario;
+    criarNovoCenario: typeof criarNovoCenario;
+    excluirCenario: typeof excluirCenario;
+    ativarCenario: typeof ativarCenario;
+    criarCenarioBase: typeof criarCenarioBase;
+  };
 }
 
 export default function CenariosTabs({ 
@@ -61,13 +70,26 @@ export default function CenariosTabs({
   onSalvarMudancas,
   onLimparCenario,
   onImprimirPDF,
-  salvandoMudancas = false
+  salvandoMudancas = false,
+  service
 }: CenariosTabsProps) {
+  // Usar o serviço passado via props ou o padrão (federais)
+  const serviceToUse = service || {
+    listarCenarios,
+    carregarCenario,
+    criarNovoCenario,
+    excluirCenario,
+    ativarCenario,
+    criarCenarioBase
+  };
   const [cenarios, setCenarios] = useState<Cenario[]>([]);
   const [cenarioAtivo, setCenarioAtivo] = useState<Cenario | null>(null);
   const [loading, setLoading] = useState(false);
   const [dialogAberto, setDialogAberto] = useState(false);
+  
   const [novoCenario, setNovoCenario] = useState({ nome: '', descricao: '', cenarioOrigem: '' });
+  
+
   const [editandoCenario, setEditandoCenario] = useState<Cenario | null>(null);
   const [activeTab, setActiveTab] = useState<string>('');
 
@@ -75,7 +97,7 @@ export default function CenariosTabs({
   const carregarCenarios = async () => {
     setLoading(true);
     try {
-      const cenariosList = await listarCenarios();
+      const cenariosList = await serviceToUse.listarCenarios();
       
       // Garantir que apenas um cenário esteja ativo
       const cenariosAtivos = cenariosList.filter(c => c.ativo);
@@ -83,10 +105,10 @@ export default function CenariosTabs({
         console.warn('Múltiplos cenários ativos detectados:', cenariosAtivos.map(c => c.nome));
         // Manter apenas o primeiro como ativo e desativar os outros
         for (let i = 1; i < cenariosAtivos.length; i++) {
-          await ativarCenario(cenariosAtivos[i].id, false);
+          await serviceToUse.ativarCenario(cenariosAtivos[i].id, false);
         }
         // Recarregar após correção
-        const cenariosCorrigidos = await listarCenarios();
+        const cenariosCorrigidos = await serviceToUse.listarCenarios();
         setCenarios(cenariosCorrigidos);
         const ativo = cenariosCorrigidos.find(c => c.ativo);
         setCenarioAtivo(ativo || null);
@@ -121,14 +143,14 @@ export default function CenariosTabs({
     setLoading(true);
     try {
       const cenarioOrigemId = novoCenario.cenarioOrigem || (cenarioAtivo?.id || 'base');
-      const novoCenarioId = await criarNovoCenario(
+      const novoCenarioId = await serviceToUse.criarNovoCenario(
         novoCenario.nome,
         novoCenario.descricao,
         cenarioOrigemId
       );
 
       // Carregar o novo cenário
-      const cenarioCompleto = await carregarCenario(novoCenarioId);
+      const cenarioCompleto = await serviceToUse.carregarCenario(novoCenarioId);
       if (cenarioCompleto) {
         onCenarioChange(cenarioCompleto);
       }
@@ -153,18 +175,18 @@ export default function CenariosTabs({
       // Desativar todos os cenários primeiro
       for (const cenario of cenarios) {
         if (cenario.ativo) {
-          await ativarCenario(cenario.id, false);
+          await serviceToUse.ativarCenario(cenario.id, false);
         }
       }
 
       // Ativar o cenário selecionado
-      await ativarCenario(cenarioId, true);
+      await serviceToUse.ativarCenario(cenarioId, true);
 
       // Recarregar cenários para garantir consistência
       await carregarCenarios();
 
       // Carregar automaticamente o cenário ativado
-      const cenarioCompleto = await carregarCenario(cenarioId);
+      const cenarioCompleto = await serviceToUse.carregarCenario(cenarioId);
       if (cenarioCompleto) {
         onCenarioChange(cenarioCompleto);
       } else {
@@ -186,15 +208,15 @@ export default function CenariosTabs({
       const cenarioSendoExcluido = cenarios.find(c => c.id === cenarioId);
       const eraCenarioAtivo = cenarioSendoExcluido?.ativo;
       
-      await excluirCenario(cenarioId);
+      await serviceToUse.excluirCenario(cenarioId);
       await carregarCenarios();
       
       // Se o cenário excluído era o ativo, ativar o cenário base
       if (eraCenarioAtivo) {
-        await ativarCenario('base', true);
+        await serviceToUse.ativarCenario('base', true);
         
         // Carregar o cenário base como ativo
-        const cenarioBase = await carregarCenario('base');
+        const cenarioBase = await serviceToUse.carregarCenario('base');
         if (cenarioBase) {
           onCenarioChange(cenarioBase);
         }
@@ -219,7 +241,7 @@ export default function CenariosTabs({
     setLoading(true);
     try {
       const novoNome = `${cenario.nome} (Cópia)`;
-      const novoCenarioId = await criarNovoCenario(
+      const novoCenarioId = await serviceToUse.criarNovoCenario(
         novoNome,
         cenario.descricao || '',
         cenario.id

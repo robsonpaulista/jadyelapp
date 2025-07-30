@@ -20,6 +20,7 @@ const protectedRoutes = [
   '/tipos-acao',
   '/pessoas',
   '/chapas',
+  '/chapas-estaduais',
   '/consultar-tetos',
   '/eleicoes-anteriores',
   '/monitoramento-noticias',

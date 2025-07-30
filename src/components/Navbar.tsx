@@ -60,7 +60,8 @@ const MENUS: Menu[] = [
     icon: <BarChart size={20} />,
     permission: 'eleicoes',
     submenus: [
-      { label: 'Formação de chapas 2026', href: '/chapas', icon: <Vote size={16} /> },
+      { label: 'Chapas Federais 2026', href: '/chapas', icon: <Vote size={16} /> },
+      { label: 'Chapas Estaduais 2026', href: '/chapas-estaduais', icon: <Vote size={16} /> },
       { label: 'Pesquisas Eleitorais', href: '/pesquisas-eleitorais', icon: <BarChart2 size={16} /> },
       { label: 'Dashboard Municípios', href: '/eleicoes-anteriores', icon: <LineChart size={16} /> },
       { label: 'Projeção por Municípios', href: '/eleicoes-anteriores/projecao-municipios', icon: <LineChart size={16} /> }

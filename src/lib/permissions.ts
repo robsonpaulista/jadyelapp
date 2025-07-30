@@ -34,6 +34,7 @@ export const ROUTE_PERMISSIONS: Record<UserLevel, string[]> = {
     '/baseliderancas',
     '/projecao2026',
     '/chapas',
+    '/chapas-estaduais',
     '/pesquisas-eleitorais',
     '/eleicoes-anteriores',
     '/eleicoes-anteriores/projecao-municipios',
@@ -62,6 +63,7 @@ export const ROUTE_PERMISSIONS: Record<UserLevel, string[]> = {
     '/analise-territorial',
     '/projecao2026',
     '/chapas',
+    '/chapas-estaduais',
     '/pesquisas-eleitorais',
     '/eleicoes-anteriores',
     '/eleicoes-anteriores/projecao-municipios',
@@ -125,6 +127,14 @@ export function getUserPermissions(userLevel: UserLevel): UserPermissions {
 
 export function hasRoutePermission(userLevel: UserLevel, route: string): boolean {
   const permissions = getUserPermissions(userLevel);
+  
+  // Debug log para chapas-estaduais
+  if (route === '/chapas-estaduais') {
+    console.log('Debug hasRoutePermission - route:', route);
+    console.log('Debug hasRoutePermission - userLevel:', userLevel);
+    console.log('Debug hasRoutePermission - permissions.routes:', permissions.routes);
+    console.log('Debug hasRoutePermission - includes result:', permissions.routes.includes(route));
+  }
   
   // Verifica se a rota exata está nas permissões
   if (permissions.routes.includes(route)) {

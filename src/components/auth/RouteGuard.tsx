@@ -17,6 +17,8 @@ export function RouteGuard({ children }: RouteGuardProps) {
 
   useEffect(() => {
     const checkAccess = async () => {
+      if (isLoading) return;
+
       const user = getCurrentUser();
       
       // Se não há usuário logado, redireciona para login
@@ -25,18 +27,25 @@ export function RouteGuard({ children }: RouteGuardProps) {
         return;
       }
 
-      // Se ainda está carregando permissões, aguarda
-      if (isLoading) {
-        return;
-      }
-
       // Cache de permissões para evitar verificações repetidas
       const cacheKey = `${user.id}-${pathname}`;
+
+      // Limpar cache para chapas-estaduais se for essa rota
+      if (pathname === '/chapas-estaduais') {
+        console.log('Limpando cache para chapas-estaduais');
+        sessionStorage.removeItem(cacheKey);
+        // Limpar também outros caches relacionados
+        Object.keys(sessionStorage).forEach(key => {
+          if (key.includes('chapas-estaduais')) {
+            sessionStorage.removeItem(key);
+          }
+        });
+      }
+
+      // Verificar cache primeiro
       const cachedResult = sessionStorage.getItem(cacheKey);
-      
       if (cachedResult !== null) {
-        const hasPermission = cachedResult === 'true';
-        if (!hasPermission) {
+        if (cachedResult === 'false') {
           console.log(`Usuário ${user.name} (${userLevel}) tentou acessar ${pathname} sem permissão (cache)`);
           router.replace('/painel-aplicacoes');
           return;
@@ -48,6 +57,16 @@ export function RouteGuard({ children }: RouteGuardProps) {
       // Se não tem acesso à rota atual
       if (!hasAccess(pathname)) {
         console.log(`Usuário ${user.name} (${userLevel}) tentou acessar ${pathname} sem permissão`);
+        console.log('Debug - pathname:', pathname);
+        console.log('Debug - userLevel:', userLevel);
+        console.log('Debug - hasAccess result:', hasAccess(pathname));
+        
+        // Limpar cache para chapas-estaduais se for essa rota
+        if (pathname === '/chapas-estaduais') {
+          console.log('Limpando cache para chapas-estaduais');
+          sessionStorage.removeItem(cacheKey);
+        }
+        
         sessionStorage.setItem(cacheKey, 'false');
         
         // Redirecionar para o painel de aplicações quando não tiver acesso
