@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Loader2, RefreshCw, Search, Filter, ChevronDown, ChevronRight, ChevronUp, DollarSign, TrendingUp, CheckCircle, CreditCard, Printer } from 'lucide-react';
+import { type Emenda } from '@/types/emenda';
+import { EmendasTable } from '@/components/table/EmendasTable';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -22,29 +24,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { toast } from 'react-hot-toast';
 
-interface Emenda {
-  id: string;
-  bloco: string | null;
-  emenda: string | null;
-  municipioBeneficiario: string | null;
-  funcional: string | null;
-  gnd: string | null;
-  valorIndicado: number | null;
-  objeto: string | null;
-  alteracao: string | null;
-  numeroProposta: string | null;
-  valorEmpenhado: number | null;
-  empenho: string | null;
-  dataEmpenho: string | null;
-  portariaConvenioContrato: string | null;
-  valorAEmpenhar: number | null;
-  pagamento: string | null;
-  valorPago: number | null;
-  valorASerPago: number | null;
-  liderancas: string | null;
-  createdAt: any;
-  updatedAt: any;
-}
+
 
 interface BlocoData {
   bloco: string;
@@ -77,6 +57,8 @@ export default function Emendas2025() {
   
   // Filtros retráteis
   const [filtrosVisiveis, setFiltrosVisiveis] = useState(true);
+
+
 
   // Estados do modal de edição
   const [modalAberto, setModalAberto] = useState(false);
@@ -1236,65 +1218,12 @@ export default function Emendas2025() {
                     <div className="overflow-x-auto">
                       {/* Layout para desktop */}
                       <div className="hidden md:block">
-                        <table className="w-full text-sm">
-                          <thead className="bg-gray-50">
-                            <tr>
-                              <th className="px-3 py-2 text-left font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('emenda')}>
-                                Emenda {obterIconeOrdenacao('emenda')}
-                              </th>
-                              <th className="px-3 py-2 text-left font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('municipioBeneficiario')}>
-                                Município/Beneficiário {obterIconeOrdenacao('municipioBeneficiario')}
-                              </th>
-                              <th className="px-3 py-2 text-right font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('valorIndicado')}>
-                                Valor Indicado {obterIconeOrdenacao('valorIndicado')}
-                              </th>
-                              <th className="px-3 py-2 text-right font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('valorAEmpenhar')}>
-                                Valor a Empenhar {obterIconeOrdenacao('valorAEmpenhar')}
-                              </th>
-                              <th className="px-3 py-2 text-right font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('valorEmpenhado')}>
-                                Valor Empenhado {obterIconeOrdenacao('valorEmpenhado')}
-                              </th>
-                              <th className="px-3 py-2 text-right font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('valorPago')}>
-                                Valor Pago {obterIconeOrdenacao('valorPago')}
-                              </th>
-                              <th className="px-3 py-2 text-left font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('liderancas')}>
-                                Lideranças {obterIconeOrdenacao('liderancas')}
-                              </th>
-                              <th className="px-3 py-2 text-left font-medium text-gray-900 cursor-pointer hover:bg-gray-100 select-none" onClick={() => ordenarPorCampo('objeto')}>
-                                Objeto {obterIconeOrdenacao('objeto')}
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-200">
-                            {bloco.emendas.map((emenda, index) => (
-                              <tr 
-                                key={emenda.id || index} 
-                                className="hover:bg-gray-50 cursor-pointer"
-                                onDoubleClick={() => handleDuploClic(emenda)}
-                                title="Duplo clique para editar"
-                              >
-                                <td className="px-3 py-2 font-medium text-gray-900">{emenda.emenda || 'N/A'}</td>
-                                <td className="px-3 py-2 text-gray-900">{emenda.municipioBeneficiario || 'N/A'}</td>
-                                <td className="px-3 py-2 text-right font-medium text-gray-900">
-                                  {formatarValor(emenda.valorIndicado)}
-                                </td>
-                                <td className="px-3 py-2 text-right font-medium text-gray-900">
-                                  {formatarValor(emenda.valorAEmpenhar)}
-                                </td>
-                                <td className="px-3 py-2 text-right font-medium text-gray-900">
-                                  {formatarValor(emenda.valorEmpenhado)}
-                                </td>
-                                <td className="px-3 py-2 text-right font-medium text-gray-900">
-                                  {formatarValor(emenda.valorPago)}
-                                </td>
-                                <td className="px-3 py-2 text-gray-900">{emenda.liderancas || 'N/A'}</td>
-                                <td className="px-3 py-2 text-gray-900 max-w-xs truncate" title={emenda.objeto || ''}>
-                                  {emenda.objeto || 'N/A'}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                        <EmendasTable
+                          data={bloco.emendas}
+                          blocoName={bloco.bloco}
+                          ordenacaoAtual={ordenacaoAtual}
+                          onDoubleClick={handleDuploClic}
+                        />
                       </div>
 
                       {/* Layout de cards para mobile */}
