@@ -25,33 +25,27 @@ export function EmendasTable({ data, blocoName, ordenacaoAtual, onDoubleClick }:
     },
     { 
       id: 'valorIndicado', 
-      accessorFn: (row) => row.valorIndicado,
-      sortingFn: 'number'
+      accessorFn: (row) => row.valorIndicado
     },
     { 
       id: 'valorAEmpenhar', 
-      accessorFn: (row) => row.valorAEmpenhar,
-      sortingFn: 'number'
+      accessorFn: (row) => row.valorAEmpenhar
     },
     { 
       id: 'valorEmpenhado', 
-      accessorFn: (row) => row.valorEmpenhado,
-      sortingFn: 'number'
+      accessorFn: (row) => row.valorEmpenhado
     },
     { 
       id: 'valorPago', 
-      accessorFn: (row) => row.valorPago,
-      sortingFn: 'number'
+      accessorFn: (row) => row.valorPago
     },
     { 
       id: 'liderancas', 
-      accessorFn: (row) => row.liderancas,
-      sortingFn: 'text'
+      accessorFn: (row) => row.liderancas
     },
     { 
       id: 'objeto', 
-      accessorFn: (row) => row.objeto,
-      sortingFn: 'text'
+      accessorFn: (row) => row.objeto
     }
   ], []);
 
