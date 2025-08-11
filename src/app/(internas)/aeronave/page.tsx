@@ -135,7 +135,7 @@ export default function AeronavePage() {
       trecho?: string;
       descricao?: string;
       reciboTexto?: string;
-      reciboMimeType?: 'image/jpeg' | 'image/png';
+      reciboMimeType?: 'image/jpeg' | 'image/png' | 'application/pdf';
       reciboImagemBase64?: string;
       reciboChunked?: boolean;
       statusReembolso?: 'pendente' | 'enviado' | 'aprovado' | 'pago';
