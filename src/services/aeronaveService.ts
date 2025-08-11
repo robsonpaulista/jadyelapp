@@ -11,6 +11,7 @@ import {
   doc,
   updateDoc,
   setDoc,
+  QueryConstraint,
 } from 'firebase/firestore';
 
 export type TipoDespesaAeronave =
@@ -115,7 +116,7 @@ export async function listarDespesasAeronave(
 ): Promise<DespesaAeronave[]> {
   let qRef = query(collection(db, DESPESAS_COLLECTION), orderBy('data', 'desc'));
 
-  const whereClauses: any[] = [];
+  const whereClauses: QueryConstraint[] = [];
 
   if (filtro.tipo) {
     whereClauses.push(where('tipo', '==', filtro.tipo));
@@ -140,7 +141,6 @@ export async function listarDespesasAeronave(
   }
 
   if (whereClauses.length > 0) {
-    // @ts-expect-error - construção incremental de query com múltiplos wheres é suportada em runtime
     qRef = query(qRef, ...whereClauses);
   }
 
