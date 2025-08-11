@@ -675,7 +675,7 @@ export default function AeronavePage() {
       }
 
       // Preparar recibo como texto e/ou imagem base64 (armazenado como texto no Firestore)
-      let reciboMimeType: 'image/jpeg' | 'image/png' | undefined = undefined;
+      let reciboMimeType: 'image/jpeg' | 'image/png' | 'application/pdf' | undefined = undefined;
       let reciboImagemBase64: string | undefined = undefined;
       let reciboTamanhoBytes: number | undefined = undefined;
 
