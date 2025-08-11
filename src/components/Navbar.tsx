@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { 
   Settings, Users, BarChart, ListTree, FileText, Building2, UserCheck, Instagram, 
   MapPin, ArrowLeft, LogOut, Newspaper, BarChart2, Building, Coins, Users2,
-  Vote, UserCog, LineChart, Menu, X, Home
+  Vote, UserCog, LineChart, Menu, X, Home, Plane
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { getCurrentUser } from '@/lib/storage';
@@ -38,7 +38,8 @@ const MENUS: Menu[] = [
     permission: 'leads',
     submenus: [
       { label: 'Monitoramento de Notícias', href: '/monitoramento-noticias', icon: <Newspaper size={16} /> },
-      { label: 'Instagram Analytics', href: '/instagram-analytics', icon: <Instagram size={16} /> }
+        { label: 'Instagram Analytics', href: '/instagram-analytics', icon: <Instagram size={16} /> },
+        { label: 'Aeronave', href: '/aeronave', icon: <Plane size={16} /> }
     ]
   },
   {

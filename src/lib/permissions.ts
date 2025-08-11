@@ -49,7 +49,8 @@ export const ROUTE_PERMISSIONS: Record<UserLevel, string[]> = {
     '/criaremendas',
     '/dashboardemendas',
     '/emendas',
-    '/emendas/[id]'
+    '/emendas/[id]',
+    '/aeronave'
   ],
   user: [
     '/',
@@ -68,7 +69,8 @@ export const ROUTE_PERMISSIONS: Record<UserLevel, string[]> = {
     '/eleicoes-anteriores',
     '/eleicoes-anteriores/projecao-municipios',
     '/pessoas',
-    '/pacientes'
+    '/pacientes',
+    '/aeronave'
   ],
   gabineteemendas: [
     '/',
