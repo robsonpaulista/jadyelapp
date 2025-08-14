@@ -23,6 +23,8 @@ import {
 } from 'lucide-react';
 import { Label } from "@/components/ui/label";
 import { toast } from 'react-hot-toast';
+import { getLimiteMacByMunicipio } from '@/utils/limitesmac';
+import { getLimitePapByMunicipio } from '@/utils/limitepap';
 
 
 
@@ -34,6 +36,45 @@ interface BlocoData {
   totalValorEmpenhado: number;
   totalValorPago: number;
   totalMunicipios: number;
+}
+
+// Função utilitária para remover acentos (igual à página de tetos)
+function normalizeString(str: string) {
+  return (str || '')
+    .normalize('NFD')
+    .replace(/[^a-zA-Z0-9\s]/g, '') // remove tudo que não é letra, número ou espaço
+    .replace(/[\u0300-\u036f]/g, '') // remove acentos
+    .toLowerCase()
+    .trim();
+}
+
+// Função para mapear nomes de municípios com acentos para nomes sem acentos
+function mapearNomeMunicipio(nomeOriginal: string): string {
+  const mapeamento: { [key: string]: string } = {
+    'PARNAÍBA': 'PARNAIBA',
+    'Parnaíba': 'PARNAIBA',
+    'parnaíba': 'PARNAIBA',
+    'ÁGUA BRANCA': 'AGUA BRANCA',
+    'Água Branca': 'AGUA BRANCA',
+    'água branca': 'AGUA BRANCA',
+    'SÃO PEDRO DO PIAUÍ': 'SAO PEDRO DO PIAUI',
+    'São Pedro do Piauí': 'SAO PEDRO DO PIAUI',
+    'são pedro do piauí': 'SAO PEDRO DO PIAUI',
+    'CAPITÃO DE CAMPOS': 'CAPITAO DE CAMPOS',
+    'Capitão de Campos': 'CAPITAO DE CAMPOS',
+    'capitão de campos': 'CAPITAO DE CAMPOS',
+    'CAPITÃO GERVÁSIO OLIVEIRA': 'CAPITAO GERVASIO OLIVEIRA',
+    'Capitão Gervásio Oliveira': 'CAPITAO GERVASIO OLIVEIRA',
+    'capitão gervásio oliveira': 'CAPITAO GERVASIO OLIVEIRA',
+    'LUÍS CORREIA': 'LUIS CORREIA',
+    'Luís Correia': 'LUIS CORREIA',
+    'luís correia': 'LUIS CORREIA',
+    'CASTELO DO PIAUÍ': 'CASTELO DO PIAUI',
+    'Castelo do Piauí': 'CASTELO DO PIAUI',
+    'castelo do piauí': 'CASTELO DO PIAUI'
+  };
+
+  return mapeamento[nomeOriginal] || nomeOriginal;
 }
 
 export default function Emendas2025() {
@@ -65,6 +106,35 @@ export default function Emendas2025() {
   const [emendaEditando, setEmendaEditando] = useState<Emenda | null>(null);
   const [dadosEdicao, setDadosEdicao] = useState<Partial<Emenda>>({});
   const [salvandoEdicao, setSalvandoEdicao] = useState(false);
+
+  // Estados para saldos MAC e PAP
+  const [saldosMac, setSaldosMac] = useState<{
+    limite: number | null;
+    propostas: number;
+    valorPagar: number;
+    saldo: number | null;
+  }>({ limite: null, propostas: 0, valorPagar: 0, saldo: null });
+  
+  const [saldosPap, setSaldosPap] = useState<{
+    limite: number | null;
+    propostas: number;
+    valorPagar: number;
+    saldo: number | null;
+  }>({ limite: null, propostas: 0, valorPagar: 0, saldo: null });
+
+  // Estados para saldos dos blocos 2 e 3
+  const [saldosBlocos, setSaldosBlocos] = useState<{
+    [municipio: string]: {
+      mac: { limite: number | null; propostas: number; valorPagar: number; saldo: number | null };
+      pap: { limite: number | null; propostas: number; valorPagar: number; saldo: number | null };
+    }
+  }>({});
+
+  // Estado para filtro por município ao clicar nos saldos
+  const [filtroMunicipioSaldo, setFiltroMunicipioSaldo] = useState<string | null>(null);
+  
+  // Estado para mostrar lista de municípios disponíveis para remanejamento
+  const [mostrarMunicipiosDisponiveis, setMostrarMunicipiosDisponiveis] = useState(false);
 
   // Buscar dados das emendas do Firebase
   const fetchEmendas = async (forceRefresh = false) => {
@@ -290,6 +360,8 @@ export default function Emendas2025() {
     setBlocos(blocosProcessados);
   };
 
+
+
   // Aplicar filtros
   useEffect(() => {
     // Se devemos pular este processamento (devido a uma atualização manual), retornar
@@ -350,18 +422,140 @@ export default function Emendas2025() {
         });
       }
 
+      // Filtro por município dos saldos
+      if (filtroMunicipioSaldo) {
+        emendasFiltradas = emendasFiltradas.filter(emenda => 
+          emenda.municipioBeneficiario?.trim().toUpperCase() === filtroMunicipioSaldo.trim().toUpperCase()
+        );
+      }
+
       // Adiciona as emendas filtradas ao resultado final
       dadosFiltrados.push(...emendasFiltradas);
     });
 
     setEmendasFiltradas(dadosFiltrados);
     processarBlocos(dadosFiltrados);
-  }, [emendas, filtroBloco, filtroMunicipio, filtroEmenda, filtroStatusEmpenho, ordenacaoAtual, skipNextFilterProcessing]);
+  }, [emendas, filtroBloco, filtroMunicipio, filtroEmenda, filtroStatusEmpenho, ordenacaoAtual, skipNextFilterProcessing, filtroMunicipioSaldo]);
 
   // Carregar dados iniciais
   useEffect(() => {
     fetchEmendas();
   }, []);
+
+  // Calcular saldos dos blocos 2 e 3 quando as emendas forem carregadas
+  useEffect(() => {
+    if (emendas.length > 0) {
+      calcularSaldosBlocos();
+    }
+  }, [emendas]);
+
+
+
+  // Função para calcular saldos MAC e PAP para todos os municípios dos blocos 2 e 3
+  const calcularSaldosBlocos = async () => {
+    try {
+      // Obter municípios únicos dos blocos 2 e 3 das emendas originais (não filtradas)
+      const municipiosBlocos = new Set<string>();
+      
+      emendas.forEach(emenda => {
+        if (emenda.bloco === 'BLOCO 2' || emenda.bloco === 'BLOCO 3') {
+          if (emenda.municipioBeneficiario) {
+            municipiosBlocos.add(emenda.municipioBeneficiario);
+          }
+        }
+      });
+
+      const municipiosArray = Array.from(municipiosBlocos);
+
+      console.log('=== DEBUG: Municípios encontrados nas emendas ===');
+      console.log('Municípios:', municipiosArray);
+
+      const novosSaldos: typeof saldosBlocos = {};
+
+      // Calcular saldos para cada município
+      for (const municipio of municipiosArray) {
+        try {
+          // Normalizar o nome do município antes de buscar os limites (igual à página de tetos)
+          const nomeNormalizado = normalizeString(municipio);
+          const nomeMapeado = mapearNomeMunicipio(municipio);
+          
+          console.log(`\n=== DEBUG: Processando ${municipio} ===`);
+          console.log(`Nome original: "${municipio}"`);
+          console.log(`Nome normalizado: "${nomeNormalizado}"`);
+          console.log(`Nome mapeado: "${nomeMapeado}"`);
+          
+          // Buscar limites do município usando o nome mapeado
+          const limiteMac = getLimiteMacByMunicipio(nomeMapeado);
+          const limitePap = getLimitePapByMunicipio(nomeMapeado);
+
+          console.log(`Limite MAC encontrado:`, limiteMac ? `R$ ${limiteMac.valor.toLocaleString('pt-BR')}` : 'NÃO ENCONTRADO');
+          console.log(`Limite PAP encontrado:`, limitePap ? `R$ ${limitePap.valor.toLocaleString('pt-BR')}` : 'NÃO ENCONTRADO');
+
+          // Buscar propostas do município na API usando o nome original
+          const res = await fetch(`/api/consultar-tetos?municipio=${encodeURIComponent(municipio)}`);
+          if (!res.ok) {
+            console.warn(`Erro ao buscar propostas para ${municipio}:`, res.status);
+            continue;
+          }
+
+          const data = await res.json();
+          const propostas = data.propostas || [];
+
+          console.log(`Propostas retornadas pela API: ${propostas.length}`);
+
+          // Aplicar filtros (igual à página de tetos)
+          const propostasFiltradas = propostas.filter((p: any) => 
+            p.dsTipoRecurso !== 'PROGRAMA'
+          );
+
+          console.log(`Propostas após filtro (sem PROGRAMA): ${propostasFiltradas.length}`);
+
+          // Calcular propostas MAC (igual à página de tetos)
+          const propostasMac = propostasFiltradas.filter((p: any) => 
+            p.coTipoProposta && p.coTipoProposta.toUpperCase().includes('MAC')
+          );
+          const somaPropostasMac = propostasMac.reduce((acc: number, curr: any) => acc + (curr.vlProposta || 0), 0);
+          const somaValorPagarMac = propostasMac.reduce((acc: number, curr: any) => acc + (curr.vlPagar || 0), 0);
+          const saldoMac = limiteMac ? limiteMac.valor - somaPropostasMac : null;
+
+          // Calcular propostas PAP (igual à página de tetos)
+          const propostasPap = propostasFiltradas.filter((p: any) => 
+            p.coTipoProposta && p.coTipoProposta.toUpperCase().includes('PAP')
+          );
+          const somaPropostasPap = propostasPap.reduce((acc: number, curr: any) => acc + (curr.vlProposta || 0), 0);
+          const somaValorPagarPap = propostasPap.reduce((acc: number, curr: any) => acc + (curr.vlPagar || 0), 0);
+          const saldoPap = limitePap ? limitePap.valor - somaPropostasPap : null;
+
+          console.log(`Resultados finais para ${municipio}:`);
+          console.log(`- MAC: Propostas R$ ${somaPropostasMac.toLocaleString('pt-BR')}, Saldo R$ ${saldoMac?.toLocaleString('pt-BR') || 'N/A'}`);
+          console.log(`- PAP: Propostas R$ ${somaPropostasPap.toLocaleString('pt-BR')}, Saldo R$ ${saldoPap?.toLocaleString('pt-BR') || 'N/A'}`);
+
+          novosSaldos[municipio] = {
+            mac: {
+              limite: limiteMac?.valor || null,
+              propostas: somaPropostasMac,
+              valorPagar: somaValorPagarMac,
+              saldo: saldoMac
+            },
+            pap: {
+              limite: limitePap?.valor || null,
+              propostas: somaPropostasPap,
+              valorPagar: somaValorPagarPap,
+              saldo: saldoPap
+            }
+          };
+
+        } catch (error) {
+          console.error(`Erro ao calcular saldos para ${municipio}:`, error);
+        }
+      }
+
+      setSaldosBlocos(novosSaldos);
+
+    } catch (error) {
+      console.error('Erro ao calcular saldos dos blocos:', error);
+    }
+  };
 
   const formatarValor = (valor: number | null) => {
     if (!valor || valor === 0) return 'R$ 0,00';
@@ -847,6 +1041,55 @@ export default function Emendas2025() {
     totalMunicipios: new Set(emendasFiltradas.map(e => e.municipioBeneficiario).filter(Boolean)).size
   };
 
+  // Função para lidar com clique nos saldos
+  const handleCliqueSaldo = (municipio: string) => {
+    if (filtroMunicipioSaldo === municipio) {
+      // Se clicar no mesmo município, remove o filtro
+      setFiltroMunicipioSaldo(null);
+    } else {
+      // Aplica o filtro para o município clicado
+      setFiltroMunicipioSaldo(municipio);
+    }
+  };
+
+  // Função para limpar filtro de saldo
+  const limparFiltroSaldo = () => {
+    setFiltroMunicipioSaldo(null);
+  };
+
+  // Função para calcular municípios disponíveis para remanejamento
+  const calcularMunicipiosDisponiveis = () => {
+    const municipiosComSaldos = Object.keys(saldosBlocos);
+    
+    return municipiosComSaldos
+      .map(municipio => {
+        const saldoMac = saldosBlocos[municipio].mac;
+        const saldoPap = saldosBlocos[municipio].pap;
+        
+        return {
+          municipio,
+          saldoMac: saldoMac.saldo || 0,
+          saldoPap: saldoPap.saldo || 0,
+          limiteMac: saldoMac.limite || 0,
+          limitePap: saldoPap.limite || 0,
+          propostasMac: saldoMac.propostas || 0,
+          propostasPap: saldoPap.propostas || 0,
+          // Calcular percentual de utilização
+          percentualMac: saldoMac.limite ? ((saldoMac.propostas / saldoMac.limite) * 100) : 0,
+          percentualPap: saldoPap.limite ? ((saldoPap.propostas / saldoPap.limite) * 100) : 0
+        };
+      })
+      .filter(m => m.saldoMac > 0 || m.saldoPap > 0) // Apenas municípios com saldo disponível
+      .sort((a, b) => {
+        // Ordenar por maior saldo disponível primeiro
+        const saldoTotalA = a.saldoMac + a.saldoPap;
+        const saldoTotalB = b.saldoMac + b.saldoPap;
+        return saldoTotalB - saldoTotalA;
+      });
+  };
+
+
+
   return (
     <>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -903,6 +1146,7 @@ export default function Emendas2025() {
                   <Printer className="h-4 w-4" />
                   <span className="ml-2">Imprimir PDF</span>
                 </Button>
+
               </div>
             </div>
 
@@ -1083,7 +1327,253 @@ export default function Emendas2025() {
               )}
             </Card>
 
-            {/* Blocos das emendas */}
+            {/* Cards de Saldo MAC e PAP */}
+            {(() => {
+              // Mostrar cards apenas se há saldos calculados para blocos 2 e 3
+              const municipiosComSaldos = Object.keys(saldosBlocos);
+              
+              if (municipiosComSaldos.length > 0) {
+                // Se há filtro por município dos saldos, mostrar apenas esse município
+                let municipiosParaCalcular = municipiosComSaldos;
+                let tituloCards = `Blocos 2 e 3 (${municipiosComSaldos.length} municípios)`;
+
+                if (filtroMunicipioSaldo) {
+                  municipiosParaCalcular = municipiosComSaldos.filter(municipio => 
+                    municipio.trim().toUpperCase() === filtroMunicipioSaldo.trim().toUpperCase()
+                  );
+                  tituloCards = `Município: ${filtroMunicipioSaldo}`;
+                }
+
+                // Calcular totais dos municípios selecionados
+                const totaisMac = municipiosParaCalcular.reduce((acc, municipio) => {
+                  const saldo = saldosBlocos[municipio].mac;
+                  return {
+                    limite: (acc.limite || 0) + (saldo.limite || 0),
+                    propostas: acc.propostas + (saldo.propostas || 0),
+                    valorPagar: acc.valorPagar + (saldo.valorPagar || 0),
+                    saldo: (acc.saldo || 0) + (saldo.saldo || 0)
+                  };
+                }, { limite: 0, propostas: 0, valorPagar: 0, saldo: 0 });
+
+                const totaisPap = municipiosParaCalcular.reduce((acc, municipio) => {
+                  const saldo = saldosBlocos[municipio].pap;
+                  return {
+                    limite: (acc.limite || 0) + (saldo.limite || 0),
+                    propostas: acc.propostas + (saldo.propostas || 0),
+                    valorPagar: acc.valorPagar + (saldo.valorPagar || 0),
+                    saldo: (acc.saldo || 0) + (saldo.saldo || 0)
+                  };
+                }, { limite: 0, propostas: 0, valorPagar: 0, saldo: 0 });
+
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {/* Card MAC */}
+                    <Card className="border-gray-200 bg-gray-50">
+                      <CardHeader className="py-2 pb-1">
+                        <CardTitle className="text-xs font-medium text-gray-700">
+                          MAC - {tituloCards}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0 pb-2">
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div>
+                            <p className="text-gray-500">Limite</p>
+                            <p className="font-semibold text-gray-900">
+                              {formatarValor(totaisMac.limite)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Propostas</p>
+                            <p className="font-semibold text-gray-900">{formatarValor(totaisMac.propostas)}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">A Pagar</p>
+                            <p className="font-semibold text-gray-900">{formatarValor(totaisMac.valorPagar)}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Saldo</p>
+                            <p className={`font-semibold ${totaisMac.saldo < 0 ? 'text-red-600' : 'text-gray-900'}`}>
+                              {formatarValor(totaisMac.saldo)}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Card PAP */}
+                    <Card className="border-gray-200 bg-gray-50">
+                      <CardHeader className="py-2 pb-1">
+                        <CardTitle className="text-xs font-medium text-gray-700">
+                          PAP - {tituloCards}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0 pb-2">
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div>
+                            <p className="text-gray-500">Limite</p>
+                            <p className="font-semibold text-gray-900">
+                              {formatarValor(totaisPap.limite)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Propostas</p>
+                            <p className="font-semibold text-gray-900">{formatarValor(totaisPap.propostas)}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">A Pagar</p>
+                            <p className="font-semibold text-gray-900">{formatarValor(totaisPap.valorPagar)}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Saldo</p>
+                            <p className={`font-semibold ${totaisPap.saldo < 0 ? 'text-red-600' : 'text-gray-900'}`}>
+                              {formatarValor(totaisPap.saldo)}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+
+            {/* Indicador de filtro por município dos saldos */}
+            {filtroMunicipioSaldo && (
+              <Card className="border-gray-200 bg-gray-50">
+                <CardContent className="py-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Filter className="h-3 w-3 text-gray-600" />
+                      <span className="text-xs font-medium text-gray-700">
+                        Filtrado: <span className="font-semibold">{filtroMunicipioSaldo}</span>
+                      </span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={limparFiltroSaldo}
+                      className="h-5 px-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100"
+                    >
+                      <X className="h-3 w-3" />
+                      <span className="ml-1 text-xs">Limpar</span>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Botão para mostrar municípios disponíveis para remanejamento */}
+            {Object.keys(saldosBlocos).length > 0 && (
+              <Card className="border-gray-200 bg-gray-50">
+                <CardContent className="py-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="h-3 w-3 text-gray-600" />
+                      <span className="text-xs font-medium text-gray-700">
+                        Municípios disponíveis para remanejamento
+                      </span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setMostrarMunicipiosDisponiveis(!mostrarMunicipiosDisponiveis)}
+                      className="h-5 px-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100"
+                    >
+                      {mostrarMunicipiosDisponiveis ? (
+                        <ChevronUp className="h-3 w-3" />
+                      ) : (
+                        <ChevronDown className="h-3 w-3" />
+                      )}
+                      <span className="ml-1 text-xs">
+                        {mostrarMunicipiosDisponiveis ? 'Ocultar' : 'Mostrar'}
+                      </span>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Lista de municípios disponíveis para remanejamento */}
+            {mostrarMunicipiosDisponiveis && Object.keys(saldosBlocos).length > 0 && (
+              <Card className="border-gray-200">
+                <CardContent className="py-3">
+                  <div className="space-y-3">
+                    <div className="text-xs font-medium text-gray-700 mb-2">
+                      Municípios com saldo disponível (ordenados por maior disponibilidade):
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                      {calcularMunicipiosDisponiveis().map((municipio, index) => (
+                        <div 
+                          key={municipio.municipio}
+                          className="border border-gray-200 rounded p-2 hover:bg-gray-50 cursor-pointer"
+                          onClick={() => handleCliqueSaldo(municipio.municipio)}
+                          title="Clique para filtrar por este município"
+                        >
+                          <div className="text-xs font-semibold text-gray-900 mb-1">
+                            {municipio.municipio}
+                          </div>
+                          
+                          <div className="space-y-1 text-xs">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">MAC:</span>
+                              <span className={`font-medium ${municipio.saldoMac > 0 ? 'text-green-600' : 'text-gray-400'}`}>
+                                {formatarValor(municipio.saldoMac)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">PAP:</span>
+                              <span className={`font-medium ${municipio.saldoPap > 0 ? 'text-green-600' : 'text-gray-400'}`}>
+                                {formatarValor(municipio.saldoPap)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Total:</span>
+                              <span className={`font-semibold ${(municipio.saldoMac + municipio.saldoPap) > 0 ? 'text-blue-600' : 'text-gray-400'}`}>
+                                {formatarValor(municipio.saldoMac + municipio.saldoPap)}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          {/* Barras de progresso para visualização rápida */}
+                          <div className="mt-2 space-y-1">
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs text-gray-500">MAC</span>
+                              <div className="flex-1 bg-gray-200 rounded-full h-1">
+                                <div 
+                                  className={`h-1 rounded-full ${municipio.percentualMac > 90 ? 'bg-red-500' : municipio.percentualMac > 70 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                                  style={{ width: `${Math.min(municipio.percentualMac, 100)}%` }}
+                                ></div>
+                              </div>
+                              <span className="text-xs text-gray-500">{municipio.percentualMac.toFixed(0)}%</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs text-gray-500">PAP</span>
+                              <div className="flex-1 bg-gray-200 rounded-full h-1">
+                                <div 
+                                  className={`h-1 rounded-full ${municipio.percentualPap > 90 ? 'bg-red-500' : municipio.percentualPap > 70 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                                  style={{ width: `${Math.min(municipio.percentualPap, 100)}%` }}
+                                ></div>
+                              </div>
+                              <span className="text-xs text-gray-500">{municipio.percentualPap.toFixed(0)}%</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {calcularMunicipiosDisponiveis().length === 0 && (
+                      <div className="text-center text-gray-500 text-sm py-4">
+                        Nenhum município com saldo disponível encontrado.
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Blocos de emendas */}
             <div className="space-y-2">
               {blocos.map((bloco) => (
                 <div key={bloco.bloco} className="bg-white rounded-lg shadow-sm border border-gray-200">
@@ -1223,6 +1713,8 @@ export default function Emendas2025() {
                           blocoName={bloco.bloco}
                           ordenacaoAtual={ordenacaoAtual}
                           onDoubleClick={handleDuploClic}
+                          saldosBlocos={saldosBlocos}
+                          onCliqueSaldo={handleCliqueSaldo}
                         />
                       </div>
 
@@ -1243,7 +1735,7 @@ export default function Emendas2025() {
                                 </div>
 
                                 {/* Valores em grid */}
-                                <div className="grid grid-cols-2 gap-2 text-sm">
+                                <div className="grid grid-cols-3 gap-2 text-sm">
                                   <div>
                                     <div className="text-gray-500 text-xs">Valor Indicado</div>
                                     <div className="font-medium text-gray-900">{formatarValor(emenda.valorIndicado)}</div>
@@ -1259,6 +1751,26 @@ export default function Emendas2025() {
                                   <div>
                                     <div className="text-gray-500 text-xs">Valor Pago</div>
                                     <div className="font-medium text-gray-900">{formatarValor(emenda.valorPago)}</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-gray-500 text-xs">Saldo MAC</div>
+                                    <div 
+                                      className="font-medium text-gray-900 cursor-pointer hover:text-blue-700 transition-colors"
+                                      onClick={() => handleCliqueSaldo(emenda.municipioBeneficiario || '')}
+                                      title="Clique para filtrar por este município"
+                                    >
+                                      {formatarValor(saldosBlocos[emenda.municipioBeneficiario || '']?.mac?.saldo || null)}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <div className="text-gray-500 text-xs">Saldo PAP</div>
+                                    <div 
+                                      className="font-medium text-gray-900 cursor-pointer hover:text-green-700 transition-colors"
+                                      onClick={() => handleCliqueSaldo(emenda.municipioBeneficiario || '')}
+                                      title="Clique para filtrar por este município"
+                                    >
+                                      {formatarValor(saldosBlocos[emenda.municipioBeneficiario || '']?.pap?.saldo || null)}
+                                    </div>
                                   </div>
                                 </div>
 

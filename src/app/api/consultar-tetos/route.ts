@@ -54,6 +54,45 @@ function setCache(key: string, data: any) {
   cache.set(key, { data, timestamp: Date.now() });
 }
 
+// Função utilitária para remover acentos (igual à página de emendas2025)
+function normalizeString(str: string) {
+  return (str || '')
+    .normalize('NFD')
+    .replace(/[^a-zA-Z0-9\s]/g, '') // remove tudo que não é letra, número ou espaço
+    .replace(/[\u0300-\u036f]/g, '') // remove acentos
+    .toLowerCase()
+    .trim();
+}
+
+// Função para mapear nomes de municípios com acentos para nomes sem acentos
+function mapearNomeMunicipio(nomeOriginal: string): string {
+  const mapeamento: { [key: string]: string } = {
+    'PARNAÍBA': 'PARNAIBA',
+    'Parnaíba': 'PARNAIBA',
+    'parnaíba': 'PARNAIBA',
+    'ÁGUA BRANCA': 'AGUA BRANCA',
+    'Água Branca': 'AGUA BRANCA',
+    'água branca': 'AGUA BRANCA',
+    'SÃO PEDRO DO PIAUÍ': 'SAO PEDRO DO PIAUI',
+    'São Pedro do Piauí': 'SAO PEDRO DO PIAUI',
+    'são pedro do piauí': 'SAO PEDRO DO PIAUI',
+    'CAPITÃO DE CAMPOS': 'CAPITAO DE CAMPOS',
+    'Capitão de Campos': 'CAPITAO DE CAMPOS',
+    'capitão de campos': 'CAPITAO DE CAMPOS',
+    'CAPITÃO GERVÁSIO OLIVEIRA': 'CAPITAO GERVASIO OLIVEIRA',
+    'Capitão Gervásio Oliveira': 'CAPITAO GERVASIO OLIVEIRA',
+    'capitão gervásio oliveira': 'CAPITAO GERVASIO OLIVEIRA',
+    'LUÍS CORREIA': 'LUIS CORREIA',
+    'Luís Correia': 'LUIS CORREIA',
+    'luís correia': 'LUIS CORREIA',
+    'CASTELO DO PIAUÍ': 'CASTELO DO PIAUI',
+    'Castelo do Piauí': 'CASTELO DO PIAUI',
+    'castelo do piauí': 'CASTELO DO PIAUI'
+  };
+
+  return mapeamento[nomeOriginal] || nomeOriginal;
+}
+
 // Função para carregar municípios do arquivo local
 function getMunicipiosFromLocal(): any[] {
   try {
@@ -194,9 +233,28 @@ export async function GET(req: NextRequest) {
 
     if (municipioParam) {
       // Buscar apenas um município específico
-      const municipioTarget = municipios.find(m => m.noMunicipio.toUpperCase() === municipioParam.toUpperCase());
+      // Normalizar o nome do município para comparação
+      const nomeNormalizado = normalizeString(municipioParam);
+      const nomeMapeado = mapearNomeMunicipio(municipioParam);
+      
+      console.log(`=== DEBUG: Buscando município ===`);
+      console.log(`Nome original: "${municipioParam}"`);
+      console.log(`Nome normalizado: "${nomeNormalizado}"`);
+      console.log(`Nome mapeado: "${nomeMapeado}"`);
+      
+      // Tentar encontrar o município usando diferentes estratégias
+      let municipioTarget = municipios.find(m => 
+        normalizeString(m.noMunicipio) === nomeNormalizado ||
+        m.noMunicipio.toUpperCase() === municipioParam.toUpperCase() ||
+        mapearNomeMunicipio(m.noMunicipio) === nomeMapeado
+      );
+
       if (municipioTarget) {
+        console.log(`Município encontrado: "${municipioTarget.noMunicipio}"`);
         allPropostas = await getPropostasByMunicipio(municipioTarget.coMunicipioIbge, municipioTarget.noMunicipio);
+      } else {
+        console.log(`Município não encontrado: "${municipioParam}"`);
+        console.log(`Municípios disponíveis:`, municipios.map(m => m.noMunicipio).slice(0, 10));
       }
     } else {
       // Buscar apenas os primeiros X municípios ou usar cache geral
