@@ -9,9 +9,16 @@ interface EmendasTableProps {
   blocoName: string;
   ordenacaoAtual: { campo: string; direcao: 'asc' | 'desc' } | null;
   onDoubleClick?: (emenda: Emenda) => void;
+  saldosBlocos: {
+    [municipio: string]: {
+      mac: { limite: number | null; propostas: number; valorPagar: number; saldo: number | null };
+      pap: { limite: number | null; propostas: number; valorPagar: number; saldo: number | null };
+    }
+  };
+  onCliqueSaldo: (municipio: string) => void;
 }
 
-export function EmendasTable({ data, blocoName, ordenacaoAtual, onDoubleClick }: EmendasTableProps) {
+export function EmendasTable({ data, blocoName, ordenacaoAtual, onDoubleClick, saldosBlocos, onCliqueSaldo }: EmendasTableProps) {
   const columns = React.useMemo<ColumnDef<Emenda>[]>(() => [
     { 
       id: 'emenda', 
@@ -40,6 +47,20 @@ export function EmendasTable({ data, blocoName, ordenacaoAtual, onDoubleClick }:
       accessorFn: (row) => row.valorPago
     },
     { 
+      id: 'saldoMac', 
+      accessorFn: (row) => {
+        if (!saldosBlocos || !row.municipioBeneficiario) return null;
+        return saldosBlocos[row.municipioBeneficiario]?.mac?.saldo || null;
+      }
+    },
+    { 
+      id: 'saldoPap', 
+      accessorFn: (row) => {
+        if (!saldosBlocos || !row.municipioBeneficiario) return null;
+        return saldosBlocos[row.municipioBeneficiario]?.pap?.saldo || null;
+      }
+    },
+    { 
       id: 'liderancas', 
       accessorFn: (row) => row.liderancas
     },
@@ -47,7 +68,7 @@ export function EmendasTable({ data, blocoName, ordenacaoAtual, onDoubleClick }:
       id: 'objeto', 
       accessorFn: (row) => row.objeto
     }
-  ], []);
+  ], [saldosBlocos]);
 
   const [columnWidths, setColumnWidths] = React.useState<Record<string, number>>({});
 
@@ -122,6 +143,12 @@ export function EmendasTable({ data, blocoName, ordenacaoAtual, onDoubleClick }:
       case 'valorAEmpenhar': return row.valorAEmpenhar;
       case 'valorEmpenhado': return row.valorEmpenhado;
       case 'valorPago': return row.valorPago;
+      case 'saldoMac': 
+        if (!saldosBlocos || !row.municipioBeneficiario) return null;
+        return saldosBlocos[row.municipioBeneficiario]?.mac?.saldo || null;
+      case 'saldoPap': 
+        if (!saldosBlocos || !row.municipioBeneficiario) return null;
+        return saldosBlocos[row.municipioBeneficiario]?.pap?.saldo || null;
       case 'liderancas': return row.liderancas;
       case 'objeto': return row.objeto;
       default: return null;
@@ -148,7 +175,7 @@ export function EmendasTable({ data, blocoName, ordenacaoAtual, onDoubleClick }:
   };
 
   return (
-    <table className="w-full text-sm">
+    <table className="w-full text-xs">
       <thead className="bg-gray-50">
         <tr>
           <th className="px-3 py-2" style={getColumnStyle('emenda')}>
@@ -217,9 +244,31 @@ export function EmendasTable({ data, blocoName, ordenacaoAtual, onDoubleClick }:
               onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`)}
             />
           </th>
-          <th className="px-3 py-2" style={getColumnStyle('liderancas')}>
+          <th className="px-3 py-2" style={getColumnStyle('saldoMac')}>
             <TableHeader
               column={table.getHeaderGroups()[0].headers[6].column}
+              title="Saldo MAC"
+              onResize={(width) => handleColumnResize('saldoMac', width)}
+              onResizeAll={handleAllColumnsResize}
+              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`)}
+              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`)}
+              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`)}
+            />
+          </th>
+          <th className="px-3 py-2" style={getColumnStyle('saldoPap')}>
+            <TableHeader
+              column={table.getHeaderGroups()[0].headers[7].column}
+              title="Saldo PAP"
+              onResize={(width) => handleColumnResize('saldoPap', width)}
+              onResizeAll={handleAllColumnsResize}
+              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`)}
+              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`)}
+              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`)}
+            />
+          </th>
+          <th className="px-3 py-2" style={getColumnStyle('liderancas')}>
+            <TableHeader
+              column={table.getHeaderGroups()[0].headers[8].column}
               title="Lideranças"
               onResize={(width) => handleColumnResize('liderancas', width)}
               onResizeAll={handleAllColumnsResize}
@@ -230,7 +279,7 @@ export function EmendasTable({ data, blocoName, ordenacaoAtual, onDoubleClick }:
           </th>
           <th className="px-3 py-2" style={getColumnStyle('objeto')}>
             <TableHeader
-              column={table.getHeaderGroups()[0].headers[7].column}
+              column={table.getHeaderGroups()[0].headers[9].column}
               title="Objeto"
               onResize={(width) => handleColumnResize('objeto', width)}
               onResizeAll={handleAllColumnsResize}
@@ -262,6 +311,22 @@ export function EmendasTable({ data, blocoName, ordenacaoAtual, onDoubleClick }:
             </td>
             <td className="px-3 py-2 text-right font-medium text-gray-900" style={getColumnStyle('valorPago')}>
               {formatarValor(emenda.valorPago)}
+            </td>
+            <td 
+              className="px-3 py-2 text-right font-medium text-gray-900 cursor-pointer hover:bg-blue-50 hover:text-blue-700 transition-colors" 
+              style={getColumnStyle('saldoMac')}
+              onClick={() => onCliqueSaldo && emenda.municipioBeneficiario && onCliqueSaldo(emenda.municipioBeneficiario)}
+              title="Clique para filtrar por este município"
+            >
+              {formatarValor(getValueByColumnId(emenda, 'saldoMac'))}
+            </td>
+            <td 
+              className="px-3 py-2 text-right font-medium text-gray-900 cursor-pointer hover:bg-green-50 hover:text-green-700 transition-colors" 
+              style={getColumnStyle('saldoPap')}
+              onClick={() => onCliqueSaldo && emenda.municipioBeneficiario && onCliqueSaldo(emenda.municipioBeneficiario)}
+              title="Clique para filtrar por este município"
+            >
+              {formatarValor(getValueByColumnId(emenda, 'saldoPap'))}
             </td>
             <td className="px-3 py-2 text-gray-900" style={getColumnStyle('liderancas')}>{emenda.liderancas || 'N/A'}</td>
             <td className="px-3 py-2 text-gray-900 truncate" style={{...getColumnStyle('objeto'), maxWidth: getColumnStyle('objeto').width || '300px'}} title={emenda.objeto || ''}>
