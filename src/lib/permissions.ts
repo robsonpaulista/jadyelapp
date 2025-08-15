@@ -85,6 +85,8 @@ export const ROUTE_PERMISSIONS: Record<UserLevel, string[]> = {
     '/projetos' // Página que ainda será criada
   ],
   piloto: [
+    '/',
+    '/painel-aplicacoes',
     '/aeronave'
   ]
 };
@@ -116,7 +118,7 @@ export const MENU_PERMISSIONS: Record<UserLevel, UserPermissions['menuAccess']> 
     configuracoes: false
   },
   piloto: {
-    leads: false,
+    leads: true,
     municipios: false,
     eleicoes: false,
     configuracoes: false
