@@ -117,6 +117,12 @@ export default function Navbar() {
       });
     }
     
+    if (userLevel === 'piloto') {
+      return submenus.filter(submenu => {
+        return submenu.href === '/aeronave';
+      });
+    }
+    
     return submenus;
   };
 

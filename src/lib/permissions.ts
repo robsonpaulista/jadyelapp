@@ -1,4 +1,4 @@
-export type UserLevel = 'admin' | 'user' | 'gabineteemendas' | 'gabinetejuridico';
+export type UserLevel = 'admin' | 'user' | 'gabineteemendas' | 'gabinetejuridico' | 'piloto';
 
 export interface Permission {
   route: string;
@@ -83,6 +83,9 @@ export const ROUTE_PERMISSIONS: Record<UserLevel, string[]> = {
     '/',
     '/painel-aplicacoes',
     '/projetos' // Página que ainda será criada
+  ],
+  piloto: [
+    '/aeronave'
   ]
 };
 
@@ -107,6 +110,12 @@ export const MENU_PERMISSIONS: Record<UserLevel, UserPermissions['menuAccess']> 
     configuracoes: false
   },
   gabinetejuridico: {
+    leads: false,
+    municipios: false,
+    eleicoes: false,
+    configuracoes: false
+  },
+  piloto: {
     leads: false,
     municipios: false,
     eleicoes: false,
