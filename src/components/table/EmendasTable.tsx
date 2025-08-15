@@ -184,9 +184,9 @@ export function EmendasTable({ data, blocoName, ordenacaoAtual, onDoubleClick, s
               title="Emenda"
               onResize={(width) => handleColumnResize('emenda', width)}
               onResizeAll={handleAllColumnsResize}
-              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`)}
-              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`)}
-              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`)}
+              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`, saldosBlocos)}
+              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`, saldosBlocos)}
+              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`, saldosBlocos)}
             />
           </th>
           <th className="px-3 py-2" style={getColumnStyle('municipioBeneficiario')}>
@@ -195,9 +195,9 @@ export function EmendasTable({ data, blocoName, ordenacaoAtual, onDoubleClick, s
               title="Município/Beneficiário"
               onResize={(width) => handleColumnResize('municipioBeneficiario', width)}
               onResizeAll={handleAllColumnsResize}
-              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`)}
-              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`)}
-              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`)}
+              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`, saldosBlocos)}
+              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`, saldosBlocos)}
+              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`, saldosBlocos)}
             />
           </th>
           <th className="px-3 py-2" style={getColumnStyle('valorIndicado')}>
@@ -206,9 +206,9 @@ export function EmendasTable({ data, blocoName, ordenacaoAtual, onDoubleClick, s
               title="Valor Indicado"
               onResize={(width) => handleColumnResize('valorIndicado', width)}
               onResizeAll={handleAllColumnsResize}
-              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`)}
-              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`)}
-              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`)}
+              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`, saldosBlocos)}
+              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`, saldosBlocos)}
+              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`, saldosBlocos)}
             />
           </th>
           <th className="px-3 py-2" style={getColumnStyle('valorAEmpenhar')}>
@@ -217,9 +217,9 @@ export function EmendasTable({ data, blocoName, ordenacaoAtual, onDoubleClick, s
               title="Valor a Empenhar"
               onResize={(width) => handleColumnResize('valorAEmpenhar', width)}
               onResizeAll={handleAllColumnsResize}
-              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`)}
-              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`)}
-              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`)}
+              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`, saldosBlocos)}
+              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`, saldosBlocos)}
+              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`, saldosBlocos)}
             />
           </th>
           <th className="px-3 py-2" style={getColumnStyle('valorEmpenhado')}>
@@ -228,9 +228,9 @@ export function EmendasTable({ data, blocoName, ordenacaoAtual, onDoubleClick, s
               title="Valor Empenhado"
               onResize={(width) => handleColumnResize('valorEmpenhado', width)}
               onResizeAll={handleAllColumnsResize}
-              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`)}
-              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`)}
-              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`)}
+              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`, saldosBlocos)}
+              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`, saldosBlocos)}
+              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`, saldosBlocos)}
             />
           </th>
           <th className="px-3 py-2" style={getColumnStyle('valorPago')}>
@@ -239,9 +239,9 @@ export function EmendasTable({ data, blocoName, ordenacaoAtual, onDoubleClick, s
               title="Valor Pago"
               onResize={(width) => handleColumnResize('valorPago', width)}
               onResizeAll={handleAllColumnsResize}
-              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`)}
-              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`)}
-              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`)}
+              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`, saldosBlocos)}
+              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`, saldosBlocos)}
+              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`, saldosBlocos)}
             />
           </th>
           <th className="px-3 py-2" style={getColumnStyle('saldoMac')}>
@@ -250,9 +250,9 @@ export function EmendasTable({ data, blocoName, ordenacaoAtual, onDoubleClick, s
               title="Saldo MAC"
               onResize={(width) => handleColumnResize('saldoMac', width)}
               onResizeAll={handleAllColumnsResize}
-              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`)}
-              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`)}
-              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`)}
+              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`, saldosBlocos)}
+              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`, saldosBlocos)}
+              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`, saldosBlocos)}
             />
           </th>
           <th className="px-3 py-2" style={getColumnStyle('saldoPap')}>
@@ -261,9 +261,9 @@ export function EmendasTable({ data, blocoName, ordenacaoAtual, onDoubleClick, s
               title="Saldo PAP"
               onResize={(width) => handleColumnResize('saldoPap', width)}
               onResizeAll={handleAllColumnsResize}
-              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`)}
-              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`)}
-              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`)}
+              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`, saldosBlocos)}
+              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`, saldosBlocos)}
+              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`, saldosBlocos)}
             />
           </th>
           <th className="px-3 py-2" style={getColumnStyle('liderancas')}>
@@ -272,9 +272,9 @@ export function EmendasTable({ data, blocoName, ordenacaoAtual, onDoubleClick, s
               title="Lideranças"
               onResize={(width) => handleColumnResize('liderancas', width)}
               onResizeAll={handleAllColumnsResize}
-              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`)}
-              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`)}
-              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`)}
+              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`, saldosBlocos)}
+              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`, saldosBlocos)}
+              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`, saldosBlocos)}
             />
           </th>
           <th className="px-3 py-2" style={getColumnStyle('objeto')}>
@@ -283,9 +283,9 @@ export function EmendasTable({ data, blocoName, ordenacaoAtual, onDoubleClick, s
               title="Objeto"
               onResize={(width) => handleColumnResize('objeto', width)}
               onResizeAll={handleAllColumnsResize}
-              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`)}
-              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`)}
-              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`)}
+              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`, saldosBlocos)}
+              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`, saldosBlocos)}
+              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`, saldosBlocos)}
             />
           </th>
         </tr>

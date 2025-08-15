@@ -4,14 +4,32 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { type Emenda } from '@/types/emenda';
 
-export const exportToCSV = (data: Emenda[], fileName: string = 'emendas') => {
-  const csvContent = convertToCSV(data);
+interface SaldosBlocos {
+  [municipio: string]: {
+    mac: { limite: number | null; propostas: number; valorPagar: number; saldo: number | null };
+    pap: { limite: number | null; propostas: number; valorPagar: number; saldo: number | null };
+  }
+}
+
+export const exportToCSV = (data: Emenda[], fileName: string = 'emendas', saldosBlocos?: SaldosBlocos) => {
+  const csvContent = convertToCSV(data, saldosBlocos);
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   saveAs(blob, `${fileName}.csv`);
 };
 
-export const exportToExcel = (data: Emenda[], fileName: string = 'emendas') => {
-  const ws = XLSX.utils.json_to_sheet(data);
+export const exportToExcel = (data: Emenda[], fileName: string = 'emendas', saldosBlocos?: SaldosBlocos) => {
+  const exportData = data.map(item => {
+    const saldoMac = saldosBlocos?.[item.municipioBeneficiario || '']?.mac?.saldo || null;
+    const saldoPap = saldosBlocos?.[item.municipioBeneficiario || '']?.pap?.saldo || null;
+    
+    return {
+      ...item,
+      saldoMac,
+      saldoPap
+    };
+  });
+  
+  const ws = XLSX.utils.json_to_sheet(exportData);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Emendas');
   const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
@@ -19,7 +37,7 @@ export const exportToExcel = (data: Emenda[], fileName: string = 'emendas') => {
   saveAs(blob, `${fileName}.xlsx`);
 };
 
-export const exportToPDF = (data: Emenda[], fileName: string = 'emendas') => {
+export const exportToPDF = (data: Emenda[], fileName: string = 'emendas', saldosBlocos?: SaldosBlocos) => {
   const doc = new jsPDF();
   
   // Adiciona título
@@ -34,17 +52,26 @@ export const exportToPDF = (data: Emenda[], fileName: string = 'emendas') => {
     'Município',
     'Valor Indicado',
     'Valor Empenhado',
-    'Valor Pago'
+    'Valor Pago',
+    'Saldo MAC',
+    'Saldo PAP'
   ];
   
-  const tableRows = data.map(item => [
-    item.bloco || '',
-    item.emenda || '',
-    item.municipioBeneficiario || '',
-    formatCurrency(item.valorIndicado),
-    formatCurrency(item.valorEmpenhado),
-    formatCurrency(item.valorPago)
-  ]);
+  const tableRows = data.map(item => {
+    const saldoMac = saldosBlocos?.[item.municipioBeneficiario || '']?.mac?.saldo || null;
+    const saldoPap = saldosBlocos?.[item.municipioBeneficiario || '']?.pap?.saldo || null;
+    
+    return [
+      item.bloco || '',
+      item.emenda || '',
+      item.municipioBeneficiario || '',
+      formatCurrency(item.valorIndicado),
+      formatCurrency(item.valorEmpenhado),
+      formatCurrency(item.valorPago),
+      formatCurrency(saldoMac),
+      formatCurrency(saldoPap)
+    ];
+  });
 
   // Calcula totais
   const totais = data.reduce((acc, item) => ({
@@ -64,7 +91,9 @@ export const exportToPDF = (data: Emenda[], fileName: string = 'emendas') => {
     '',
     formatCurrency(totais.valorIndicado),
     formatCurrency(totais.valorEmpenhado),
-    formatCurrency(totais.valorPago)
+    formatCurrency(totais.valorPago),
+    '',
+    ''
   ]);
 
   autoTable(doc, {
@@ -80,7 +109,9 @@ export const exportToPDF = (data: Emenda[], fileName: string = 'emendas') => {
     columnStyles: {
       3: { halign: 'right' },
       4: { halign: 'right' },
-      5: { halign: 'right' }
+      5: { halign: 'right' },
+      6: { halign: 'right' },
+      7: { halign: 'right' }
     },
     // Estilo especial para a última linha (totais)
     didParseCell: function(data) {
@@ -100,7 +131,7 @@ export const exportToPDF = (data: Emenda[], fileName: string = 'emendas') => {
   doc.save(`${fileName}.pdf`);
 };
 
-const convertToCSV = (data: Emenda[]): string => {
+const convertToCSV = (data: Emenda[], saldosBlocos?: SaldosBlocos): string => {
   const headers = [
     'Bloco',
     'Emenda',
@@ -119,29 +150,38 @@ const convertToCSV = (data: Emenda[]): string => {
     'Pagamento',
     'Valor Pago',
     'Valor a Ser Pago',
-    'Lideranças'
+    'Lideranças',
+    'Saldo MAC',
+    'Saldo PAP'
   ].join(';');
 
-  const rows = data.map(item => [
-    item.bloco || '',
-    item.emenda || '',
-    item.municipioBeneficiario || '',
-    item.funcional || '',
-    item.gnd || '',
-    formatCurrency(item.valorIndicado),
-    item.objeto || '',
-    item.alteracao || '',
-    item.numeroProposta || '',
-    formatCurrency(item.valorEmpenhado),
-    item.empenho || '',
-    item.dataEmpenho || '',
-    item.portariaConvenioContrato || '',
-    formatCurrency(item.valorAEmpenhar),
-    item.pagamento || '',
-    formatCurrency(item.valorPago),
-    formatCurrency(item.valorASerPago),
-    item.liderancas || ''
-  ].join(';'));
+  const rows = data.map(item => {
+    const saldoMac = saldosBlocos?.[item.municipioBeneficiario || '']?.mac?.saldo || null;
+    const saldoPap = saldosBlocos?.[item.municipioBeneficiario || '']?.pap?.saldo || null;
+
+    return [
+      item.bloco || '',
+      item.emenda || '',
+      item.municipioBeneficiario || '',
+      item.funcional || '',
+      item.gnd || '',
+      formatCurrency(item.valorIndicado),
+      item.objeto || '',
+      item.alteracao || '',
+      item.numeroProposta || '',
+      formatCurrency(item.valorEmpenhado),
+      item.empenho || '',
+      item.dataEmpenho || '',
+      item.portariaConvenioContrato || '',
+      formatCurrency(item.valorAEmpenhar),
+      item.pagamento || '',
+      formatCurrency(item.valorPago),
+      formatCurrency(item.valorASerPago),
+      item.liderancas || '',
+      formatCurrency(saldoMac),
+      formatCurrency(saldoPap)
+    ].join(';');
+  });
 
   return [headers, ...rows].join('\n');
 };

@@ -23,7 +23,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import toast from 'react-hot-toast';
-import { Plane, PlusCircle, Search, Upload, Eye, Download, Wand2 } from 'lucide-react';
+import { Plane, PlusCircle, Search, Upload, Eye, Download, Wand2, Sparkles, Trash2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toPng } from 'html-to-image';
 import { Bar, Doughnut } from 'react-chartjs-2';
@@ -57,6 +57,7 @@ import {
     updateAeronave,
     updateTrecho,
     atualizarDespesaAeronave,
+    deletarDespesaAeronave,
 } from '@/services/aeronaveService';
 
 type NullableString = string | undefined;
@@ -461,7 +462,7 @@ export default function AeronavePage() {
       reciboTexto: s.reciboTexto || raw.trim(),
       data: s.data || dataISO || s.data,
     }));
-    toast.success('OCR concluído');
+    toast.success('Informações extraídas automaticamente do recibo');
   }
 
   function extractTotalValor(text: string): string | undefined {
@@ -809,6 +810,18 @@ export default function AeronavePage() {
     }
   }
 
+  async function handleDeletarDespesa(id: string) {
+    try {
+      await deletarDespesaAeronave(id);
+      toast.success('Despesa excluída com sucesso');
+      // Recarrega o relatório atual
+      await handleBuscarRelatorio();
+    } catch (err) {
+      console.error('Erro ao deletar despesa:', err);
+      toast.error('Erro ao excluir despesa');
+    }
+  }
+
   function renderStatusChip(status?: 'pendente' | 'enviado' | 'aprovado' | 'pago') {
     const label = status || 'pendente';
     const classes =
@@ -1099,21 +1112,42 @@ export default function AeronavePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>Recibo (imagem opcional)</Label>
+                <div className="flex items-center gap-2">
+                  <Label>Recibo (imagem opcional)</Label>
+                  {ocrRunning && (
+                    <div className="flex items-center gap-1 text-xs text-blue-600">
+                      <Sparkles className="w-3 h-3 animate-pulse" />
+                      Processando...
+                    </div>
+                  )}
+                </div>
                 <div className="flex items-center gap-2 mt-1">
                   <Input
                     type="file"
                     accept="image/png, image/jpeg, application/pdf"
-                    onChange={(e) => {
+                    disabled={ocrRunning}
+                    onChange={async (e) => {
                       const file = e.target.files?.[0] || null;
                       if (!file) {
                         setForm((s) => ({ ...s, reciboFile: null, reciboPreview: undefined }));
                         return;
                       }
                       const reader = new FileReader();
-                      reader.onload = (ev) => {
+                      reader.onload = async (ev) => {
                         const dataUrl = String(ev.target?.result || '');
                         setForm((s) => ({ ...s, reciboFile: file, reciboPreview: dataUrl }));
+                        
+                        // Executar OCR automaticamente após carregar o arquivo
+                        try {
+                          setOcrRunning(true);
+                          const text = await runSmartOcr(dataUrl, file.type);
+                          applySmartExtraction(text);
+                        } catch (e) {
+                          console.error(e);
+                          toast.error('Falha no OCR automático');
+                        } finally {
+                          setOcrRunning(false);
+                        }
                       };
                       reader.readAsDataURL(file);
                     }}
@@ -1123,6 +1157,7 @@ export default function AeronavePage() {
                       type="button"
                       variant="outline"
                       size="sm"
+                      disabled={ocrRunning}
                       onClick={() => {
                         setPreviewContent('');
                         // mostra a imagem no modal também
@@ -1135,37 +1170,29 @@ export default function AeronavePage() {
                     </Button>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 mt-1">JPG/PNG/PDF. O arquivo será convertido para texto Base64 e armazenado no Firestore (com divisão em partes quando necessário).</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  JPG/PNG/PDF. O arquivo será processado automaticamente com OCR para extrair informações. 
+                  {ocrRunning && (
+                    <span className="text-blue-600 font-medium"> Processando...</span>
+                  )}
+                </p>
               </div>
             </div>
 
             <div className="flex justify-end">
               <div className="flex items-center gap-2">
+                {ocrRunning && (
+                  <div className="flex items-center gap-2 text-sm text-blue-600">
+                    <Sparkles className="w-4 h-4 animate-pulse" />
+                    Processando OCR...
+                  </div>
+                )}
                 <Button
                   variant="outline"
                   type="button"
                   onClick={resetForm}
                 >
                   Cancelar
-                </Button>
-                <Button
-                  variant="outline"
-                  disabled={!form.reciboPreview || ocrRunning}
-                  onClick={async () => {
-                    try {
-                      if (!form.reciboPreview || !form.reciboFile) return;
-                      setOcrRunning(true);
-                      const text = await runSmartOcr(form.reciboPreview, form.reciboFile.type);
-                      applySmartExtraction(text);
-                    } catch (e) {
-                      console.error(e);
-                      toast.error('Falha no OCR');
-                    } finally {
-                      setOcrRunning(false);
-                    }
-                  }}
-                >
-                  <Wand2 className="w-4 h-4 mr-1" /> OCR Inteligente
                 </Button>
                 <Button onClick={handleSalvarDespesa}>Salvar Despesa</Button>
               </div>
@@ -1443,7 +1470,17 @@ export default function AeronavePage() {
                             <Button size="sm" variant="outline" onClick={cancelEditRow}>Cancelar</Button>
                           </div>
                         ) : (
-                          <Button size="sm" variant="outline" onClick={() => startEditRow(l)}>Editar</Button>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline" onClick={() => startEditRow(l)}>Editar</Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              onClick={() => handleDeletarDespesa(l.id)}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         )}
                       </TableCell>
                     </TableRow>
@@ -1538,7 +1575,6 @@ export default function AeronavePage() {
                       <TableCell>{renderStatusChip(l.statusReembolso as any)}</TableCell>
                       <TableCell>
                         <div className="flex gap-2">
-                          <Button size="sm" variant="outline" onClick={async () => { await atualizarDespesaAeronave(l.id, { statusReembolso: 'enviado' }); toast.success('Status atualizado'); handleBuscarPrestacao(); }}>Marcar como enviado</Button>
                           <Button size="sm" variant="outline" onClick={async () => { await atualizarDespesaAeronave(l.id, { statusReembolso: 'aprovado' }); toast.success('Status atualizado'); handleBuscarPrestacao(); }}>Aprovar</Button>
                           <Button size="sm" variant="outline" onClick={async () => { await atualizarDespesaAeronave(l.id, { statusReembolso: 'pago' }); toast.success('Status atualizado'); handleBuscarPrestacao(); }}>Marcar pago</Button>
                         </div>

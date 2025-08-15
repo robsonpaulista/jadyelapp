@@ -1,0 +1,8 @@
+warning: in the working copy of 'src/app/(internas)/chapas/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/(internas)/emendas2025/page.tsx', LF will be replaced by CRLF the next time Git touches it
+src/app/(internas)/aeronave/page.tsx
+src/app/(internas)/chapas/page.tsx
+src/app/(internas)/emendas2025/page.tsx
+src/components/table/EmendasTable.tsx
+src/lib/export-utils.ts
+src/services/aeronaveService.ts

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
-import { Trash2, Plus, Pencil, RefreshCw, Check, Printer } from "lucide-react";
+import { Trash2, Plus, Pencil, RefreshCw, Check, Printer, Info } from "lucide-react";
 import generatePDF from 'react-to-pdf';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -88,6 +88,8 @@ export default function ChapasPage() {
   const [notificacaoAutoSave, setNotificacaoAutoSave] = useState<string | null>(null);
   const [carregandoCenario, setCarregandoCenario] = useState(false);
   const [numVagas, setNumVagas] = useState(8); // Novo estado para número de vagas
+  const [openAnaliseRepublicanos, setOpenAnaliseRepublicanos] = useState(false);
+  const [mostrarDetalhesSobras, setMostrarDetalhesSobras] = useState(false);
 
   const mostrarNotificacaoAutoSave = (mensagem: string) => {
     setNotificacaoAutoSave(mensagem);
@@ -951,6 +953,468 @@ export default function ChapasPage() {
     }, 0);
   };
 
+  // Análise específica do REPUBLICANOS
+  type AnaliseRepublicanos = {
+    votos: number;
+    quociente: number;
+    minimo80: number;
+    atingiuMinimo: boolean;
+    vagasDiretas: number;
+    vagasTotaisPrevistas: number;
+    ganhaPorSobras: boolean;
+    rodadaSobra?: number;
+    rankSobra?: number;
+    vagasSobra: number;
+    faltamPara80: number;
+    faltamPara1QE: number;
+    faltamParaPrimeiraSobra?: number;
+    conclusao: string;
+  };
+
+  const gerarAnaliseRepublicanos = (): AnaliseRepublicanos => {
+    const partidoNome = "REPUBLICANOS";
+    const partido = partidos.find(p => p.nome === partidoNome);
+    const votos = partido ? getVotosProjetados(partido.candidatos, partido.nome) : 0;
+    const minimo80 = getQuocienteMinimo();
+    const atingiuMinimo = votos >= minimo80;
+    const vagasDiretas = calcularVagasDiretas(votos);
+
+    // Simulação completa
+    const simulacao = simularDistribuicaoCompleta();
+    const infoPartidoSim = simulacao.partidosComVagas.find(p => p.partido === partidoNome);
+    const vagasTotaisPrevistas = infoPartidoSim?.vagasObtidas || 0;
+    const vagasSobra = simulacao.vagasRestantes;
+    const ganhaPorSobrasIndex = simulacao.historicoSobras.findIndex(s => s.partido === partidoNome);
+    const ganhaPorSobras = ganhaPorSobrasIndex !== -1;
+
+    // Ranking para a primeira sobra (quociente partidário)
+    const { ordenadosPorSobras } = calcularSobras();
+    const rankSobra = ordenadosPorSobras.findIndex(r => r.partido === partidoNome) + 1 || undefined;
+
+    // Votos que faltam para atingir 80% e para alcançar 1 QE
+    const faltamPara80 = Math.max(0, Math.ceil(minimo80 - votos));
+    const faltamPara1QE = Math.max(0, Math.ceil(quociente - votos));
+
+    // Votos para ganhar a primeira sobra (superar o maior quociente partidário da primeira rodada)
+    let faltamParaPrimeiraSobra: number | undefined = undefined;
+    if (atingiuMinimo && vagasSobra > 0) {
+      const qRodada1: Array<{ partido: string; q: number }> = simulacao.partidosComVagas.map(p => ({
+        partido: p.partido,
+        q: p.votosTotal / (p.vagasDiretas + 1)
+      }));
+      const maiorQ = Math.max(...qRodada1.map(item => item.q));
+      const qRepublicanos = votos / (vagasDiretas + 1);
+      if (qRepublicanos <= maiorQ) {
+        const necessario = Math.floor(maiorQ * (vagasDiretas + 1) - votos) + 1;
+        faltamParaPrimeiraSobra = Math.max(0, necessario);
+      } else {
+        faltamParaPrimeiraSobra = 0;
+      }
+    }
+
+    const conclusao = vagasTotaisPrevistas > 0
+      ? `Com os números atuais, o ${partidoNome} elege ${vagasTotaisPrevistas} candidato(s).`
+      : `Com os números atuais, o ${partidoNome} não elege ninguém.`;
+
+    return {
+      votos,
+      quociente,
+      minimo80,
+      atingiuMinimo,
+      vagasDiretas,
+      vagasTotaisPrevistas,
+      ganhaPorSobras,
+      rodadaSobra: ganhaPorSobras ? (ganhaPorSobrasIndex + 1) : undefined,
+      rankSobra,
+      vagasSobra,
+      faltamPara80,
+      faltamPara1QE,
+      faltamParaPrimeiraSobra,
+      conclusao
+    };
+  };
+
+  // Sensibilidade: em quais cenários perdemos vaga de sobra e por quanto
+  type RiscoSobra = {
+    rodada: number;
+    vaga: number;
+    adversario: string;
+    deltaAdversario: number; // votos a mais para nos ultrapassar na rodada
+    podemosPerder: number;   // votos que podemos perder e manter a vaga
+    qRepublicanos: number;
+    qAdversario: number;
+  };
+
+  const analisarRiscosRepublicanos = (): { porRodada: RiscoSobra[]; resumoAdversarios: { adversario: string; menorDelta: number }[]; minimoParaPerderUma: number | null; minimoParaPerderTodas: number | null } => {
+    const simulacao = simularDistribuicaoCompleta();
+    const partidoNome = 'REPUBLICANOS';
+    const republicanosInfo = simulacao.partidosComVagas.find(p => p.partido === partidoNome);
+    const votosRepublicanos = republicanosInfo?.votosTotal || 0;
+    const vagasDiretasRepublicanos = republicanosInfo?.vagasDiretas || 0;
+
+    const porRodada: RiscoSobra[] = [];
+
+    simulacao.historicoSobras.forEach((sobra, index) => {
+      if (sobra.partido !== partidoNome) return;
+
+      // Vagas antes da rodada para cada partido
+      const vagasAntesPorPartido: Record<string, number> = {};
+      simulacao.partidosComVagas.forEach(p => {
+        let ganhosAteAgora = 0;
+        for (let j = 0; j < index; j++) {
+          if (simulacao.historicoSobras[j].partido === p.partido) ganhosAteAgora++;
+        }
+        vagasAntesPorPartido[p.partido] = p.vagasDiretas + ganhosAteAgora;
+      });
+
+      // Quociente do REPUBLICANOS nesta rodada
+      const vagasAntesRep = vagasAntesPorPartido[partidoNome] || vagasDiretasRepublicanos;
+      const qRep = votosRepublicanos / (vagasAntesRep + 1);
+
+      // Encontrar adversário mais próximo (maior quociente entre os outros)
+      let melhorAdversario: { partido: string; q: number; vagasAntes: number } | null = null;
+      simulacao.partidosComVagas.forEach(p => {
+        if (p.partido === partidoNome) return;
+        const q = p.votosTotal / ((vagasAntesPorPartido[p.partido] || p.vagasDiretas) + 1);
+        if (!melhorAdversario || q > melhorAdversario.q) {
+          melhorAdversario = { partido: p.partido, q, vagasAntes: (vagasAntesPorPartido[p.partido] || p.vagasDiretas) };
+        }
+      });
+
+      if (melhorAdversario !== null) {
+        const adv: { partido: string; q: number; vagasAntes: number } = melhorAdversario;
+        const deltaAdversario = Math.max(0, Math.floor((qRep - adv.q) * (adv.vagasAntes + 1)) + 1);
+        const podemosPerder = Math.max(0, Math.floor((qRep - adv.q) * (vagasAntesRep + 1)));
+        porRodada.push({
+          rodada: index + 1,
+          vaga: sobra.vaga,
+          adversario: adv.partido,
+          deltaAdversario,
+          podemosPerder,
+          qRepublicanos: qRep,
+          qAdversario: adv.q,
+        });
+      }
+    });
+
+    // Resumo: menor delta por adversário
+    const mapa: Record<string, number> = {};
+    porRodada.forEach(r => {
+      if (!(r.adversario in mapa)) mapa[r.adversario] = r.deltaAdversario;
+      else mapa[r.adversario] = Math.min(mapa[r.adversario], r.deltaAdversario);
+    });
+    const resumoAdversarios = Object.entries(mapa)
+      .map(([adversario, menorDelta]) => ({ adversario, menorDelta }))
+      .sort((a, b) => a.menorDelta - b.menorDelta);
+
+    // Risco agregado: perder pelo menos 1 vaga (sobra)
+    const deltasOrdenados = [...porRodada.map(r => r.deltaAdversario)].sort((a, b) => a - b);
+    const minimoParaPerderUma = deltasOrdenados.length > 0 ? deltasOrdenados[0] : null;
+    // Para perder todas as vagas de sobra, precisamos superar cada rodada; aproximação: soma dos menores deltas
+    const minimoParaPerderTodas = deltasOrdenados.length > 0 ? deltasOrdenados.reduce((acc, v) => acc + v, 0) : null;
+
+    return { porRodada, resumoAdversarios, minimoParaPerderUma, minimoParaPerderTodas };
+  };
+
+  // Detalhamento por rodada: deltas por adversário para cada rodada em que ganhamos sobra
+  type RoundDetail = {
+    rodada: number;
+    vaga: number;
+    qRep: number;
+    porAdversario: Array<{ partido: string; delta: number; qAtual: number }>; // ordenado por delta
+  };
+
+  const detalharSobrasRepublicanos = (): { rodadas: RoundDetail[]; resumoAdversarioCompleto: Array<{ adversario: string; deltaMinimoUma: number; deltaMinimoTodas: number; primeiraRodada?: number }> } => {
+    const simulacao = simularDistribuicaoCompleta();
+    const partidoNome = 'REPUBLICANOS';
+    const republicanosInfo = simulacao.partidosComVagas.find(p => p.partido === partidoNome);
+    const votosRepublicanos = republicanosInfo?.votosTotal || 0;
+
+    const rodadas: RoundDetail[] = [];
+
+    simulacao.historicoSobras.forEach((sobra, index) => {
+      if (sobra.partido !== partidoNome) return;
+
+      // Vagas antes da rodada para cada partido
+      const vagasAntesPorPartido: Record<string, number> = {};
+      simulacao.partidosComVagas.forEach(p => {
+        let ganhosAteAgora = 0;
+        for (let j = 0; j < index; j++) {
+          if (simulacao.historicoSobras[j].partido === p.partido) ganhosAteAgora++;
+        }
+        vagasAntesPorPartido[p.partido] = p.vagasDiretas + ganhosAteAgora;
+      });
+
+      const vagasAntesRep = vagasAntesPorPartido[partidoNome] || (republicanosInfo?.vagasDiretas || 0);
+      const qRep = votosRepublicanos / (vagasAntesRep + 1);
+
+      // Calcular delta por adversário
+      const porAdversario: Array<{ partido: string; delta: number; qAtual: number }> = [];
+      simulacao.partidosComVagas.forEach(p => {
+        if (p.partido === partidoNome) return;
+        const vagasAntes = vagasAntesPorPartido[p.partido] || p.vagasDiretas;
+        const qAtual = p.votosTotal / (vagasAntes + 1);
+        const delta = Math.max(0, Math.floor(qRep * (vagasAntes + 1) - p.votosTotal) + 1);
+        porAdversario.push({ partido: p.partido, delta, qAtual });
+      });
+
+      porAdversario.sort((a, b) => a.delta - b.delta);
+      rodadas.push({ rodada: index + 1, vaga: sobra.vaga, qRep, porAdversario });
+    });
+
+    // Resumo completo por adversário: mínimo para 1 vaga e estimativa incremental para tirar todas as nossas sobras
+    const adversarios = new Set<string>();
+    rodadas.forEach(r => r.porAdversario.forEach(x => adversarios.add(x.partido)));
+
+    const resumoAdversarioCompleto: Array<{ adversario: string; deltaMinimoUma: number; deltaMinimoTodas: number; primeiraRodada?: number }> = [];
+
+    adversarios.forEach(adversario => {
+      // Mínimo para 1 vaga e a primeira rodada correspondente
+      let deltaMinimoUma = Infinity;
+      let primeiraRodada: number | undefined = undefined;
+      rodadas.forEach(r => {
+        const item = r.porAdversario.find(x => x.partido === adversario);
+        if (item && item.delta < deltaMinimoUma) {
+          deltaMinimoUma = item.delta;
+          primeiraRodada = r.rodada;
+        }
+      });
+      if (deltaMinimoUma === Infinity) deltaMinimoUma = 0;
+
+      // Estimativa incremental para tirar todas as sobras do REPUBLICANOS
+      let votosAdv = (simulacao.partidosComVagas.find(p => p.partido === adversario)?.votosTotal) || 0;
+      let vagasDiretasAdv = (simulacao.partidosComVagas.find(p => p.partido === adversario)?.vagasDiretas) || 0;
+      let totalDelta = 0;
+
+      rodadas.forEach(r => {
+        // denominador do adversário após eventuais vitórias anteriores nesta simulação incremental
+        const qNecessario = r.qRep;
+        const deltaRodada = Math.max(0, Math.floor(qNecessario * (vagasDiretasAdv + 1) - votosAdv) + 1);
+        totalDelta += deltaRodada;
+        // Atualiza votos e denom como se ele ganhasse esta rodada
+        votosAdv += deltaRodada;
+        vagasDiretasAdv += 1;
+      });
+
+      resumoAdversarioCompleto.push({ adversario, deltaMinimoUma, deltaMinimoTodas: totalDelta, primeiraRodada });
+    });
+
+    resumoAdversarioCompleto.sort((a, b) => a.deltaMinimoUma - b.deltaMinimoUma);
+
+    return { rodadas, resumoAdversarioCompleto };
+  };
+
+  // Cenário greedy: ajustar votos de adversários ao longo das rodadas para tirar TODAS as sobras do REPUBLICANOS com o menor acréscimo somado possível
+  const cenarioGreedyTirarTodasSobras = (): { etapas: Array<{ rodada: number; adversario?: string; delta?: number; vencedor: string }>; totalDelta: number; vagasDiretasRep: number; vagasFinaisRep: number } => {
+    const partidoNome = 'REPUBLICANOS';
+    const QE = quociente;
+    const minimo80 = QE * 0.8;
+
+    // Estado inicial para TODOS os partidos (elegibilidade dinâmica)
+    const estado = partidos.map(p => {
+      const votos = getVotosProjetados(p.candidatos, p.nome);
+      const vagasDiretas = Math.floor(votos / QE);
+      return {
+        partido: p.nome,
+        votos,
+        obtidas: vagasDiretas,
+        diretas: vagasDiretas,
+        elegivel: votos >= minimo80,
+      };
+    });
+
+    const idxRep = estado.findIndex(e => e.partido === partidoNome);
+    const vagasTotais = numVagas;
+    const vagasDistribuidas = estado.reduce((sum, e) => sum + e.diretas, 0);
+    const vagasRestantes = Math.max(0, vagasTotais - vagasDistribuidas);
+
+    const etapas: Array<{ rodada: number; adversario?: string; delta?: number; vencedor: string }>= [];
+    let totalDelta = 0;
+
+    for (let rodada = 1; rodada <= vagasRestantes; rodada++) {
+      // Descobrir quem ganharia agora, com o estado ajustado até aqui
+      const quocientes = estado
+        .filter(e => e.elegivel)
+        .map(e => ({ partido: e.partido, q: e.votos / (e.obtidas + 1) }))
+        .sort((a,b) => b.q - a.q);
+
+      const vencedorAtual = quocientes[0]?.partido;
+
+      if (!vencedorAtual) {
+        etapas.push({ rodada, vencedor: '—' });
+        continue;
+      }
+
+      if (vencedorAtual !== partidoNome) {
+        // Não precisamos mexer: já não seria nossa
+        const e = estado.find(x => x.partido === vencedorAtual)!;
+        e.obtidas += 1;
+        etapas.push({ rodada, vencedor: vencedorAtual });
+        continue;
+      }
+
+      // REP ganharia — precisamos encontrar o adversário com menor delta para superá-lo
+      const eRep = estado[idxRep];
+      const qRep = eRep.votos / (eRep.obtidas + 1);
+
+      let melhor: { adversario: string; delta: number } | null = null;
+      estado.forEach(e => {
+        if (e.partido === partidoNome) return;
+        const denom = e.obtidas + 1;
+        const precisaEleg = Math.max(0, Math.ceil(minimo80 - e.votos));
+        const precisaQ = Math.max(0, Math.floor(qRep * denom - e.votos) + 1);
+        const delta = Math.max(precisaEleg, precisaQ);
+        if (!melhor || delta < melhor.delta) melhor = { adversario: e.partido, delta };
+      });
+
+      if (melhor) {
+        const m: { adversario: string; delta: number } = melhor;
+        const alvo = estado.find(x => x.partido === m.adversario)!;
+        alvo.votos += m.delta;
+        alvo.elegivel = alvo.votos >= minimo80;
+        alvo.obtidas += 1;
+        totalDelta += m.delta;
+        etapas.push({ rodada, adversario: alvo.partido, delta: m.delta, vencedor: alvo.partido });
+      } else {
+        // fallback de segurança
+        etapas.push({ rodada, vencedor: vencedorAtual });
+      }
+    }
+
+    const vagasDiretasRep = estado[idxRep]?.diretas || 0;
+    const vagasFinaisRep = estado[idxRep]?.obtidas || 0;
+    return { etapas, totalDelta, vagasDiretasRep, vagasFinaisRep };
+  };
+
+  // Queda dos nossos votos: identificar pontos de inflexão onde perdemos cada vaga (direta e por sobra)
+  type PontoInflexao = {
+    tipo: 'direta' | 'sobra';
+    indice: number; // para direta: número da vaga direta (1..k); para sobra: rodada
+    perderVotos: number; // votos que precisamos perder para perder essa vaga
+    votosAposPerda: number; // nosso total após a perda
+    label: string; // exibição amigável
+  };
+
+  const analisarQuedaRepublicanos = (): { pontos: PontoInflexao[]; proximoPonto?: PontoInflexao } => {
+    const partidoNome = 'REPUBLICANOS';
+    const partido = partidos.find(p => p.nome === partidoNome);
+    const votosAtuais = partido ? getVotosProjetados(partido.candidatos, partido.nome) : 0;
+    const vagasDiretasAtuais = calcularVagasDiretas(votosAtuais);
+
+    const pontos: PontoInflexao[] = [];
+
+    // Diretas: limites k*QE
+    for (let k = vagasDiretasAtuais; k >= 1; k--) {
+      const limite = k * quociente; // cair abaixo disso perde a k-ésima vaga direta
+      const perderVotos = Math.max(0, Math.floor(votosAtuais - limite) + 1);
+      pontos.push({
+        tipo: 'direta',
+        indice: k,
+        perderVotos,
+        votosAposPerda: Math.max(0, votosAtuais - perderVotos),
+        label: `Direta #${k}`,
+      });
+    }
+
+    // Sobras: usar podemosPerder + 1 por rodada que ganhamos
+    const riscos = analisarRiscosRepublicanos();
+    riscos.porRodada.forEach(r => {
+      const perderVotos = (r.podemosPerder || 0) + 1;
+      pontos.push({
+        tipo: 'sobra',
+        indice: r.rodada,
+        perderVotos,
+        votosAposPerda: Math.max(0, votosAtuais - perderVotos),
+        label: `Sobra (rodada ${r.rodada})`,
+      });
+    });
+
+    // Ordenar pelos menores perdas necessárias (próximo ponto primeiro)
+    pontos.sort((a, b) => a.perderVotos - b.perderVotos);
+    return { pontos, proximoPonto: pontos[0] };
+  };
+
+  // Análise simples e direta do REPUBLICANOS
+  const analisarRepublicanos = () => {
+    const partidoNome = "REPUBLICANOS";
+    const partido = partidos.find(p => p.nome === partidoNome);
+    const votos = partido ? getVotosProjetados(partido.candidatos, partido.nome) : 0;
+    const minimo80 = getQuocienteMinimo();
+    const atingiuMinimo = votos >= minimo80;
+    const vagasDiretas = calcularVagasDiretas(votos);
+
+    // Simulação atual
+    const simulacao = simularDistribuicaoCompleta();
+    const infoPartidoSim = simulacao.partidosComVagas.find(p => p.partido === partidoNome);
+    const vagasTotaisPrevistas = infoPartidoSim?.vagasObtidas || 0;
+    const vagasSobra = vagasTotaisPrevistas - vagasDiretas;
+
+    // Cenário atual
+    const cenarios = {
+      atual: {
+        votos,
+        vagasDiretas,
+        vagasSobra,
+        vagasTotais: vagasTotaisPrevistas,
+        elegivel: atingiuMinimo
+      }
+    };
+
+    // Análise de risco: quanto cada adversário precisa crescer para nos tirar vagas
+    const riscos: Array<{
+      partido: string;
+      votosAtuais: number;
+      deltaParaDireta: number;
+      deltaParaSobra: number;
+      deltaMinimo: number;
+      elegivel: boolean;
+    }> = [];
+    const adversarios = partidos.filter(p => p.nome !== partidoNome);
+
+    adversarios.forEach(adversario => {
+      const votosAdv = getVotosProjetados(adversario.candidatos, adversario.nome);
+      const vagasDiretasAdv = calcularVagasDiretas(votosAdv);
+      const minimo80Adv = getQuocienteMinimo();
+      const atingiuMinimoAdv = votosAdv >= minimo80Adv;
+
+      // Para nos tirar uma vaga direta: precisa superar nosso quociente
+      const deltaParaDireta = Math.max(0, Math.ceil(quociente - votosAdv));
+
+      // Para nos tirar uma sobra: precisa ter quociente partidário maior
+      let deltaParaSobra = Infinity;
+      if (atingiuMinimoAdv && vagasSobra > 0) {
+        // Simular: quanto o adversário precisa crescer para ter quociente partidário maior que o nosso
+        const qRepublicanos = votos / (vagasDiretas + 1);
+        const qAdversario = votosAdv / (vagasDiretasAdv + 1);
+        if (qAdversario < qRepublicanos) {
+          deltaParaSobra = Math.max(0, Math.ceil(qRepublicanos * (vagasDiretasAdv + 1) - votosAdv));
+        } else {
+          deltaParaSobra = 0; // já tem quociente maior
+        }
+      }
+
+      riscos.push({
+        partido: adversario.nome,
+        votosAtuais: votosAdv,
+        deltaParaDireta,
+        deltaParaSobra,
+        deltaMinimo: Math.min(deltaParaDireta, deltaParaSobra),
+        elegivel: atingiuMinimoAdv
+      });
+    });
+
+    // Ordenar por menor delta
+    riscos.sort((a, b) => a.deltaMinimo - b.deltaMinimo);
+
+    return {
+      cenarios,
+      riscos,
+      conclusao: vagasTotaisPrevistas > 0 
+        ? `REPUBLICANOS elege ${vagasTotaisPrevistas} candidato(s) (${vagasDiretas} diretas + ${vagasSobra} sobras)`
+        : `REPUBLICANOS não elege ninguém`
+    };
+  };
+
   return (
     <div className="container mx-auto p-4">
       {/* Notificação de auto-save */}
@@ -1055,12 +1519,24 @@ export default function ChapasPage() {
                 ? 'border-gray-100' 
                 : 'border-red-300 bg-red-50'
             }`}>
-              <div className={`w-full text-center py-1 font-bold text-base mb-2 rounded ${
+              <div className={`w-full py-1 font-bold text-base mb-2 rounded ${
                 atingiuMinimo 
                   ? 'bg-gray-200 text-gray-800' 
                   : 'bg-red-200 text-red-800'
               }`}>
-                {partido.nome}
+                <div className="flex items-center justify-center relative">
+                  <span className="px-6">{partido.nome}</span>
+                  {partido.nome === 'REPUBLICANOS' && (
+                    <button
+                      type="button"
+                      aria-label="Análise do REPUBLICANOS"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-700 hover:text-blue-700"
+                      onClick={() => setOpenAnaliseRepublicanos(true)}
+                    >
+                      <Info className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
               </div>
               
               {/* Informativo para partidos que não atingiram o mínimo */}
@@ -1875,7 +2351,13 @@ export default function ChapasPage() {
                               return acc;
                             }, {} as { [partido: string]: typeof candidatosEleitos });
 
-                            return Object.entries(candidatosPorPartido).map(([partido, candidatos]) => (
+                            // Ordenar partidos na ordem fixa: PT, PSD/MDB, PP, REPUBLICANOS
+                            const ordemPartidos = ["PT", "PSD/MDB", "PP", "REPUBLICANOS"];
+                            const partidosOrdenados = ordemPartidos
+                              .map(nomePartido => ({ nome: nomePartido, candidatos: candidatosPorPartido[nomePartido] || [] }))
+                              .filter(item => item.candidatos.length > 0);
+
+                            return partidosOrdenados.map(({ nome: partido, candidatos }) => (
                               <div key={partido} className="border rounded-lg p-3">
                                 <div className={`font-semibold text-sm mb-2 text-center ${coresPartidos[partido as keyof typeof coresPartidos]?.cor || 'bg-gray-200'} ${coresPartidos[partido as keyof typeof coresPartidos]?.corTexto || 'text-gray-800'}`}>{partido}</div>
                                 <div className="space-y-2">
@@ -1914,6 +2396,84 @@ export default function ChapasPage() {
           </div>
         </div>
       </div>
+
+      {/* Diálogo de Análise - REPUBLICANOS */}
+      <Dialog open={openAnaliseRepublicanos} onOpenChange={setOpenAnaliseRepublicanos}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>REPUBLICANOS — Análise</DialogTitle>
+          </DialogHeader>
+          {(() => {
+            const a = analisarRepublicanos();
+            return (
+              <div className="space-y-3 text-sm">
+                {/* KPIs principais */}
+                <div className="grid grid-cols-4 gap-2">
+                  <div className="p-2 bg-gray-50 rounded border text-center">
+                    <div className="text-[11px] text-gray-600">Votos</div>
+                    <div className="text-sm font-bold">{a.cenarios.atual.votos.toLocaleString('pt-BR')}</div>
+                  </div>
+                  <div className="p-2 bg-gray-50 rounded border text-center">
+                    <div className="text-[11px] text-gray-600">QE</div>
+                    <div className="text-sm font-bold">{quociente.toLocaleString('pt-BR')}</div>
+                  </div>
+                  <div className="p-2 bg-gray-50 rounded border text-center">
+                    <div className="text-[11px] text-gray-600">80% QE</div>
+                    <div className="text-sm font-bold">{getQuocienteMinimo().toLocaleString('pt-BR')}</div>
+                  </div>
+                  <div className="p-2 bg-gray-50 rounded border text-center">
+                    <div className="text-[11px] text-gray-600">Vagas</div>
+                    <div className="text-sm font-bold">{a.cenarios.atual.vagasTotais}</div>
+                  </div>
+                </div>
+
+                {/* Status atual */}
+                <div className="flex items-center gap-2">
+                  <Badge className={a.cenarios.atual.elegivel ? 'bg-green-600' : 'bg-red-600'}>
+                    {a.cenarios.atual.elegivel ? '≥ 80% do QE' : '< 80% do QE'}
+                  </Badge>
+                  <Badge variant="outline">
+                    {a.cenarios.atual.vagasDiretas} diretas + {a.cenarios.atual.vagasSobra} sobras
+                  </Badge>
+                </div>
+
+                {/* Análise de risco */}
+                <div className="p-2 bg-gray-50 rounded border text-xs">
+                  <div className="font-medium mb-2">Análise de Risco — Quanto cada adversário precisa crescer para nos tirar vagas:</div>
+                  
+                  {a.riscos.map((risco, index) => (
+                    <div key={risco.partido} className="mb-2 p-2 bg-white rounded border">
+                      <div className="font-medium text-gray-800">{risco.partido}</div>
+                      <div className="grid grid-cols-2 gap-2 mt-1 text-[11px]">
+                        <div>
+                          <span className="text-gray-600">Para vaga direta:</span>
+                          <span className="font-semibold ml-1">+{risco.deltaParaDireta.toLocaleString('pt-BR')} votos</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Para sobra:</span>
+                          <span className="font-semibold ml-1">
+                            {risco.deltaParaSobra === Infinity ? '—' : `+${risco.deltaParaSobra.toLocaleString('pt-BR')}`}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="mt-1 text-[10px] text-gray-600">
+                        Menor delta: <strong>+{risco.deltaMinimo.toLocaleString('pt-BR')} votos</strong>
+                        {index === 0 && ' (MAIS PERIGOSO)'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Conclusão */}
+                <div className="text-xs text-gray-700 font-medium">{a.conclusao}</div>
+              </div>
+            );
+          })()}
+          <DialogFooter>
+            <Button onClick={() => setOpenAnaliseRepublicanos(false)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,30 +1,22 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Loader2, RefreshCw, Search, Filter, ChevronDown, ChevronRight, ChevronUp, DollarSign, TrendingUp, CheckCircle, CreditCard, Printer } from 'lucide-react';
+import { Loader2, RefreshCw, Search, Filter, ChevronDown, ChevronRight, ChevronUp, DollarSign, TrendingUp, CheckCircle, CreditCard, Printer, X, CheckCircle2 } from 'lucide-react';
 import { type Emenda } from '@/types/emenda';
 import { EmendasTable } from '@/components/table/EmendasTable';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { PageLoading } from "@/components/ui/loading";
-import { 
-  ArrowUpDown, 
-  ArrowUp, 
-  ArrowDown,
-  Save,
-  X,
-  CheckCircle2
-} from 'lucide-react';
-import { Label } from "@/components/ui/label";
 import { toast } from 'react-hot-toast';
+import { Save } from 'lucide-react';
 import { getLimiteMacByMunicipio } from '@/utils/limitesmac';
 import { getLimitePapByMunicipio } from '@/utils/limitepap';
+import { PageLoading } from '@/components/ui/loading';
 
 
 
@@ -467,9 +459,6 @@ export default function Emendas2025() {
 
       const municipiosArray = Array.from(municipiosBlocos);
 
-      console.log('=== DEBUG: Municípios encontrados nas emendas ===');
-      console.log('Municípios:', municipiosArray);
-
       const novosSaldos: typeof saldosBlocos = {};
 
       // Calcular saldos para cada município
@@ -479,17 +468,9 @@ export default function Emendas2025() {
           const nomeNormalizado = normalizeString(municipio);
           const nomeMapeado = mapearNomeMunicipio(municipio);
           
-          console.log(`\n=== DEBUG: Processando ${municipio} ===`);
-          console.log(`Nome original: "${municipio}"`);
-          console.log(`Nome normalizado: "${nomeNormalizado}"`);
-          console.log(`Nome mapeado: "${nomeMapeado}"`);
-          
           // Buscar limites do município usando o nome mapeado
           const limiteMac = getLimiteMacByMunicipio(nomeMapeado);
           const limitePap = getLimitePapByMunicipio(nomeMapeado);
-
-          console.log(`Limite MAC encontrado:`, limiteMac ? `R$ ${limiteMac.valor.toLocaleString('pt-BR')}` : 'NÃO ENCONTRADO');
-          console.log(`Limite PAP encontrado:`, limitePap ? `R$ ${limitePap.valor.toLocaleString('pt-BR')}` : 'NÃO ENCONTRADO');
 
           // Buscar propostas do município na API usando o nome original
           const res = await fetch(`/api/consultar-tetos?municipio=${encodeURIComponent(municipio)}`);
@@ -501,14 +482,10 @@ export default function Emendas2025() {
           const data = await res.json();
           const propostas = data.propostas || [];
 
-          console.log(`Propostas retornadas pela API: ${propostas.length}`);
-
           // Aplicar filtros (igual à página de tetos)
           const propostasFiltradas = propostas.filter((p: any) => 
             p.dsTipoRecurso !== 'PROGRAMA'
           );
-
-          console.log(`Propostas após filtro (sem PROGRAMA): ${propostasFiltradas.length}`);
 
           // Calcular propostas MAC (igual à página de tetos)
           const propostasMac = propostasFiltradas.filter((p: any) => 
@@ -525,10 +502,6 @@ export default function Emendas2025() {
           const somaPropostasPap = propostasPap.reduce((acc: number, curr: any) => acc + (curr.vlProposta || 0), 0);
           const somaValorPagarPap = propostasPap.reduce((acc: number, curr: any) => acc + (curr.vlPagar || 0), 0);
           const saldoPap = limitePap ? limitePap.valor - somaPropostasPap : null;
-
-          console.log(`Resultados finais para ${municipio}:`);
-          console.log(`- MAC: Propostas R$ ${somaPropostasMac.toLocaleString('pt-BR')}, Saldo R$ ${saldoMac?.toLocaleString('pt-BR') || 'N/A'}`);
-          console.log(`- PAP: Propostas R$ ${somaPropostasPap.toLocaleString('pt-BR')}, Saldo R$ ${saldoPap?.toLocaleString('pt-BR') || 'N/A'}`);
 
           novosSaldos[municipio] = {
             mac: {
@@ -939,23 +912,31 @@ export default function Emendas2025() {
                     <th>Valor a Empenhar</th>
                     <th>Valor Empenhado</th>
                     <th>Valor Pago</th>
+                    <th>Saldo MAC</th>
+                    <th>Saldo PAP</th>
                     <th>Lideranças</th>
                     <th>Objeto</th>
                   </tr>
                 </thead>
                 <tbody>
-                  ${bloco.emendas.map(emenda => `
-                    <tr>
-                      <td>${emenda.emenda || 'N/A'}</td>
-                      <td>${emenda.municipioBeneficiario || 'N/A'}</td>
-                      <td class="valor">${formatarValor(emenda.valorIndicado)}</td>
-                      <td class="valor">${formatarValor(emenda.valorAEmpenhar)}</td>
-                      <td class="valor">${formatarValor(emenda.valorEmpenhado)}</td>
-                      <td class="valor">${formatarValor(emenda.valorPago)}</td>
-                      <td class="liderancas">${emenda.liderancas || 'N/A'}</td>
-                      <td class="objeto">${emenda.objeto || 'N/A'}</td>
-                    </tr>
-                  `).join('')}
+                  ${bloco.emendas.map(emenda => {
+                    const saldoMac = saldosBlocos[emenda.municipioBeneficiario || '']?.mac?.saldo || null;
+                    const saldoPap = saldosBlocos[emenda.municipioBeneficiario || '']?.pap?.saldo || null;
+                    return `
+                      <tr>
+                        <td>${emenda.emenda || 'N/A'}</td>
+                        <td>${emenda.municipioBeneficiario || 'N/A'}</td>
+                        <td class="valor">${formatarValor(emenda.valorIndicado)}</td>
+                        <td class="valor">${formatarValor(emenda.valorAEmpenhar)}</td>
+                        <td class="valor">${formatarValor(emenda.valorEmpenhado)}</td>
+                        <td class="valor">${formatarValor(emenda.valorPago)}</td>
+                        <td class="valor">${formatarValor(saldoMac)}</td>
+                        <td class="valor">${formatarValor(saldoPap)}</td>
+                        <td class="liderancas">${emenda.liderancas || 'N/A'}</td>
+                        <td class="objeto">${emenda.objeto || 'N/A'}</td>
+                      </tr>
+                    `;
+                  }).join('')}
                 </tbody>
               </table>
             </div>
@@ -982,6 +963,8 @@ export default function Emendas2025() {
       printWindow.focus();
     };
   };
+
+
 
   if (isLoading) {
     return (
@@ -1599,106 +1582,59 @@ export default function Emendas2025() {
                           ({bloco.emendas.length} emendas • {bloco.totalMunicipios} municípios)
                         </span>
                       </div>
-                      <div className="hidden md:flex md:gap-2 text-sm">
-                        <div className="w-36">
-                          <span className="text-gray-500 text-sm">Valor Indicado:</span>
-                          <span className="block font-medium text-gray-900 text-xs">
-                            {formatarValor(bloco.totalValorIndicado)}
-                          </span>
-                        </div>
-                        <div className="w-36">
-                          <span className="text-gray-500 text-sm">Empenhado:</span>
-                          <span className="block font-medium text-gray-900 mb-1 text-xs">
-                            {formatarValor(bloco.totalValorEmpenhado)}
-                          </span>
-                          <div className="w-full">
-                            <BarraProgresso 
-                              valor={bloco.totalValorEmpenhado} 
-                              total={bloco.totalValorIndicado}
-                              className="h-1"
-                            />
+                      
+                      {/* Menu de contexto para exportação */}
+                      <div className="flex items-center gap-2">
+                        <div className="hidden md:flex md:gap-2 text-sm">
+                          <div className="w-36">
+                            <span className="text-gray-500 text-sm">Valor Indicado:</span>
+                            <span className="block font-medium text-gray-900 text-xs">
+                              {formatarValor(bloco.totalValorIndicado)}
+                            </span>
                           </div>
-                        </div>
-                        <div className="w-36">
-                          <span className="text-gray-500 text-sm">A Empenhar:</span>
-                          <span className="block font-medium text-gray-900 mb-1 text-xs">
-                            {formatarValor(bloco.totalValorAEmpenhar)}
-                          </span>
-                          <div className="w-full">
-                            <BarraProgresso 
-                              valor={bloco.totalValorAEmpenhar} 
-                              total={bloco.totalValorIndicado}
-                              className="h-1"
-                            />
+                          <div className="w-36">
+                            <span className="text-gray-500 text-sm">Empenhado:</span>
+                            <span className="block font-medium text-gray-900 mb-1 text-xs">
+                              {formatarValor(bloco.totalValorEmpenhado)}
+                            </span>
+                            <div className="w-full">
+                              <BarraProgresso 
+                                valor={bloco.totalValorEmpenhado} 
+                                total={bloco.totalValorIndicado}
+                                className="h-1"
+                              />
+                            </div>
                           </div>
-                        </div>
-                        <div className="w-36">
-                          <span className="text-gray-500 text-sm">Valor Pago:</span>
-                          <span className="block font-medium text-gray-900 mb-1 text-xs">
-                            {formatarValor(bloco.totalValorPago)}
-                          </span>
-                          <div className="w-full">
-                            <BarraProgresso 
-                              valor={bloco.totalValorPago} 
-                              total={bloco.totalValorIndicado}
-                              className="h-1"
-                              tipo="pago"
-                            />
+                          <div className="w-36">
+                            <span className="text-gray-500 text-sm">A Empenhar:</span>
+                            <span className="block font-medium text-gray-900 mb-1 text-xs">
+                              {formatarValor(bloco.totalValorAEmpenhar)}
+                            </span>
+                            <div className="w-full">
+                              <BarraProgresso 
+                                valor={bloco.totalValorAEmpenhar} 
+                                total={bloco.totalValorIndicado}
+                                className="h-1"
+                              />
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                      {/* Layout mobile/tablet */}
-                      <div className="block md:hidden text-sm">
-                        <div className="px-2 py-2">
-                          <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                            <div className="min-w-0">
-                              <span className="block text-gray-500 text-xs mb-1">Valor Indicado:</span>
-                              <span className="font-medium text-gray-900 text-sm break-words">
-                                {formatarValor(bloco.totalValorIndicado)}
-                              </span>
-                            </div>
-                            <div className="min-w-0">
-                              <span className="block text-gray-500 text-xs mb-1">Empenhado:</span>
-                              <span className="block font-medium text-gray-900 mb-1 text-sm break-words">
-                                {formatarValor(bloco.totalValorEmpenhado)}
-                              </span>
-                              <div className="w-full max-w-full overflow-hidden">
-                                <BarraProgresso 
-                                  valor={bloco.totalValorEmpenhado} 
-                                  total={bloco.totalValorIndicado}
-                                  className="h-1"
-                                />
-                              </div>
-                            </div>
-                            <div className="min-w-0">
-                              <span className="block text-gray-500 text-xs mb-1">A Empenhar:</span>
-                              <span className="block font-medium text-gray-900 mb-1 text-sm break-words">
-                                {formatarValor(bloco.totalValorAEmpenhar)}
-                              </span>
-                              <div className="w-full max-w-full overflow-hidden">
-                                <BarraProgresso 
-                                  valor={bloco.totalValorAEmpenhar} 
-                                  total={bloco.totalValorIndicado}
-                                  className="h-1"
-                                />
-                              </div>
-                            </div>
-                            <div className="min-w-0">
-                              <span className="block text-gray-500 text-xs mb-1">Valor Pago:</span>
-                              <span className="block font-medium text-gray-900 mb-1 text-sm break-words">
-                                {formatarValor(bloco.totalValorPago)}
-                              </span>
-                              <div className="w-full max-w-full overflow-hidden">
-                                <BarraProgresso 
-                                  valor={bloco.totalValorPago} 
-                                  total={bloco.totalValorIndicado}
-                                  className="h-1"
-                                  tipo="pago"
-                                />
-                              </div>
+                          <div className="w-36">
+                            <span className="text-gray-500 text-sm">Valor Pago:</span>
+                            <span className="block font-medium text-gray-900 mb-1 text-xs">
+                              {formatarValor(bloco.totalValorPago)}
+                            </span>
+                            <div className="w-full">
+                              <BarraProgresso 
+                                valor={bloco.totalValorPago} 
+                                total={bloco.totalValorIndicado}
+                                className="h-1"
+                                tipo="pago"
+                              />
                             </div>
                           </div>
                         </div>
+                        
+
                       </div>
                     </div>
                   </div>

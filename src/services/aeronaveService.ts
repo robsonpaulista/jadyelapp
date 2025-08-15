@@ -12,6 +12,7 @@ import {
   updateDoc,
   setDoc,
   QueryConstraint,
+  deleteDoc,
 } from 'firebase/firestore';
 
 export type TipoDespesaAeronave =
@@ -323,6 +324,11 @@ export async function atualizarDespesaAeronave(id: string, partial: Partial<Desp
   if (partial.reciboTexto !== undefined) payload.reciboTexto = partial.reciboTexto;
   if (partial.statusReembolso) payload.statusReembolso = partial.statusReembolso;
   await updateDoc(doc(db, DESPESAS_COLLECTION, id), payload);
+}
+
+export async function deletarDespesaAeronave(id: string): Promise<void> {
+  const docRef = doc(db, DESPESAS_COLLECTION, id);
+  await deleteDoc(docRef);
 }
 
 
