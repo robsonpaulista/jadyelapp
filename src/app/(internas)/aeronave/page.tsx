@@ -943,6 +943,78 @@ export default function AeronavePage() {
                 </ul>
               </div>
             )}
+            {/* Seção 1: Recibo (imagem opcional) - Primeiro para OCR automático */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Label>Recibo (imagem opcional)</Label>
+                  {ocrRunning && (
+                    <div className="flex items-center gap-1 text-xs text-blue-600">
+                      <Sparkles className="w-3 h-3 animate-pulse" />
+                      Processando...
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <Input
+                    type="file"
+                    accept="image/png, image/jpeg, application/pdf"
+                    disabled={ocrRunning}
+                    className="[&::-webkit-file-upload-button]:border-b-2 [&::-webkit-file-upload-button]:border-blue-500 [&::-webkit-file-upload-button]:focus:border-blue-600 [&::-webkit-file-upload-button]:hover:border-blue-400 [&::-webkit-file-upload-button]:transition-colors"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0] || null;
+                      if (!file) {
+                        setForm((s) => ({ ...s, reciboFile: null, reciboPreview: undefined }));
+                        return;
+                      }
+                      const reader = new FileReader();
+                      reader.onload = async (ev) => {
+                        const dataUrl = String(ev.target?.result || '');
+                        setForm((s) => ({ ...s, reciboFile: file, reciboPreview: dataUrl }));
+                        
+                        // Executar OCR automaticamente após carregar o arquivo
+                        try {
+                          setOcrRunning(true);
+                          const text = await runSmartOcr(dataUrl, file.type);
+                          applySmartExtraction(text);
+                        } catch (e) {
+                          console.error(e);
+                          toast.error('Falha no OCR automático');
+                        } finally {
+                          setOcrRunning(false);
+                        }
+                      };
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                  {form.reciboPreview && form.reciboFile && form.reciboFile.type.startsWith('image/') && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={ocrRunning}
+                      onClick={() => {
+                        setPreviewContent('');
+                        // mostra a imagem no modal também
+                        setPreviewOpen(true);
+                        setPreviewImageUrl(form.reciboPreview);
+                        setPreviewPdfUrl(undefined);
+                      }}
+                    >
+                      <Eye className="w-4 h-4 mr-1" /> Pré-visualizar
+                    </Button>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  <strong>Primeiro passo:</strong> Anexe o comprovante aqui. O sistema processará automaticamente com OCR para preencher os campos abaixo. 
+                  {ocrRunning && (
+                    <span className="text-blue-600 font-medium"> Processando...</span>
+                  )}
+                </p>
+              </div>
+            </div>
+
+            {/* Seção 2: Data, Valor, Tipo, Descrição */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
                 <Label>Data</Label>
@@ -988,6 +1060,7 @@ export default function AeronavePage() {
               </div>
             </div>
 
+            {/* Seção 3: Piloto, Aeronave, Trecho */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <div className="flex items-center justify-between">
@@ -1101,6 +1174,7 @@ export default function AeronavePage() {
               </div>
             </div>
 
+            {/* Seção 4: Recibo (texto) - Último para ajustes manuais */}
             <div>
               <Label>Recibo (texto)</Label>
               <Input
@@ -1108,75 +1182,9 @@ export default function AeronavePage() {
                 value={form.reciboTexto}
                 onChange={(e) => setForm((s) => ({ ...s, reciboTexto: e.target.value }))}
               />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <Label>Recibo (imagem opcional)</Label>
-                  {ocrRunning && (
-                    <div className="flex items-center gap-1 text-xs text-blue-600">
-                      <Sparkles className="w-3 h-3 animate-pulse" />
-                      Processando...
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 mt-1">
-                  <Input
-                    type="file"
-                    accept="image/png, image/jpeg, application/pdf"
-                    disabled={ocrRunning}
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0] || null;
-                      if (!file) {
-                        setForm((s) => ({ ...s, reciboFile: null, reciboPreview: undefined }));
-                        return;
-                      }
-                      const reader = new FileReader();
-                      reader.onload = async (ev) => {
-                        const dataUrl = String(ev.target?.result || '');
-                        setForm((s) => ({ ...s, reciboFile: file, reciboPreview: dataUrl }));
-                        
-                        // Executar OCR automaticamente após carregar o arquivo
-                        try {
-                          setOcrRunning(true);
-                          const text = await runSmartOcr(dataUrl, file.type);
-                          applySmartExtraction(text);
-                        } catch (e) {
-                          console.error(e);
-                          toast.error('Falha no OCR automático');
-                        } finally {
-                          setOcrRunning(false);
-                        }
-                      };
-                      reader.readAsDataURL(file);
-                    }}
-                  />
-                  {form.reciboPreview && form.reciboFile && form.reciboFile.type.startsWith('image/') && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={ocrRunning}
-                      onClick={() => {
-                        setPreviewContent('');
-                        // mostra a imagem no modal também
-                        setPreviewOpen(true);
-                        setPreviewImageUrl(form.reciboPreview);
-                        setPreviewPdfUrl(undefined);
-                      }}
-                    >
-                      <Eye className="w-4 h-4 mr-1" /> Pré-visualizar
-                    </Button>
-                  )}
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  JPG/PNG/PDF. O arquivo será processado automaticamente com OCR para extrair informações. 
-                  {ocrRunning && (
-                    <span className="text-blue-600 font-medium"> Processando...</span>
-                  )}
-                </p>
-              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                <strong>Ajustes manuais:</strong> Use este campo para corrigir ou complementar informações extraídas pelo OCR.
+              </p>
             </div>
 
             <div className="flex justify-end">

@@ -15,6 +15,48 @@ export function RouteGuard({ children }: RouteGuardProps) {
   const router = useRouter();
   const pathname = usePathname();
 
+  // Função para limpar cache de usuário piloto
+  const clearPilotCache = (userId: string) => {
+    console.log('Limpando cache para usuário piloto:', userId);
+    
+    // Verificar cache antes da limpeza
+    const cacheBefore = Object.keys(sessionStorage).filter(key => 
+      key.includes(userId) || key.includes('painel-aplicacoes') || key.includes('piloto')
+    );
+    console.log('Cache antes da limpeza:', cacheBefore);
+    
+    // Limpeza agressiva de todos os caches
+    Object.keys(sessionStorage).forEach(key => {
+      if (key.includes(userId) || key.includes('painel-aplicacoes') || key.includes('piloto')) {
+        console.log('Removendo cache:', key);
+        sessionStorage.removeItem(key);
+      }
+    });
+    
+    // Limpeza específica por padrões
+    const patternsToRemove = [
+      `${userId}-`,
+      'painel-aplicacoes',
+      'piloto'
+    ];
+    
+    patternsToRemove.forEach(pattern => {
+      Object.keys(sessionStorage).forEach(key => {
+        if (key.includes(pattern)) {
+          console.log('Removendo cache por padrão:', key);
+          sessionStorage.removeItem(key);
+        }
+      });
+    });
+    
+    // Verificar cache após a limpeza
+    const cacheAfter = Object.keys(sessionStorage).filter(key => 
+      key.includes(userId) || key.includes('painel-aplicacoes') || key.includes('piloto')
+    );
+    console.log('Cache após a limpeza:', cacheAfter);
+    console.log('Cache limpo para usuário piloto');
+  };
+
   useEffect(() => {
     const checkAccess = async () => {
       if (isLoading) return;
@@ -23,72 +65,84 @@ export function RouteGuard({ children }: RouteGuardProps) {
       
       // Se não há usuário logado, redireciona para login
       if (!user) {
+        console.log('RouteGuard: Nenhum usuário encontrado, redirecionando para login');
         router.replace('/');
         return;
       }
 
+      console.log('RouteGuard: Usuário encontrado:', user.name, 'Level:', userLevel);
+      console.log('RouteGuard: userLevel type:', typeof userLevel);
+      console.log('RouteGuard: userLevel value:', userLevel);
+      console.log('RouteGuard: userLevel === "piloto":', userLevel === 'piloto');
+
       // Cache de permissões para evitar verificações repetidas
       const cacheKey = `${user.id}-${pathname}`;
 
-      // Limpar cache para chapas-estaduais se for essa rota
-      if (pathname === '/chapas-estaduais') {
-        console.log('Limpando cache para chapas-estaduais');
-        sessionStorage.removeItem(cacheKey);
-        // Limpar também outros caches relacionados
-        Object.keys(sessionStorage).forEach(key => {
-          if (key.includes('chapas-estaduais')) {
-            sessionStorage.removeItem(key);
-          }
-        });
-      }
-
-      // Limpar cache para piloto se for esse level
-      if (userLevel === 'piloto') {
-        console.log('Limpando cache para usuário piloto');
-        sessionStorage.removeItem(cacheKey);
-        // Limpar também outros caches relacionados ao piloto
-        Object.keys(sessionStorage).forEach(key => {
-          if (key.includes('piloto') || key.includes(user.id)) {
-            sessionStorage.removeItem(key);
-          }
-        });
-      }
-
-      // Verificar cache primeiro
-      const cachedResult = sessionStorage.getItem(cacheKey);
-      if (cachedResult !== null) {
-        if (cachedResult === 'false') {
-          console.log(`Usuário ${user.name} (${userLevel}) tentou acessar ${pathname} sem permissão (cache)`);
-          router.replace('/painel-aplicacoes');
-          return;
-        }
-        setIsChecking(false);
-        return;
-      }
-
-      // Se não tem acesso à rota atual
-      if (!hasAccess(pathname)) {
-        console.log(`Usuário ${user.name} (${userLevel}) tentou acessar ${pathname} sem permissão`);
+      // SEMPRE limpar cache para usuários piloto ANTES de qualquer verificação
+      if (userLevel === 'piloto' || userLevel?.toLowerCase() === 'piloto') {
+        console.log('RouteGuard: Usuário piloto detectado - limpando cache imediatamente');
+        clearPilotCache(user.id);
+        
+        // Verificar se ainda há cache após a limpeza
+        const remainingCache = sessionStorage.getItem(cacheKey);
+        console.log('Cache restante após limpeza:', remainingCache);
+        
+        // Para usuários piloto, SEMPRE verificar permissões reais (não usar cache)
+        console.log('Usuário piloto - verificando permissões reais (sem cache)');
         console.log('Debug - pathname:', pathname);
         console.log('Debug - userLevel:', userLevel);
         console.log('Debug - hasAccess result:', hasAccess(pathname));
         
-        // Limpar cache para chapas-estaduais se for essa rota
-        if (pathname === '/chapas-estaduais') {
-          console.log('Limpando cache para chapas-estaduais');
-          sessionStorage.removeItem(cacheKey);
+        // Se não tem acesso à rota atual
+        if (!hasAccess(pathname)) {
+          console.log(`Usuário ${user.name} (${userLevel}) tentou acessar ${pathname} sem permissão`);
+          console.log('Debug - pathname:', pathname);
+          console.log('Debug - userLevel:', userLevel);
+          console.log('Debug - hasAccess result:', hasAccess(pathname));
+          
+          // Redirecionar para o painel de aplicações quando não tiver acesso
+          router.replace('/painel-aplicacoes');
+          return;
         }
         
-        sessionStorage.setItem(cacheKey, 'false');
-        
-        // Redirecionar para o painel de aplicações quando não tiver acesso
-        router.replace('/painel-aplicacoes');
+        // Se tem acesso, permitir
+        console.log('Usuário piloto tem acesso - permitindo');
+        setIsChecking(false);
         return;
-      }
+      } else {
+        console.log('RouteGuard: Usuário NÃO é piloto - userLevel:', userLevel);
+        
+        // Para outros usuários, verificar cache primeiro
+        const cachedResult = sessionStorage.getItem(cacheKey);
+        if (cachedResult !== null) {
+          if (cachedResult === 'false') {
+            console.log(`Usuário ${user.name} (${userLevel}) tentou acessar ${pathname} sem permissão (cache)`);
+            router.replace('/painel-aplicacoes');
+            return;
+          }
+          setIsChecking(false);
+          return;
+        }
+        
+        // Se não tem acesso à rota atual
+        if (!hasAccess(pathname)) {
+          console.log(`Usuário ${user.name} (${userLevel}) tentou acessar ${pathname} sem permissão`);
+          console.log('Debug - pathname:', pathname);
+          console.log('Debug - userLevel:', userLevel);
+          console.log('Debug - hasAccess result:', hasAccess(pathname));
+          
+          // Salvar cache negativo para usuários que não são piloto
+          sessionStorage.setItem(cacheKey, 'false');
+          
+          // Redirecionar para o painel de aplicações quando não tiver acesso
+          router.replace('/painel-aplicacoes');
+          return;
+        }
 
-      // Cache do resultado positivo
-      sessionStorage.setItem(cacheKey, 'true');
-      setIsChecking(false);
+        // Cache do resultado positivo (só para usuários que não são piloto)
+        sessionStorage.setItem(cacheKey, 'true');
+        setIsChecking(false);
+      }
     };
 
     checkAccess();
@@ -151,7 +205,7 @@ export function AccessDenied({ message = "Você não tem permissão para acessar
 
   const handleGoBack = () => {
     switch (userLevel) {
-      case 'gabineteemendas':
+              case 'gabineteemendas':
         router.push('/consultar-tetos');
         break;
       case 'gabinetejuridico':

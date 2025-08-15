@@ -102,28 +102,37 @@ export default function Navbar() {
 
   const getVisibleMenus = () => {
     if (isLoading) return [];
-    return MENUS.filter(menu => {
+    
+    console.log('getVisibleMenus - userLevel:', userLevel);
+    
+    const filteredMenus = MENUS.filter(menu => {
       if (!menu.permission) return true;
-      return hasMenuAccess(menu.permission);
+      
+      const hasPermission = hasMenuAccess(menu.permission);
+      console.log(`getVisibleMenus - ${menu.label} (${menu.permission}): ${hasPermission}`);
+      
+      return hasPermission;
     });
+    
+    console.log('getVisibleMenus - menus filtrados:', filteredMenus.map(m => m.label));
+    return filteredMenus;
   };
 
   const getVisibleSubmenus = (submenus: Submenu[] | undefined) => {
     if (isLoading || !submenus) return [];
     
-    if (userLevel === 'gabineteemendas') {
-      return submenus.filter(submenu => {
-        return submenu.href === '/consultar-tetos' || submenu.href === '/emendas2025';
-      });
-    }
+    console.log('getVisibleSubmenus - userLevel:', userLevel);
+    console.log('getVisibleSubmenus - submenus originais:', submenus);
     
-    if (userLevel === 'piloto') {
-      return submenus.filter(submenu => {
-        return submenu.href === '/aeronave';
-      });
-    }
+    // Filtrar submenus baseado nas permissões reais do usuário
+    const filteredSubmenus = submenus.filter(submenu => {
+      const hasPermission = hasAccess(submenu.href);
+      console.log(`getVisibleSubmenus - ${submenu.href}: ${hasPermission}`);
+      return hasPermission;
+    });
     
-    return submenus;
+    console.log('getVisibleSubmenus - submenus filtrados:', filteredSubmenus);
+    return filteredSubmenus;
   };
 
   const visibleMenus = getVisibleMenus();

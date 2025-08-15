@@ -126,10 +126,16 @@ export const MENU_PERMISSIONS: Record<UserLevel, UserPermissions['menuAccess']> 
 };
 
 export function getUserPermissions(userLevel: UserLevel): UserPermissions {
+  // Normalizar o nível do usuário para lowercase para garantir compatibilidade
+  const normalizedLevel = userLevel?.toLowerCase() as UserLevel;
+  
+  console.log('getUserPermissions - userLevel original:', userLevel);
+  console.log('getUserPermissions - normalizedLevel:', normalizedLevel);
+  
   return {
     level: userLevel,
-    routes: ROUTE_PERMISSIONS[userLevel] || [],
-    menuAccess: MENU_PERMISSIONS[userLevel] || {
+    routes: ROUTE_PERMISSIONS[normalizedLevel] || [],
+    menuAccess: MENU_PERMISSIONS[normalizedLevel] || {
       leads: false,
       municipios: false,
       eleicoes: false,
@@ -139,6 +145,12 @@ export function getUserPermissions(userLevel: UserLevel): UserPermissions {
 }
 
 export function hasRoutePermission(userLevel: UserLevel, route: string): boolean {
+  // Normalizar o nível do usuário para lowercase
+  const normalizedLevel = userLevel?.toLowerCase() as UserLevel;
+  
+  console.log('hasRoutePermission - userLevel original:', userLevel);
+  console.log('hasRoutePermission - normalizedLevel:', normalizedLevel);
+  
   const permissions = getUserPermissions(userLevel);
   
   // Debug log para chapas-estaduais
@@ -149,8 +161,8 @@ export function hasRoutePermission(userLevel: UserLevel, route: string): boolean
     console.log('Debug hasRoutePermission - includes result:', permissions.routes.includes(route));
   }
   
-  // Debug log para piloto
-  if (userLevel === 'piloto') {
+  // Debug log para piloto (case-insensitive)
+  if (normalizedLevel === 'piloto') {
     console.log('Debug hasRoutePermission PILOTO - route:', route);
     console.log('Debug hasRoutePermission PILOTO - permissions.routes:', permissions.routes);
     console.log('Debug hasRoutePermission PILOTO - includes result:', permissions.routes.includes(route));
@@ -185,6 +197,9 @@ export function hasMenuPermission(userLevel: UserLevel, menu: keyof UserPermissi
 
 export function getRedirectRoute(userLevel: UserLevel): string {
   const permissions = getUserPermissions(userLevel);
+  
+  console.log('getRedirectRoute - userLevel:', userLevel);
+  console.log('getRedirectRoute - permissions.routes:', permissions.routes);
   
   // Se tem acesso ao painel de aplicações, redireciona para lá
   if (permissions.routes.includes('/painel-aplicacoes')) {

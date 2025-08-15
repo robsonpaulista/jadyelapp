@@ -32,6 +32,10 @@ export function usePermissions() {
       // Obtém o nível do usuário, com fallback para 'user' se não existir
       const level = (user.level || 'user') as UserLevel;
       
+      console.log('usePermissions: user.level:', user.level);
+      console.log('usePermissions: level definido:', level);
+      console.log('usePermissions: level type:', typeof level);
+      
       setUserLevel(level);
       const userPermissions = getUserPermissions(level);
       setPermissions(userPermissions);
@@ -71,6 +75,7 @@ export function usePermissions() {
         console.log('Debug usePermissions hasAccess PILOTO - userLevel:', userLevel);
         const result = hasRoutePermission(userLevel, route);
         console.log('Debug usePermissions hasAccess PILOTO - result:', result);
+        console.log('Debug usePermissions hasAccess PILOTO - permissions object:', getUserPermissions(userLevel));
         return result;
       }
       
