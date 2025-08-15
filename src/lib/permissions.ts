@@ -154,10 +154,12 @@ export function hasRoutePermission(userLevel: UserLevel, route: string): boolean
     console.log('Debug hasRoutePermission PILOTO - route:', route);
     console.log('Debug hasRoutePermission PILOTO - permissions.routes:', permissions.routes);
     console.log('Debug hasRoutePermission PILOTO - includes result:', permissions.routes.includes(route));
+    console.log('Debug hasRoutePermission PILOTO - permissions object:', permissions);
   }
   
   // Verifica se a rota exata está nas permissões
   if (permissions.routes.includes(route)) {
+    console.log(`Debug hasRoutePermission - ROTA PERMITIDA: ${route} para ${userLevel}`);
     return true;
   }
   
@@ -171,7 +173,9 @@ export function hasRoutePermission(userLevel: UserLevel, route: string): boolean
     return false;
   });
   
-  return !!dynamicRoute;
+  const result = !!dynamicRoute;
+  console.log(`Debug hasRoutePermission - RESULTADO FINAL: ${route} para ${userLevel} = ${result}`);
+  return result;
 }
 
 export function hasMenuPermission(userLevel: UserLevel, menu: keyof UserPermissions['menuAccess']): boolean {

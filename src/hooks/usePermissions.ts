@@ -65,6 +65,15 @@ export function usePermissions() {
         return result;
       }
       
+      // Debug log para piloto
+      if (userLevel === 'piloto') {
+        console.log('Debug usePermissions hasAccess PILOTO - route:', route);
+        console.log('Debug usePermissions hasAccess PILOTO - userLevel:', userLevel);
+        const result = hasRoutePermission(userLevel, route);
+        console.log('Debug usePermissions hasAccess PILOTO - result:', result);
+        return result;
+      }
+      
       return hasRoutePermission(userLevel, route);
     } catch (error) {
       console.error('Erro em hasAccess:', error);
