@@ -42,6 +42,18 @@ export function RouteGuard({ children }: RouteGuardProps) {
         });
       }
 
+      // Limpar cache para piloto se for esse level
+      if (userLevel === 'piloto') {
+        console.log('Limpando cache para usuário piloto');
+        sessionStorage.removeItem(cacheKey);
+        // Limpar também outros caches relacionados ao piloto
+        Object.keys(sessionStorage).forEach(key => {
+          if (key.includes('piloto') || key.includes(user.id)) {
+            sessionStorage.removeItem(key);
+          }
+        });
+      }
+
       // Verificar cache primeiro
       const cachedResult = sessionStorage.getItem(cacheKey);
       if (cachedResult !== null) {

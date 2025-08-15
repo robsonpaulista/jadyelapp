@@ -149,6 +149,13 @@ export function hasRoutePermission(userLevel: UserLevel, route: string): boolean
     console.log('Debug hasRoutePermission - includes result:', permissions.routes.includes(route));
   }
   
+  // Debug log para piloto
+  if (userLevel === 'piloto') {
+    console.log('Debug hasRoutePermission PILOTO - route:', route);
+    console.log('Debug hasRoutePermission PILOTO - permissions.routes:', permissions.routes);
+    console.log('Debug hasRoutePermission PILOTO - includes result:', permissions.routes.includes(route));
+  }
+  
   // Verifica se a rota exata está nas permissões
   if (permissions.routes.includes(route)) {
     return true;
