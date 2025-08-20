@@ -129,7 +129,7 @@ export default function ChapasEstaduaisPage() {
       }
       
       const partidosConvertidos = converterPartidosParaCenario();
-      await atualizarCenario(cenarioAtivo.id, partidosConvertidos, cenarioAtivo.quocienteEleitoral);
+      await atualizarCenario(cenarioAtivo.id, partidosConvertidos, cenarioAtivo.quocienteEleitoral, numVagas);
 
       mostrarNotificacaoAutoSave(`Votos de legenda do ${partido.nome} salvos`);
     } catch (error) {
@@ -171,7 +171,7 @@ export default function ChapasEstaduaisPage() {
               candidatos: []
             }
           ];
-          await criarCenarioBase(partidosIniciais, 190000);
+          await criarCenarioBase(partidosIniciais, 190000, numVagas);
           // Recarregar o cenário base recriado
           const novoCenarioBase = await carregarCenario('base');
           if (novoCenarioBase) {
@@ -181,6 +181,12 @@ export default function ChapasEstaduaisPage() {
             if (!quocienteCarregado) {
               setQuociente(novoCenarioBase.quocienteEleitoral);
             }
+            
+            // Carregar número de vagas do cenário base
+            if (novoCenarioBase.numeroVagas) {
+              setNumVagas(novoCenarioBase.numeroVagas);
+            }
+            
             const votosLegendaTemp: { [partido: string]: number } = {};
             novoCenarioBase.partidos.forEach((partido: any) => {
               if (partido.votosLegenda) {
@@ -198,6 +204,12 @@ export default function ChapasEstaduaisPage() {
         if (!quocienteCarregado) {
           setQuociente(cenarioBase.quocienteEleitoral);
         }
+        
+        // Carregar número de vagas do cenário base
+        if (cenarioBase.numeroVagas) {
+          setNumVagas(cenarioBase.numeroVagas);
+        }
+        
         const votosLegendaTemp: { [partido: string]: number } = {};
         cenarioBase.partidos.forEach((partido: any) => {
           if (partido.votosLegenda) {
@@ -228,7 +240,7 @@ export default function ChapasEstaduaisPage() {
             candidatos: []
           }
         ];
-        await criarCenarioBase(partidosIniciais, 190000);
+        await criarCenarioBase(partidosIniciais, 190000, numVagas);
         
         // Recarregar o cenário base criado
         const novoCenarioBase = await carregarCenario('base');
@@ -280,6 +292,11 @@ export default function ChapasEstaduaisPage() {
             // Carregar o QE do cenário ativo
             setQuociente(cenarioAtivo.quocienteEleitoral);
             setQuocienteCarregado(true);
+            
+            // Carregar número de vagas do cenário ativo
+            if (cenarioAtivo.numeroVagas) {
+              setNumVagas(cenarioAtivo.numeroVagas);
+            }
             
             // Carregar votos de legenda do cenário ativo
             const votosLegendaTemp: { [partido: string]: number } = {};
@@ -393,7 +410,7 @@ export default function ChapasEstaduaisPage() {
         }
         
         const partidosConvertidos = converterPartidosParaCenario();
-        await atualizarCenario(cenarioAtivo.id, partidosConvertidos, cenarioAtivo.quocienteEleitoral);
+        await atualizarCenario(cenarioAtivo.id, partidosConvertidos, cenarioAtivo.quocienteEleitoral, numVagas);
 
 
       } catch (error) {
@@ -440,7 +457,7 @@ export default function ChapasEstaduaisPage() {
       }
       
       const partidosConvertidos = converterPartidosParaCenario();
-      await atualizarCenario(cenarioAtivo.id, partidosConvertidos, cenarioAtivo.quocienteEleitoral);
+      await atualizarCenario(cenarioAtivo.id, partidosConvertidos, cenarioAtivo.quocienteEleitoral, numVagas);
     } catch (error) {
       console.error('Erro ao salvar votos:', error);
     }
@@ -700,7 +717,7 @@ export default function ChapasEstaduaisPage() {
 
       // Salvar apenas os partidos, sem alterar o QE
       const partidosConvertidos = converterPartidosParaCenario();
-      await atualizarCenario(cenarioAtivo.id, partidosConvertidos, cenarioAtivo.quocienteEleitoral);
+      await atualizarCenario(cenarioAtivo.id, partidosConvertidos, cenarioAtivo.quocienteEleitoral, numVagas);
       mostrarNotificacaoAutoSave(`Candidato excluído com sucesso`);
     } catch (error) {
       console.error('Erro ao excluir candidato:', error);
@@ -784,7 +801,7 @@ export default function ChapasEstaduaisPage() {
 
       // Salvar apenas os partidos, sem alterar o QE
       const partidosConvertidos = converterPartidosParaCenario();
-      await atualizarCenario(cenarioAtivo.id, partidosConvertidos, cenarioAtivo.quocienteEleitoral);
+      await atualizarCenario(cenarioAtivo.id, partidosConvertidos, cenarioAtivo.quocienteEleitoral, numVagas);
 
       // Limpar formulário e fechar dialog
       setNovoCandidato({ nome: '', votos: 0, genero: 'homem' });
@@ -806,6 +823,11 @@ export default function ChapasEstaduaisPage() {
     setPartidos(partidosOrdenados);
     setQuociente(cenario.quocienteEleitoral);
     setQuocienteCarregado(true);
+    
+    // Carregar número de vagas do cenário
+    if (cenario.numeroVagas) {
+      setNumVagas(cenario.numeroVagas);
+    }
     
     // Carregar votos de legenda do cenário
     const votosLegendaTemp: { [partido: string]: number } = {};
@@ -845,6 +867,11 @@ export default function ChapasEstaduaisPage() {
         const partidosOrdenados = ordenarPartidos(cenario.partidos);
         setPartidos(partidosOrdenados);
         setQuociente(cenario.quocienteEleitoral);
+        
+        // Carregar número de vagas do cenário base
+        if (cenario.numeroVagas) {
+          setNumVagas(cenario.numeroVagas);
+        }
       }
     });
   };
@@ -861,6 +888,11 @@ export default function ChapasEstaduaisPage() {
         const partidosOrdenados = ordenarPartidos(cenario.partidos);
         setPartidos(partidosOrdenados);
         setQuociente(cenario.quocienteEleitoral);
+        
+        // Carregar número de vagas do cenário base
+        if (cenario.numeroVagas) {
+          setNumVagas(cenario.numeroVagas);
+        }
       } else {
         console.error('Erro: não foi possível carregar o cenário base');
       }
@@ -900,7 +932,7 @@ export default function ChapasEstaduaisPage() {
       setSalvandoMudancas(true);
       try {
         const partidosConvertidos = converterPartidosParaCenario();
-        await atualizarCenario(cenarioAtivo.id, partidosConvertidos, quociente);
+        await atualizarCenario(cenarioAtivo.id, partidosConvertidos, quociente, numVagas);
         
         // O cenário será automaticamente ativado pelo serviço
         
@@ -916,7 +948,7 @@ export default function ChapasEstaduaisPage() {
         
         // Feedback visual temporário
         setTimeout(() => setSalvandoMudancas(false), 2000);
-        mostrarNotificacaoAutoSave(`Mudanças salvas no cenário "${cenarioAtivo.nome}" com QE: ${quociente.toLocaleString('pt-BR')}`);
+        mostrarNotificacaoAutoSave(`Mudanças salvas no cenário "${cenarioAtivo.nome}" com QE: ${quociente.toLocaleString('pt-BR')} e ${numVagas} vagas`);
       } catch (error) {
         console.error('Erro ao salvar mudanças no cenário:', error);
         setSalvandoMudancas(false);
@@ -1084,7 +1116,22 @@ export default function ChapasEstaduaisPage() {
               <input
                 type="number"
                 value={numVagas}
-                onChange={(e) => setNumVagas(Math.max(1, parseInt(e.target.value) || 8))}
+                onChange={(e) => {
+                  const novoValor = Math.max(1, parseInt(e.target.value) || 8);
+                  setNumVagas(novoValor);
+                  
+                  // Salvar automaticamente se há um cenário ativo
+                  if (cenarioAtivo) {
+                    const partidosConvertidos = converterPartidosParaCenario();
+                    atualizarCenario(cenarioAtivo.id, partidosConvertidos, quociente, novoValor)
+                      .then(() => {
+                        mostrarNotificacaoAutoSave(`Número de vagas atualizado para ${novoValor}`);
+                      })
+                      .catch((error) => {
+                        console.error('Erro ao salvar número de vagas:', error);
+                      });
+                  }
+                }}
                 className="text-sm font-bold text-gray-700 bg-transparent border-b border-gray-200 focus:border-blue-400 outline-none w-20 text-center px-1"
                 min="1"
                 max="20"

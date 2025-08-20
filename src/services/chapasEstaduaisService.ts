@@ -11,6 +11,7 @@ export interface Cenario {
   atualizadoEm: string;
   ativo: boolean;
   quocienteEleitoral: number;
+  numeroVagas?: number; // Novo campo para número de vagas
   votosIgreja?: number;
 }
 
@@ -144,7 +145,7 @@ export async function carregarQuocienteEleitoral(): Promise<number> {
 }
 
 // Função para criar cenário base
-export async function criarCenarioBase(partidos: PartidoCenario[], quociente: number): Promise<string> {
+export async function criarCenarioBase(partidos: PartidoCenario[], quociente: number, numeroVagas: number = 8): Promise<string> {
   const cenarioBase: Cenario = {
     id: 'base',
     nome: 'Cenário Base',
@@ -153,7 +154,8 @@ export async function criarCenarioBase(partidos: PartidoCenario[], quociente: nu
     criadoEm: new Date().toISOString(),
     atualizadoEm: new Date().toISOString(),
     ativo: true,
-    quocienteEleitoral: quociente
+    quocienteEleitoral: quociente,
+    numeroVagas: numeroVagas
   };
 
   // Salvar o cenário
@@ -284,7 +286,8 @@ export async function criarNovoCenario(
       criadoEm: new Date().toISOString(),
       atualizadoEm: new Date().toISOString(),
       ativo: false,
-      quocienteEleitoral: cenarioOrigem.quocienteEleitoral
+      quocienteEleitoral: cenarioOrigem.quocienteEleitoral,
+      numeroVagas: cenarioOrigem.numeroVagas || 8
     };
 
     // Salvar o novo cenário
@@ -320,14 +323,22 @@ export async function criarNovoCenario(
 export async function atualizarCenario(
   cenarioId: string, 
   partidos: PartidoCenario[], 
-  quociente: number
+  quociente: number,
+  numeroVagas?: number
 ): Promise<void> {
   try {
     // Atualizar dados do cenário
-    await setDoc(doc(db, 'cenarios_estaduais', cenarioId), {
+    const updateData: any = {
       atualizadoEm: new Date().toISOString(),
       quocienteEleitoral: quociente
-    }, { merge: true });
+    };
+    
+    // Incluir numeroVagas apenas se foi fornecido
+    if (numeroVagas !== undefined) {
+      updateData.numeroVagas = numeroVagas;
+    }
+    
+    await setDoc(doc(db, 'cenarios_estaduais', cenarioId), updateData, { merge: true });
 
     // Limpar partidos existentes
     const q = query(
