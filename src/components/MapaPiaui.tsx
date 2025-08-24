@@ -488,31 +488,16 @@ export default function MapaPiaui({ onFilterChange }: MapaPiauiProps) {
         zoom={7}
         style={{ 
           height: isFullscreen ? '100vh' : '500px', 
-          width: '100%',
-          position: isFullscreen ? 'fixed' : 'relative',
-          top: isFullscreen ? '0' : 'auto',
-          left: isFullscreen ? '0' : 'auto',
-          right: isFullscreen ? '0' : 'auto',
-          bottom: isFullscreen ? '0' : 'auto',
-          zIndex: isFullscreen ? '9999' : '10',
-          margin: isFullscreen ? '0' : 'auto',
-          // Garantir que o mapa seja sempre visível
-          visibility: 'visible',
-          display: 'block'
+          width: '100%'
         }}
         className={`${isFullscreen ? 'fullscreen-map' : 'rounded-lg'}`}
         ref={mapRef}
-        // Adicionar propriedades para melhorar a renderização
+        // Propriedades válidas do MapContainer
         zoomControl={true}
         attributionControl={true}
         doubleClickZoom={true}
         scrollWheelZoom={true}
         dragging={true}
-        animate={true}
-        easeLinearity={0.35}
-        worldCopyJump={false}
-        maxBounds={undefined}
-        maxBoundsViscosity={0.0}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
