@@ -422,25 +422,25 @@ export default function CenariosTabs({
 
       {/* Sistema de Abas Compacto */}
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="grid w-full grid-cols-auto-fit h-10">
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-auto-fit h-auto min-h-[40px] gap-1 p-1">
           {cenarios.map((cenario) => (
             <TabsTrigger 
               key={cenario.id} 
               value={cenario.id}
-              className="flex items-center justify-between gap-1 px-2 py-1 text-xs relative group"
+              className="flex items-center justify-between gap-1 px-2 py-2 text-xs relative group h-8 min-w-0"
             >
               <div className="flex items-center gap-1 min-w-0 flex-1">
-                <span className="truncate">{cenario.nome}</span>
+                <span className="truncate text-xs">{cenario.nome}</span>
                 {loading && (
-                  <RefreshCw className="h-3 w-3 animate-spin text-blue-600" />
+                  <RefreshCw className="h-3 w-3 animate-spin text-blue-600 flex-shrink-0" />
                 )}
                 {cenario.tipo === 'base' && !loading && (
-                  <Badge variant="default" className="text-xs px-1 py-0 h-4">
+                  <Badge variant="default" className="text-xs px-1 py-0 h-4 flex-shrink-0">
                     B
                   </Badge>
                 )}
                 {cenario.ativo && !loading && (
-                  <Badge variant="secondary" className="text-xs px-1 py-0 h-4">
+                  <Badge variant="secondary" className="text-xs px-1 py-0 h-4 flex-shrink-0">
                     A
                   </Badge>
                 )}

@@ -11,6 +11,19 @@
   .grid-cols-auto-fit {
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   }
+  
+  /* Responsividade para mobile */
+  @media (max-width: 640px) {
+    .grid-cols-auto-fit {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  @media (min-width: 641px) and (max-width: 768px) {
+    .grid-cols-auto-fit {
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+  }
 }
 
 /* CSS personalizado para o Leaflet Popup */
