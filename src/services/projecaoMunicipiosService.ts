@@ -30,12 +30,6 @@ async function getSheetsClient() {
 
 export async function buscarProjecoesMunicipios() {
   try {
-    logger.info('=== DEBUG - Iniciando busca de dados de projeções ===');
-    logger.info(`Sheet ID: ${SHEET_ID}`);
-    logger.info(`Sheet Name: ${SHEET_NAME}`);
-    logger.info(`CLIENT_EMAIL: ${CLIENT_EMAIL}`);
-    logger.info(`PRIVATE_KEY exists: ${!!PRIVATE_KEY}`);
-
     const sheets = await getSheetsClient();
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
@@ -44,15 +38,11 @@ export async function buscarProjecoesMunicipios() {
 
     const data = response.data.values;
     if (!data || data.length < 2) {
-      logger.warn('Dados insuficientes na planilha');
       return [];
     }
 
     const headers = data[0];
-    logger.info('Headers da planilha:', headers);
-
     const rows = data.slice(1);
-    logger.info(`Total de linhas recebidas: ${rows.length}`);
 
     // Criar um mapa para consolidar os dados por município
     const municipiosMap = new Map<string, ProjecaoMunicipio>();
@@ -62,10 +52,10 @@ export async function buscarProjecoesMunicipios() {
         const municipio = row[0] || ''; // Município
         if (!municipio) return;
 
-        const liderancaAtual = (row[4] || '').toUpperCase() === 'SIM' ? 1 : 0; // Liderança Atual?
-        const votacao2022 = row[15] ? parseInt(String(row[15]).replace(/[^0-9]/g, '')) || 0 : 0; // Votação Final 2022
-        const expectativa2026 = row[17] ? parseInt(String(row[17]).replace(/[^0-9]/g, '')) || 0 : 0; // Total Expectativa de Votos 2026
-        const eleitores = row[7] ? parseInt(String(row[7]).replace(/[^0-9]/g, '')) || 0 : 0; // Total Votos Eleição 2020
+        const liderancaAtual = (row[3] || '').toUpperCase() === 'SIM' ? 1 : 0; // Liderança Atual (coluna 3)
+        const votacao2022 = row[14] ? parseInt(String(row[14]).replace(/[^0-9]/g, '')) || 0 : 0; // Votação Final 2022 (coluna 14)
+        const expectativa2026 = row[16] ? parseInt(String(row[16]).replace(/[^0-9]/g, '')) || 0 : 0; // Total Expectativa de Votos 2026 (coluna 16)
+        const eleitores = row[6] ? parseInt(String(row[6]).replace(/[^0-9]/g, '')) || 0 : 0; // Total Votos Eleição 2020 (coluna 6)
 
         // Se o município já existe no mapa, atualiza os valores
         if (municipiosMap.has(municipio)) {
@@ -73,8 +63,8 @@ export async function buscarProjecoesMunicipios() {
           municipiosMap.set(municipio, {
             municipio,
             liderancasAtuais: atual.liderancasAtuais + liderancaAtual,
-            votacao2022: atual.votacao2022 + votacao2022,
-            expectativa2026: atual.expectativa2026 + expectativa2026,
+            votacao2022: Math.max(atual.votacao2022, votacao2022), // Usa o maior valor
+            expectativa2026: atual.expectativa2026 + expectativa2026, // SOMA os valores
             eleitores: Math.max(atual.eleitores, eleitores), // Usa o maior valor de eleitores
             crescimento: 0, // Será calculado depois
             alcance: 0 // Será calculado depois
@@ -89,16 +79,6 @@ export async function buscarProjecoesMunicipios() {
             eleitores,
             crescimento: 0, // Será calculado depois
             alcance: 0 // Será calculado depois
-          });
-        }
-
-        if (index === 0) {
-          logger.info('Exemplo de linha processada com valores específicos:', {
-            Município: municipio,
-            'Liderança Atual?': row[4],
-            'Votação Final 2022': row[15],
-            'Total Expectativa de Votos 2026': row[17],
-            'Total Votos Eleição 2020': row[7],
           });
         }
       } catch (error) {
@@ -134,7 +114,6 @@ export async function buscarProjecoesMunicipios() {
       };
     });
 
-    logger.info(`Processados ${projecoes.length} municípios únicos`);
     return projecoes;
   } catch (error) {
     logger.error('Erro ao buscar projeções dos municípios:', error);

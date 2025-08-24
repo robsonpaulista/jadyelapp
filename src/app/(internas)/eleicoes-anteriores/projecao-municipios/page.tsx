@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import dynamic from 'next/dynamic';
+// import dynamic from 'next/dynamic';
+// import "@/styles/leaflet-custom.css";
 import {
   Table,
   TableBody,
@@ -25,10 +26,10 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 // Carregamento dinâmico do MapaPiaui apenas no cliente
-const MapaPiaui = dynamic(() => import('@/components/MapaPiaui'), {
-  ssr: false,
-  loading: () => <div className="flex justify-center items-center h-96">Carregando mapa...</div>
-});
+// const MapaPiaui = dynamic(() => import('@/components/MapaPiaui'), {
+//   ssr: false,
+//   loading: () => <div className="flex justify-center items-center h-96">Carregando mapa...</div>
+// });
 
 interface ProjecaoMunicipio {
   municipio: string;
@@ -64,8 +65,9 @@ export default function ProjecaoMunicipios() {
   const [selectedMunicipio, setSelectedMunicipio] = useState('');
   const [liderancas, setLiderancas] = useState<any[]>([]);
   const [loadingLiderancas, setLoadingLiderancas] = useState(false);
-  const [filtroTerritorio, setFiltroTerritorio] = useState<string[]>([]);
-  const [territorioSelecionado, setTerritorioSelecionado] = useState<string>('');
+  // Variáveis relacionadas ao mapa temporariamente desabilitadas
+  // const [filtroTerritorio, setFiltroTerritorio] = useState<string[]>([]);
+  // const [territorioSelecionado, setTerritorioSelecionado] = useState<string>('');
 
   const itemsPerPage = 10;
 
@@ -142,11 +144,11 @@ export default function ProjecaoMunicipios() {
   };
 
   // Callback para receber mudanças do filtro do mapa
-  const handleMapFilterChange = (territorio: string | null, municipiosNomes: string[]) => {
-    setFiltroTerritorio(territorio ? municipiosNomes : []);
-    setTerritorioSelecionado(territorio || '');
-    setCurrentPage(1); // Resetar para primeira página quando filtrar
-  };
+  // const handleMapFilterChange = (territorio: string | null, municipiosNomes: string[]) => {
+  //   setFiltroTerritorio(territorio ? municipiosNomes : []);
+  //   setTerritorioSelecionado(territorio || '');
+  //   setCurrentPage(1); // Resetar para primeira página quando filtrar
+  // };
 
   const sortedData = [...projecoes].sort((a, b) => {
     if (!sortConfig) return 0;
@@ -171,10 +173,11 @@ export default function ProjecaoMunicipios() {
     const matchesSearch = item.municipio.toLowerCase().includes(searchTerm.toLowerCase());
     
     // Filtro por território (se algum território estiver selecionado)
-    const matchesTerritory = filtroTerritorio.length === 0 || 
-      filtroTerritorio.some(municipioTerritorio => 
-        normalizeString(municipioTerritorio) === normalizeString(item.municipio)
-      );
+    const matchesTerritory = true; // Temporariamente desabilitado
+    // const matchesTerritory = filtroTerritorio.length === 0 || 
+    //   filtroTerritorio.some(municipioTerritorio => 
+    //     normalizeString(municipioTerritorio) === normalizeString(item.municipio)
+    //   );
     
     return matchesSearch && matchesTerritory;
   });
@@ -290,7 +293,7 @@ export default function ProjecaoMunicipios() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-8 py-2">
+    <div className="max-w-7xl mx-auto px-8 py-2 projecao-municipios-container">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-semibold">Projeção de Municípios</h2>
         <div className="flex gap-2">
@@ -315,10 +318,12 @@ export default function ProjecaoMunicipios() {
         </div>
       </div>
 
-      {/* Mapa Interativo do Piauí */}
-      <div className="mb-8">
+      {/* Mapa Interativo do Piauí - TEMPORARIAMENTE COMENTADO */}
+      {/* 
+      <div className="mb-8 w-full overflow-hidden">
         <MapaPiaui onFilterChange={handleMapFilterChange} />
       </div>
+      */}
 
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-4">
@@ -332,6 +337,7 @@ export default function ProjecaoMunicipios() {
             }}
             className="max-w-xs"
           />
+          {/* Filtro de território temporariamente desabilitado
           {territorioSelecionado && (
             <div className="flex items-center gap-2 px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm">
               <span>Filtro: {territorioSelecionado}</span>
@@ -344,14 +350,17 @@ export default function ProjecaoMunicipios() {
               </button>
             </div>
           )}
+          */}
         </div>
         <div className="text-sm text-gray-500">
           Mostrando {Math.min(itemsPerPage, filteredData.length)} de {filteredData.length} registros
+          {/* Filtro de território temporariamente desabilitado
           {territorioSelecionado && (
             <span className="ml-2 text-orange-600">
               (filtrado por {territorioSelecionado})
             </span>
           )}
+          */}
         </div>
       </div>
 

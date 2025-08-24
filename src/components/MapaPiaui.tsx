@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Tooltip } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
+import '@/styles/leaflet-custom.css';
 import L from 'leaflet';
 import { Maximize2, Minimize2, X } from 'lucide-react';
 import { createRoot } from 'react-dom/client';
@@ -285,6 +285,21 @@ export default function MapaPiaui({ onFilterChange }: MapaPiauiProps) {
     };
   }, []);
 
+  // Garantir que o mapa seja redimensionado corretamente após a renderização
+  useEffect(() => {
+    if (mapRef.current && !loading) {
+      // Aguardar um pouco para garantir que o DOM esteja pronto
+      const timer = setTimeout(() => {
+        if (mapRef.current) {
+          mapRef.current.invalidateSize();
+          console.log('Mapa redimensionado após renderização');
+        }
+      }, 500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [loading, municipios.length, projecoes.length]);
+
   const handleFilterChange = useCallback((territorio: string | null, municipiosNomes: string[]) => {
     console.log('handleFilterChange chamado:', { territorio, municipiosNomes, projecoes: projecoes.length, eleicoes: dadosEleicoes2022.length });
     setFilteredMunicipios(territorio ? municipiosNomes : []);
@@ -467,7 +482,7 @@ export default function MapaPiaui({ onFilterChange }: MapaPiauiProps) {
   };
 
   return (
-    <div className="relative" ref={containerRef}>
+    <div className="relative w-full" ref={containerRef}>
       <MapContainer
         center={[-5.5, -42.5]}
         zoom={7}
@@ -480,10 +495,24 @@ export default function MapaPiaui({ onFilterChange }: MapaPiauiProps) {
           right: isFullscreen ? '0' : 'auto',
           bottom: isFullscreen ? '0' : 'auto',
           zIndex: isFullscreen ? '9999' : '10',
-          margin: isFullscreen ? '0' : 'auto'
+          margin: isFullscreen ? '0' : 'auto',
+          // Garantir que o mapa seja sempre visível
+          visibility: 'visible',
+          display: 'block'
         }}
         className={`${isFullscreen ? 'fullscreen-map' : 'rounded-lg'}`}
         ref={mapRef}
+        // Adicionar propriedades para melhorar a renderização
+        zoomControl={true}
+        attributionControl={true}
+        doubleClickZoom={true}
+        scrollWheelZoom={true}
+        dragging={true}
+        animate={true}
+        easeLinearity={0.35}
+        worldCopyJump={false}
+        maxBounds={undefined}
+        maxBoundsViscosity={0.0}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

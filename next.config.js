@@ -6,14 +6,14 @@ const nextConfig = {
   generateEtags: true,
   // Habilitar Turbopack para desenvolvimento
   experimental: {
-    turbo: {
-      rules: {
-        '*.svg': {
-          loaders: ['@svgr/webpack'],
-          as: '*.js',
-        },
-      },
-    },
+    // turbo: {
+    //   rules: {
+    //     '*.svg': {
+    //       loaders: ['@svgr/webpack'],
+    //       as: '*.js',
+    //     },
+    //   },
+    // },
     optimizeCss: true,
     optimizePackageImports: ['lucide-react', '@/components/ui'],
     // Otimizações de performance

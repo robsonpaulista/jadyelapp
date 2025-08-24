@@ -49,6 +49,15 @@
   border-radius: 4px !important;
 }
 
+/* Regras específicas para o container da página de projeção de municípios */
+.projecao-municipios-container {
+  overflow: visible !important;
+}
+
+.projecao-municipios-container > div {
+  overflow: visible !important;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

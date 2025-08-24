@@ -1,0 +1,364 @@
+/* Estilos essenciais do Leaflet - versão limpa e funcional */
+
+/* Container principal do mapa */
+.leaflet-container {
+  font: 12px/1.5 "Helvetica Neue", Arial, Helvetica, sans-serif;
+  background: #ddd;
+  outline: 0;
+  cursor: -webkit-grab;
+  cursor: -moz-grab;
+  cursor: grab;
+  /* Garantir que o container seja visível */
+  visibility: visible !important;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 400px !important;
+}
+
+.leaflet-container:active {
+  cursor: -webkit-grabbing;
+  cursor: -moz-grabbing;
+  cursor: grabbing;
+}
+
+/* Garantir que o mapa seja sempre visível */
+.leaflet-map-pane {
+  visibility: visible !important;
+  display: block !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.leaflet-tile-pane {
+  visibility: visible !important;
+  display: block !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Controles de zoom */
+.leaflet-control-zoom {
+  border-radius: 4px;
+  border: 2px solid rgba(0,0,0,0.2);
+  background: #fff;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+}
+
+.leaflet-control-zoom a {
+  width: 30px;
+  height: 30px;
+  line-height: 30px;
+  display: block;
+  text-align: center;
+  text-decoration: none;
+  color: black;
+  border-bottom: 1px solid #ccc;
+}
+
+.leaflet-control-zoom a:hover {
+  background-color: #f4f4f4;
+}
+
+.leaflet-control-zoom a:last-child {
+  border-bottom: none;
+}
+
+.leaflet-control-zoom-in,
+.leaflet-control-zoom-out {
+  font: bold 18px 'Lucida Console', Monaco, monospace;
+  text-indent: 1px;
+}
+
+.leaflet-control-zoom-out {
+  font-size: 20px;
+}
+
+/* Controles do mapa */
+.leaflet-control {
+  position: relative;
+  z-index: 800;
+  pointer-events: visiblePainted;
+  pointer-events: auto;
+}
+
+.leaflet-top,
+.leaflet-bottom {
+  position: absolute;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.leaflet-top {
+  top: 0;
+}
+
+.leaflet-right {
+  right: 0;
+}
+
+.leaflet-bottom {
+  bottom: 0;
+}
+
+.leaflet-left {
+  left: 0;
+}
+
+/* Marcadores */
+.leaflet-marker-icon,
+.leaflet-marker-shadow {
+  display: block;
+}
+
+.leaflet-marker-icon {
+  border: none;
+}
+
+/* Popups */
+.leaflet-popup {
+  position: absolute;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.leaflet-popup-content-wrapper {
+  background: white;
+  box-shadow: 0 3px 14px rgba(0,0,0,0.4);
+  border-radius: 5px;
+  padding: 1px;
+  text-align: left;
+}
+
+.leaflet-popup-content {
+  margin: 13px 19px;
+  line-height: 1.4;
+}
+
+.leaflet-popup-tip-container {
+  width: 40px;
+  height: 20px;
+  position: absolute;
+  left: 50%;
+  margin-left: -20px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.leaflet-popup-tip {
+  width: 17px;
+  height: 17px;
+  padding: 1px;
+  margin: -10px auto 0;
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  transform: rotate(45deg);
+  background: white;
+  box-shadow: 0 3px 14px rgba(0,0,0,0.4);
+}
+
+/* Tooltips */
+.leaflet-tooltip {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid black;
+  border-radius: 3px;
+  color: white;
+  padding: 2px 5px;
+  white-space: nowrap;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  pointer-events: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+
+.leaflet-tooltip-top:before,
+.leaflet-tooltip-bottom:before,
+.leaflet-tooltip-left:before,
+.leaflet-tooltip-right:before {
+  content: "";
+  position: absolute;
+  border: 6px solid transparent;
+}
+
+.leaflet-tooltip-top:before {
+  bottom: 0;
+  margin-bottom: -12px;
+  border-top-color: rgba(0, 0, 0, 0.8);
+}
+
+.leaflet-tooltip-bottom:before {
+  top: 0;
+  margin-top: -12px;
+  border-bottom-color: rgba(0, 0, 0, 0.8);
+}
+
+.leaflet-tooltip-left:before {
+  right: 0;
+  margin-right: -12px;
+  border-left-color: rgba(0, 0, 0, 0.8);
+}
+
+.leaflet-tooltip-right:before {
+  left: 0;
+  margin-left: -12px;
+  border-right-color: rgba(0, 0, 0, 0.8);
+}
+
+/* Camadas do mapa - CORRIGIDO */
+.leaflet-tile {
+  filter: inherit;
+  visibility: visible !important;
+  display: block !important;
+  position: absolute !important;
+}
+
+.leaflet-tile-loaded {
+  visibility: visible !important;
+  display: block !important;
+}
+
+/* Garantir que as tiles sejam sempre visíveis */
+.leaflet-tile-pane .leaflet-tile {
+  visibility: visible !important;
+  display: block !important;
+  position: absolute !important;
+}
+
+.leaflet-zoom-anim {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  -webkit-border-radius: inherit;
+  border-radius: inherit;
+}
+
+.leaflet-zoom-anim .leaflet-zoom-animated {
+  -webkit-transition: -webkit-transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  -moz-transition: -moz-transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.leaflet-zoom-anim .leaflet-tile,
+.leaflet-pan-anim .leaflet-tile {
+  -webkit-transition: none;
+  -moz-transition: none;
+  transition: none;
+}
+
+.leaflet-zoom-anim .leaflet-zoom-hide {
+  visibility: hidden;
+}
+
+/* Estados de carregamento */
+.leaflet-fade-anim .leaflet-tile,
+.leaflet-fade-anim .leaflet-popup {
+  opacity: 0;
+  -webkit-transition: opacity 0.2s linear;
+  -moz-transition: opacity 0.2s linear;
+  -o-transition: opacity 0.2s linear;
+  transition: opacity 0.2s linear;
+}
+
+.leaflet-fade-anim .leaflet-tile-loaded,
+.leaflet-fade-anim .leaflet-map-pane .leaflet-popup {
+  opacity: 1;
+}
+
+/* Controles de navegação */
+.leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.6);
+  margin: 0;
+  padding: 0 5px;
+  color: #333;
+  font: 11px/1.5 "Helvetica Neue", Arial, Helvetica, sans-serif;
+}
+
+.leaflet-control-attribution a {
+  text-decoration: none;
+  color: #0078A8;
+}
+
+.leaflet-control-attribution a:hover {
+  text-decoration: underline;
+}
+
+.leaflet-control-attribution-pane {
+  display: none;
+}
+
+/* Estados de hover e focus */
+.leaflet-control a:hover,
+.leaflet-control a:focus {
+  background-color: #f4f4f4;
+}
+
+.leaflet-control a:active {
+  background-color: #e5e5e5;
+}
+
+/* Regras específicas para corrigir problemas de renderização */
+.leaflet-container img {
+  max-width: none !important;
+  max-height: none !important;
+  visibility: visible !important;
+}
+
+.leaflet-container svg {
+  max-width: none !important;
+  max-height: none !important;
+  visibility: visible !important;
+}
+
+/* Corrigir problemas de overflow */
+.leaflet-container .leaflet-pane {
+  overflow: visible !important;
+}
+
+/* Garantir que as tiles sejam renderizadas corretamente */
+.leaflet-tile-pane img {
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Corrigir problemas de z-index */
+.leaflet-container .leaflet-pane {
+  z-index: 1 !important;
+}
+
+.leaflet-container .leaflet-tile-pane {
+  z-index: 2 !important;
+}
+
+.leaflet-container .leaflet-overlay-pane {
+  z-index: 4 !important;
+}
+
+.leaflet-container .leaflet-marker-pane {
+  z-index: 5 !important;
+}
+
+.leaflet-container .leaflet-tooltip-pane {
+  z-index: 6 !important;
+}
+
+.leaflet-container .leaflet-popup-pane {
+  z-index: 7 !important;
+}
