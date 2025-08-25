@@ -631,20 +631,22 @@ export default function EvolucaoRepublicanosPage() {
                           }))
                           .filter(item => item.votos > 0);
 
-                        // Calcular eleitos por ano para este cargo
-                        const eleitosPorAno = dadosFiltrados
+                        // Calcular candidatos únicos eleitos para este cargo
+                        const candidatosEleitos = new Set();
+                        dadosFiltrados
                           .filter(item => {
                             const cargoItem = item.cargo || 'Cargo não informado';
-                            const situacao = (item['situacao totalizacao'] || '').toLowerCase();
-                            return cargoItem === cargo && situacao.includes('eleito');
+                            const situacao = (item['situacao totalizacao'] || '').toLowerCase().trim();
+                            return cargoItem === cargo && situacao === 'eleito';
                           })
-                          .reduce((acc, item) => {
+                          .forEach(item => {
+                            const candidato = item['nome candidato'] || 'Candidato não informado';
                             const ano = Number(item['ano de eleicao'] || item.ano);
-                            acc[ano] = (acc[ano] || 0) + 1;
-                            return acc;
-                          }, {} as any);
+                            // Criar chave única por candidato e ano para evitar duplicatas
+                            candidatosEleitos.add(`${candidato}-${ano}`);
+                          });
 
-                        const totalEleitos = Object.values(eleitosPorAno).reduce((sum: number, count: any) => sum + count, 0);
+                        const totalEleitos = candidatosEleitos.size;
 
                         return (
                           <div key={cargo} className="border border-gray-200 rounded-lg p-4 bg-white">
