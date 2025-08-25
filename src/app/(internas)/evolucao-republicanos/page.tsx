@@ -194,18 +194,18 @@ export default function EvolucaoRepublicanosPage() {
     return isNaN(num) ? '-' : num.toLocaleString('pt-BR');
   };
 
-  // Paleta de cores para os cargos
+  // Paleta de cores para os cargos (tons neutros e profissionais)
   const coresCargos = [
+    '#1f2937', // gray-800
+    '#374151', // gray-700
+    '#4b5563', // gray-600
+    '#6b7280', // gray-500
+    '#059669', // emerald-600
+    '#0891b2', // cyan-600
     '#2563eb', // blue-600
-    '#dc2626', // red-600  
     '#16a34a', // green-600
     '#ca8a04', // yellow-600
-    '#9333ea', // violet-600
     '#c2410c', // orange-600
-    '#0891b2', // cyan-600
-    '#be123c', // rose-600
-    '#4338ca', // indigo-600
-    '#059669', // emerald-600
   ];
 
   const getCorCargo = (index: number) => {
