@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -51,6 +51,22 @@ export default function EvolucaoRepublicanosPage() {
     carregarDados();
   }, []);
 
+  // Calcular dados filtrados usando useMemo
+  const dadosFiltrados = useMemo(() => {
+    return dados.filter(item => {
+      if (filtroNomeCandidato === 'todos') return true;
+      const nomeCandidato = item['nome candidato']?.toString() || '';
+      return nomeCandidato === filtroNomeCandidato;
+    });
+  }, [dados, filtroNomeCandidato]);
+
+  // Processar gráfico quando dados filtrados mudarem
+  useEffect(() => {
+    if (dadosFiltrados.length > 0) {
+      processarDadosGrafico(dadosFiltrados);
+    }
+  }, [dadosFiltrados]);
+
   const carregarDados = async (filtros = {}) => {
     setLoading(true);
     try {
@@ -86,8 +102,7 @@ export default function EvolucaoRepublicanosPage() {
           setCandidatosDisponiveis(candidatosUnicos);
         }
         
-        // Processar dados para o gráfico
-        processarDadosGrafico(resultado.data);
+        // Processar dados para o gráfico será feito no useEffect de filtros
       } else {
         console.error('Erro ao carregar dados:', resultado.message);
       }
@@ -162,12 +177,7 @@ export default function EvolucaoRepublicanosPage() {
     return isNaN(num) ? '-' : num.toLocaleString('pt-BR');
   };
 
-  // Filtrar dados por nome do candidato localmente (busca em tempo real)
-  const dadosFiltrados = dados.filter(item => {
-    if (filtroNomeCandidato === 'todos') return true;
-    const nomeCandidato = item['nome candidato']?.toString() || '';
-    return nomeCandidato === filtroNomeCandidato;
-  });
+  // dadosFiltrados já definido acima com useMemo
 
   // Filtrar apenas candidatos com votos > 0 e agrupar por ano
   const dadosComVotos = dadosFiltrados.filter(item => {
