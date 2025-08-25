@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { ApiResponseResultadoEleicao, ResultadoEleicaoRegistro } from '@/types/resultadoEleicoes';
-import { Search, Filter, TrendingUp, Calendar, MapPin, User, Users, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, Filter, TrendingUp, Calendar, MapPin, User, Users, ChevronDown, ChevronUp, ChevronRight, Minus, Plus } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import {
   LineChart,
@@ -41,6 +41,11 @@ export default function EvolucaoRepublicanosPage() {
   
   // Estado para controlar se os filtros estão expandidos
   const [filtrosExpandidos, setFiltrosExpandidos] = useState(false);
+  
+  // Estados para controlar expansão da árvore
+  const [anosExpandidos, setAnosExpandidos] = useState<Set<string>>(new Set());
+  const [cargosExpandidos, setCargosExpandidos] = useState<Set<string>>(new Set());
+  const [municipiosExpandidos, setMunicipiosExpandidos] = useState<Set<string>>(new Set());
 
   // Carregar dados iniciais e listas para filtros
   useEffect(() => {
@@ -161,54 +166,84 @@ export default function EvolucaoRepublicanosPage() {
     return nomeCandidato.includes(filtroNomeCandidato.toLowerCase());
   });
 
-  // Agrupar dados por Ano > Município > Candidato
-  const dadosAgrupados = dadosFiltrados.reduce((acc, item) => {
-    const ano = item['ano de eleicao'] || item.ano;
+  // Agrupar dados em estrutura de árvore: Ano > Cargo > Município > Candidato
+  const dadosArvore = dadosFiltrados.reduce((acc, item) => {
+    const ano = (item['ano de eleicao'] || item.ano || 'Ano não informado').toString();
+    const cargo = item.cargo || 'Cargo não informado';
     const municipio = item.municipio || 'Município não informado';
     const candidato = item['nome candidato'] || 'Candidato não informado';
     const partido = item.partido || '-';
-    const cargo = item.cargo || '-';
     const votos = Number(item['votos nominais'] || 0);
     const situacao = item['situacao totalizacao'] || '-';
 
-    const chaveAno = ano.toString();
-    const chaveMunicipio = municipio.toString();
-    const chaveCandidato = candidato.toString();
-
-    if (!acc[chaveAno]) {
-      acc[chaveAno] = {};
+    // Criar estrutura hierárquica
+    if (!acc[ano]) {
+      acc[ano] = {};
     }
-    if (!acc[chaveAno][chaveMunicipio]) {
-      acc[chaveAno][chaveMunicipio] = {};
+    if (!acc[ano][cargo]) {
+      acc[ano][cargo] = {};
     }
-    if (!acc[chaveAno][chaveMunicipio][chaveCandidato]) {
-      acc[chaveAno][chaveMunicipio][chaveCandidato] = {
+    if (!acc[ano][cargo][municipio]) {
+      acc[ano][cargo][municipio] = {};
+    }
+    if (!acc[ano][cargo][municipio][candidato]) {
+      acc[ano][cargo][municipio][candidato] = {
         ano,
+        cargo,
         municipio,
         candidato,
         partido,
-        cargo,
         totalVotos: 0,
         situacao,
         registros: 0
       };
     }
 
-    acc[chaveAno][chaveMunicipio][chaveCandidato].totalVotos += votos;
-    acc[chaveAno][chaveMunicipio][chaveCandidato].registros += 1;
+    acc[ano][cargo][municipio][candidato].totalVotos += votos;
+    acc[ano][cargo][municipio][candidato].registros += 1;
 
     return acc;
   }, {} as any);
 
-  // Converter estrutura agrupada para array plano para exibição
-  const dadosParaTabela = [];
-  Object.keys(dadosAgrupados).sort().forEach(ano => {
-    Object.keys(dadosAgrupados[ano]).sort().forEach(municipio => {
-      Object.keys(dadosAgrupados[ano][municipio]).sort().forEach(candidato => {
-        dadosParaTabela.push(dadosAgrupados[ano][municipio][candidato]);
-      });
-    });
-  });
+  // Funções para controle de expansão
+  const toggleAno = (ano: string) => {
+    const novosExpandidos = new Set(anosExpandidos);
+    if (novosExpandidos.has(ano)) {
+      novosExpandidos.delete(ano);
+    } else {
+      novosExpandidos.add(ano);
+    }
+    setAnosExpandidos(novosExpandidos);
+  };
+
+  const toggleCargo = (anoCargoKey: string) => {
+    const novosExpandidos = new Set(cargosExpandidos);
+    if (novosExpandidos.has(anoCargoKey)) {
+      novosExpandidos.delete(anoCargoKey);
+    } else {
+      novosExpandidos.add(anoCargoKey);
+    }
+    setCargosExpandidos(novosExpandidos);
+  };
+
+  const toggleMunicipio = (anoCargoMunicipioKey: string) => {
+    const novosExpandidos = new Set(municipiosExpandidos);
+    if (novosExpandidos.has(anoCargoMunicipioKey)) {
+      novosExpandidos.delete(anoCargoMunicipioKey);
+    } else {
+      novosExpandidos.add(anoCargoMunicipioKey);
+    }
+    setMunicipiosExpandidos(novosExpandidos);
+  };
+
+  // Contar total de candidatos únicos para o card de filtrados
+  const totalCandidatos = Object.values(dadosArvore).reduce((total, cargos: any) => {
+    return total + Object.values(cargos).reduce((totalCargos, municipios: any) => {
+      return totalCargos + Object.values(municipios).reduce((totalMunicipios, candidatos: any) => {
+        return totalMunicipios + Object.keys(candidatos).length;
+      }, 0);
+    }, 0);
+  }, 0);
 
   return (
     <div className="min-h-screen bg-white text-gray-800 flex flex-col">
@@ -283,7 +318,7 @@ export default function EvolucaoRepublicanosPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-gray-900">{formatarNumero(dadosParaTabela.length)}</div>
+                  <div className="text-2xl font-bold text-gray-900">{formatarNumero(totalCandidatos)}</div>
                 </CardContent>
               </Card>
             </div>
@@ -511,10 +546,10 @@ export default function EvolucaoRepublicanosPage() {
           <Card className="border-gray-200">
             <CardHeader>
               <CardTitle className="text-base font-medium text-gray-900">
-                Resultados Agrupados ({formatarNumero(dadosParaTabela.length)} candidatos)
+                Estrutura Hierárquica ({formatarNumero(totalCandidatos)} candidatos)
               </CardTitle>
               <CardDescription className="text-sm text-gray-600">
-                Dados agrupados por Ano > Município > Candidato com votação consolidada
+                Dados organizados em árvore: Ano > Cargo > Município > Candidato
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -523,68 +558,133 @@ export default function EvolucaoRepublicanosPage() {
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
                   <p>Carregando dados...</p>
                 </div>
-              ) : dadosParaTabela.length === 0 ? (
+              ) : totalCandidatos === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   Nenhum resultado encontrado com os filtros aplicados
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse border border-gray-200">
-                    <thead>
-                      <tr className="bg-gray-50">
-                        <th className="text-left p-3 border border-gray-200 font-medium">Ano</th>
-                        <th className="text-left p-3 border border-gray-200 font-medium">Município</th>
-                        <th className="text-left p-3 border border-gray-200 font-medium">Candidato</th>
-                        <th className="text-left p-3 border border-gray-200 font-medium">Partido</th>
-                        <th className="text-left p-3 border border-gray-200 font-medium">Cargo</th>
-                        <th className="text-right p-3 border border-gray-200 font-medium">Total Votos</th>
-                        <th className="text-center p-3 border border-gray-200 font-medium">Registros</th>
-                        <th className="text-center p-3 border border-gray-200 font-medium">Situação</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {dadosParaTabela.slice(0, 100).map((item, index) => (
-                        <tr key={index} className="hover:bg-gray-50">
-                          <td className="p-3 border border-gray-200">
-                            <Badge variant="secondary">
-                              {item.ano || '-'}
-                            </Badge>
-                          </td>
-                          <td className="p-3 border border-gray-200">{item.municipio || '-'}</td>
-                          <td className="p-3 border border-gray-200 font-medium">
-                            {item.candidato || '-'}
-                          </td>
-                          <td className="p-3 border border-gray-200">
-                            {item.partido && item.partido !== '-' && (
-                              <Badge variant="outline">{item.partido}</Badge>
-                            )}
-                          </td>
-                          <td className="p-3 border border-gray-200">{item.cargo || '-'}</td>
-                          <td className="p-3 border border-gray-200 text-right font-mono">
-                            {formatarNumero(item.totalVotos)}
-                          </td>
-                          <td className="p-3 border border-gray-200 text-center">
-                            <Badge variant="outline" className="text-xs">
-                              {item.registros}
-                            </Badge>
-                          </td>
-                          <td className="p-3 border border-gray-200 text-center">
-                            {item.situacao && item.situacao !== '-' && (
-                              <Badge variant={item.situacao.toLowerCase().includes('eleito') ? 'default' : 'secondary'}>
-                                {item.situacao}
-                              </Badge>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  
-                  {dadosParaTabela.length > 100 && (
-                    <div className="text-center py-4 text-sm text-gray-500">
-                      Mostrando primeiros 100 candidatos de {formatarNumero(dadosParaTabela.length)}
+                <div className="space-y-2">
+                  {Object.keys(dadosArvore).sort().map((ano) => (
+                    <div key={ano} className="border border-gray-200 rounded-lg">
+                      {/* Nível 1: Ano */}
+                      <div 
+                        className="flex items-center justify-between p-3 bg-blue-50 hover:bg-blue-100 cursor-pointer border-b border-gray-200"
+                        onClick={() => toggleAno(ano)}
+                      >
+                        <div className="flex items-center gap-2">
+                          {anosExpandidos.has(ano) ? (
+                            <Minus className="h-4 w-4 text-blue-600" />
+                          ) : (
+                            <Plus className="h-4 w-4 text-blue-600" />
+                          )}
+                          <Badge variant="default" className="bg-blue-600">
+                            {ano}
+                          </Badge>
+                          <span className="font-medium text-blue-900">
+                            {Object.keys(dadosArvore[ano]).length} cargo(s)
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Nível 2: Cargos */}
+                      {anosExpandidos.has(ano) && (
+                        <div className="p-2 space-y-1">
+                          {Object.keys(dadosArvore[ano]).sort().map((cargo) => {
+                            const anoCargoKey = `${ano}-${cargo}`;
+                            return (
+                              <div key={anoCargoKey} className="border border-gray-100 rounded">
+                                <div 
+                                  className="flex items-center justify-between p-2 bg-green-50 hover:bg-green-100 cursor-pointer"
+                                  onClick={() => toggleCargo(anoCargoKey)}
+                                >
+                                  <div className="flex items-center gap-2 ml-4">
+                                    {cargosExpandidos.has(anoCargoKey) ? (
+                                      <Minus className="h-3 w-3 text-green-600" />
+                                    ) : (
+                                      <Plus className="h-3 w-3 text-green-600" />
+                                    )}
+                                    <Badge variant="outline" className="border-green-500 text-green-700">
+                                      {cargo}
+                                    </Badge>
+                                    <span className="text-sm text-green-800">
+                                      {Object.keys(dadosArvore[ano][cargo]).length} município(s)
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Nível 3: Municípios */}
+                                {cargosExpandidos.has(anoCargoKey) && (
+                                  <div className="p-2 space-y-1">
+                                    {Object.keys(dadosArvore[ano][cargo]).sort().map((municipio) => {
+                                      const anoCargoMunicipioKey = `${ano}-${cargo}-${municipio}`;
+                                      return (
+                                        <div key={anoCargoMunicipioKey} className="border border-gray-100 rounded">
+                                          <div 
+                                            className="flex items-center justify-between p-2 bg-purple-50 hover:bg-purple-100 cursor-pointer"
+                                            onClick={() => toggleMunicipio(anoCargoMunicipioKey)}
+                                          >
+                                            <div className="flex items-center gap-2 ml-8">
+                                              {municipiosExpandidos.has(anoCargoMunicipioKey) ? (
+                                                <Minus className="h-3 w-3 text-purple-600" />
+                                              ) : (
+                                                <Plus className="h-3 w-3 text-purple-600" />
+                                              )}
+                                              <MapPin className="h-3 w-3 text-purple-600" />
+                                              <span className="font-medium text-purple-900">{municipio}</span>
+                                              <Badge variant="outline" className="border-purple-500 text-purple-700 text-xs">
+                                                {Object.keys(dadosArvore[ano][cargo][municipio]).length} candidato(s)
+                                              </Badge>
+                                            </div>
+                                          </div>
+
+                                          {/* Nível 4: Candidatos */}
+                                          {municipiosExpandidos.has(anoCargoMunicipioKey) && (
+                                            <div className="p-2">
+                                              <div className="space-y-1">
+                                                {Object.keys(dadosArvore[ano][cargo][municipio]).sort().map((candidato) => {
+                                                  const dadosCandidato = dadosArvore[ano][cargo][municipio][candidato];
+                                                  return (
+                                                    <div key={candidato} className="flex items-center justify-between p-2 ml-12 bg-gray-50 rounded border">
+                                                      <div className="flex items-center gap-2">
+                                                        <User className="h-3 w-3 text-gray-600" />
+                                                        <span className="font-medium text-gray-900">{candidato}</span>
+                                                        {dadosCandidato.partido && dadosCandidato.partido !== '-' && (
+                                                          <Badge variant="outline" className="text-xs">
+                                                            {dadosCandidato.partido}
+                                                          </Badge>
+                                                        )}
+                                                      </div>
+                                                      <div className="flex items-center gap-3">
+                                                        <span className="text-sm font-mono font-bold text-gray-900">
+                                                          {formatarNumero(dadosCandidato.totalVotos)} votos
+                                                        </span>
+                                                        <Badge variant="outline" className="text-xs">
+                                                          {dadosCandidato.registros} reg.
+                                                        </Badge>
+                                                        {dadosCandidato.situacao && dadosCandidato.situacao !== '-' && (
+                                                          <Badge variant={dadosCandidato.situacao.toLowerCase().includes('eleito') ? 'default' : 'secondary'} className="text-xs">
+                                                            {dadosCandidato.situacao}
+                                                          </Badge>
+                                                        )}
+                                                      </div>
+                                                    </div>
+                                                  );
+                                                })}
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
-                  )}
+                  ))}
                 </div>
               )}
             </CardContent>
