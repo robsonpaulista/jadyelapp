@@ -27,11 +27,11 @@ export default function EvolucaoRepublicanosPage() {
   const [estatisticas, setEstatisticas] = useState<any>(null);
   
   // Filtros
-  const [filtroAno, setFiltroAno] = useState('');
-  const [filtroCargo, setFiltroCargo] = useState('');
-  const [filtroMunicipio, setFiltroMunicipio] = useState('');
+  const [filtroAno, setFiltroAno] = useState('todos');
+  const [filtroCargo, setFiltroCargo] = useState('todos');
+  const [filtroMunicipio, setFiltroMunicipio] = useState('todos');
   const [filtroNomeCandidato, setFiltroNomeCandidato] = useState('');
-  const [filtroPartido, setFiltroPartido] = useState('');
+  const [filtroPartido, setFiltroPartido] = useState('todos');
 
   // Estados para listas de filtros
   const [anosDisponiveis, setAnosDisponiveis] = useState<number[]>([]);
@@ -128,21 +128,21 @@ export default function EvolucaoRepublicanosPage() {
 
   const aplicarFiltros = () => {
     const filtrosAtivos = {
-      ...(filtroAno && { ano: filtroAno }),
-      ...(filtroCargo && { cargo: filtroCargo }),
-      ...(filtroMunicipio && { municipio: filtroMunicipio }),
-      ...(filtroPartido && { partido: filtroPartido })
+      ...(filtroAno && filtroAno !== 'todos' && { ano: filtroAno }),
+      ...(filtroCargo && filtroCargo !== 'todos' && { cargo: filtroCargo }),
+      ...(filtroMunicipio && filtroMunicipio !== 'todos' && { municipio: filtroMunicipio }),
+      ...(filtroPartido && filtroPartido !== 'todos' && { partido: filtroPartido })
     };
     
     carregarDados(filtrosAtivos);
   };
 
   const limparFiltros = () => {
-    setFiltroAno('');
-    setFiltroCargo('');
-    setFiltroMunicipio('');
+    setFiltroAno('todos');
+    setFiltroCargo('todos');
+    setFiltroMunicipio('todos');
     setFiltroNomeCandidato('');
-    setFiltroPartido('');
+    setFiltroPartido('todos');
     carregarDados();
   };
 
@@ -261,7 +261,7 @@ export default function EvolucaoRepublicanosPage() {
                       <SelectValue placeholder="Selecione o ano" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Todos os anos</SelectItem>
+                      <SelectItem value="todos">Todos os anos</SelectItem>
                       {anosDisponiveis.map((ano) => (
                         <SelectItem key={ano} value={ano.toString()}>
                           {ano}
@@ -282,7 +282,7 @@ export default function EvolucaoRepublicanosPage() {
                       <SelectValue placeholder="Selecione o cargo" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Todos os cargos</SelectItem>
+                      <SelectItem value="todos">Todos os cargos</SelectItem>
                       {cargosDisponiveis.map((cargo) => (
                         <SelectItem key={cargo} value={cargo}>
                           {cargo}
@@ -303,7 +303,7 @@ export default function EvolucaoRepublicanosPage() {
                       <SelectValue placeholder="Selecione o município" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Todos os municípios</SelectItem>
+                      <SelectItem value="todos">Todos os municípios</SelectItem>
                       {municipiosDisponiveis.slice(0, 50).map((municipio) => (
                         <SelectItem key={municipio} value={municipio}>
                           {municipio}
@@ -337,7 +337,7 @@ export default function EvolucaoRepublicanosPage() {
                       <SelectValue placeholder="Selecione o partido" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Todos os partidos</SelectItem>
+                      <SelectItem value="todos">Todos os partidos</SelectItem>
                       {partidosDisponiveis.map((partido) => (
                         <SelectItem key={partido} value={partido}>
                           {partido}
