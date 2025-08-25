@@ -172,7 +172,13 @@ export default function EvolucaoRepublicanosPage() {
   });
 
   // Agrupar dados em estrutura de árvore: Ano > Cargo > Município > Candidato
-  const dadosArvore = dadosFiltrados.reduce((acc, item) => {
+  // Filtrar apenas candidatos com votos > 0
+  const dadosComVotos = dadosFiltrados.filter(item => {
+    const votos = Number(item['votos nominais'] || 0);
+    return votos > 0;
+  });
+
+  const dadosArvore = dadosComVotos.reduce((acc, item) => {
     const ano = (item['ano de eleicao'] || item.ano || 'Ano não informado').toString();
     const cargo = item.cargo || 'Cargo não informado';
     const municipio = item.municipio || 'Município não informado';
