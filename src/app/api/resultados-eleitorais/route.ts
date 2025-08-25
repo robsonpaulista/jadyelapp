@@ -107,7 +107,7 @@ function aplicarFiltros(
   // Filtro por ano
   if (filtros.ano) {
     resultado = resultado.filter(item => {
-      const anoItem = Number(item.ano || item.ano_eleicao);
+      const anoItem = Number(item['ano de eleicao'] || item.ano);
       return anoItem === filtros.ano;
     });
   }
