@@ -127,40 +127,44 @@ export default function EvolucaoRepublicanosPage() {
   };
 
   const processarDadosGrafico = (dadosOriginais: ResultadoEleicaoRegistro[]) => {
-    // Agrupar dados por ano e calcular total de votos nominais
+    // Agrupar dados por ano e cargo
     const dadosAgrupados = dadosOriginais.reduce((acc, item) => {
       const ano = Number(item['ano de eleicao'] || item.ano);
+      const cargo = item.cargo || 'Cargo não informado';
       const votosNominais = Number(item['votos nominais'] || 0);
       
       if (!acc[ano]) {
-        acc[ano] = {
-          ano,
-          totalVotosNominais: 0,
-          totalCandidatos: 0,
-          municipios: new Set(),
-          cargos: new Set()
-        };
+        acc[ano] = { ano };
       }
       
-      acc[ano].totalVotosNominais += votosNominais;
-      acc[ano].totalCandidatos += 1;
-      
-      if (item.municipio) acc[ano].municipios.add(item.municipio);
-      if (item.cargo) acc[ano].cargos.add(item.cargo);
+      // Somar votos por cargo
+      if (!acc[ano][cargo]) {
+        acc[ano][cargo] = 0;
+      }
+      acc[ano][cargo] += votosNominais;
       
       return acc;
     }, {} as any);
-    
-    // Converter para array e ordenar por ano
-    const dadosParaGrafico = Object.values(dadosAgrupados)
-      .map((item: any) => ({
-        ano: item.ano,
-        votosNominais: item.totalVotosNominais,
-        candidatos: item.totalCandidatos,
-        municipios: item.municipios.size,
-        cargos: item.cargos.size
-      }))
-      .sort((a: any, b: any) => a.ano - b.ano);
+
+    // Coletar todos os cargos únicos
+    const cargosUnicos = new Set<string>();
+    Object.values(dadosAgrupados).forEach((dadosAno: any) => {
+      Object.keys(dadosAno).forEach(key => {
+        if (key !== 'ano') {
+          cargosUnicos.add(key);
+        }
+      });
+    });
+
+    // Converter para array e preencher dados faltantes com 0
+    const anosOrdenados = Object.keys(dadosAgrupados).map(Number).sort();
+    const dadosParaGrafico = anosOrdenados.map(ano => {
+      const dadosAno: any = { ano };
+      cargosUnicos.forEach(cargo => {
+        dadosAno[cargo] = dadosAgrupados[ano]?.[cargo] || 0;
+      });
+      return dadosAno;
+    });
     
     setDadosGrafico(dadosParaGrafico);
   };
@@ -188,6 +192,24 @@ export default function EvolucaoRepublicanosPage() {
   const formatarNumero = (valor: any) => {
     const num = Number(valor);
     return isNaN(num) ? '-' : num.toLocaleString('pt-BR');
+  };
+
+  // Paleta de cores para os cargos
+  const coresCargos = [
+    '#2563eb', // blue-600
+    '#dc2626', // red-600  
+    '#16a34a', // green-600
+    '#ca8a04', // yellow-600
+    '#9333ea', // violet-600
+    '#c2410c', // orange-600
+    '#0891b2', // cyan-600
+    '#be123c', // rose-600
+    '#4338ca', // indigo-600
+    '#059669', // emerald-600
+  ];
+
+  const getCorCargo = (index: number) => {
+    return coresCargos[index % coresCargos.length];
   };
 
   // dadosFiltrados já definido acima com useMemo
@@ -615,22 +637,29 @@ export default function EvolucaoRepublicanosPage() {
                         labelFormatter={(label) => `Ano: ${label}`}
                       />
                       <Legend />
-                      <Line 
-                        type="monotone" 
-                        dataKey="votosNominais" 
-                        stroke="#2563eb" 
-                        strokeWidth={3}
-                        name="Votos Nominais"
-                        dot={{ fill: '#2563eb', strokeWidth: 2, r: 4 }}
-                        activeDot={{ r: 6 }}
-                      >
-                        <LabelList 
-                          dataKey="votosNominais" 
-                          position="top" 
-                          formatter={(value: any) => formatarNumero(value)}
-                          style={{ fontSize: '10px', fill: '#374151', fontWeight: 'bold' }}
-                        />
-                      </Line>
+                      {dadosGrafico.length > 0 && 
+                        Object.keys(dadosGrafico[0])
+                          .filter(key => key !== 'ano')
+                          .map((cargo, index) => (
+                            <Line 
+                              key={cargo}
+                              type="monotone" 
+                              dataKey={cargo} 
+                              stroke={getCorCargo(index)} 
+                              strokeWidth={2}
+                              name={cargo}
+                              dot={{ fill: getCorCargo(index), strokeWidth: 2, r: 3 }}
+                              activeDot={{ r: 5, stroke: getCorCargo(index), strokeWidth: 2 }}
+                            >
+                              <LabelList 
+                                dataKey={cargo} 
+                                position="top" 
+                                formatter={(value: any) => value > 0 ? formatarNumero(value) : ''}
+                                style={{ fontSize: '9px', fill: getCorCargo(index), fontWeight: 'bold' }}
+                              />
+                            </Line>
+                          ))
+                      }
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
