@@ -623,10 +623,13 @@ export default function EvolucaoRepublicanosPage() {
                       .filter(key => key !== 'ano')
                       .map((cargo, index) => {
                         // Filtrar dados para mostrar apenas o cargo atual
-                        const dadosCargo = dadosGrafico.map(item => ({
-                          ano: item.ano,
-                          votos: item[cargo] || 0
-                        }));
+                        // Remover anos com zero votos (sem eleições para o cargo)
+                        const dadosCargo = dadosGrafico
+                          .map(item => ({
+                            ano: item.ano,
+                            votos: item[cargo] || 0
+                          }))
+                          .filter(item => item.votos > 0);
 
                         return (
                           <div key={cargo} className="border border-gray-200 rounded-lg p-4 bg-white">
@@ -666,7 +669,7 @@ export default function EvolucaoRepublicanosPage() {
                                     <LabelList 
                                       dataKey="votos" 
                                       position="top" 
-                                      formatter={(value: any) => value > 0 ? (value > 1000 ? `${Math.round(value/1000)}k` : value.toString()) : ''}
+                                      formatter={(value: any) => value > 1000 ? `${Math.round(value/1000)}k` : value.toString()}
                                       style={{ fontSize: '9px', fill: getCorCargo(index), fontWeight: 'bold' }}
                                     />
                                   </Line>
