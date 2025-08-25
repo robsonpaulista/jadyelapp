@@ -30,7 +30,7 @@ export default function EvolucaoRepublicanosPage() {
   const [filtroAno, setFiltroAno] = useState('todos');
   const [filtroCargo, setFiltroCargo] = useState('todos');
   const [filtroMunicipio, setFiltroMunicipio] = useState('todos');
-  const [filtroNomeCandidato, setFiltroNomeCandidato] = useState('');
+  const [filtroNomeCandidato, setFiltroNomeCandidato] = useState('todos');
   const [filtroPartido, setFiltroPartido] = useState('todos');
 
   // Estados para listas de filtros
@@ -38,6 +38,7 @@ export default function EvolucaoRepublicanosPage() {
   const [cargosDisponiveis, setCargosDisponiveis] = useState<string[]>([]);
   const [municipiosDisponiveis, setMunicipiosDisponiveis] = useState<string[]>([]);
   const [partidosDisponiveis, setPartidosDisponiveis] = useState<string[]>([]);
+  const [candidatosDisponiveis, setCandidatosDisponiveis] = useState<string[]>([]);
   
   // Estado para controlar se os filtros estão expandidos
   const [filtrosExpandidos, setFiltrosExpandidos] = useState(false);
@@ -63,7 +64,7 @@ export default function EvolucaoRepublicanosPage() {
       });
       
       // Buscar todos os registros para análise completa
-      params.set('limite', '15000');
+      params.set('limite', '50000');
       
       const response = await fetch(`/api/resultados-eleitorais?${params}`);
       const resultado: ApiResponseResultadoEleicao = await response.json();
@@ -81,6 +82,10 @@ export default function EvolucaoRepublicanosPage() {
           // Extrair municípios únicos dos dados
           const municipiosUnicos = [...new Set(resultado.data.map(item => item.municipio?.toString()).filter(Boolean))].sort();
           setMunicipiosDisponiveis(municipiosUnicos);
+          
+          // Extrair candidatos únicos dos dados
+          const candidatosUnicos = [...new Set(resultado.data.map(item => item['nome candidato']?.toString()).filter(Boolean))].sort();
+          setCandidatosDisponiveis(candidatosUnicos);
         }
         
         // Processar dados para o gráfico
@@ -149,7 +154,7 @@ export default function EvolucaoRepublicanosPage() {
     setFiltroAno('todos');
     setFiltroCargo('todos');
     setFiltroMunicipio('todos');
-    setFiltroNomeCandidato('');
+    setFiltroNomeCandidato('todos');
     setFiltroPartido('todos');
     carregarDados();
   };
@@ -161,9 +166,9 @@ export default function EvolucaoRepublicanosPage() {
 
   // Filtrar dados por nome do candidato localmente (busca em tempo real)
   const dadosFiltrados = dados.filter(item => {
-    if (!filtroNomeCandidato) return true;
-    const nomeCandidato = item['nome candidato']?.toString().toLowerCase() || '';
-    return nomeCandidato.includes(filtroNomeCandidato.toLowerCase());
+    if (filtroNomeCandidato === 'todos') return true;
+    const nomeCandidato = item['nome candidato']?.toString() || '';
+    return nomeCandidato === filtroNomeCandidato;
   });
 
   // Agrupar dados em estrutura de árvore: Ano > Cargo > Município > Candidato
@@ -424,11 +429,19 @@ export default function EvolucaoRepublicanosPage() {
                     <User className="h-4 w-4" />
                     Nome Candidato
                   </label>
-                  <Input
-                    placeholder="Digite o nome do candidato..."
-                    value={filtroNomeCandidato}
-                    onChange={(e) => setFiltroNomeCandidato(e.target.value)}
-                  />
+                  <Select value={filtroNomeCandidato} onValueChange={setFiltroNomeCandidato}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um candidato" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos os candidatos</SelectItem>
+                      {candidatosDisponiveis.map((candidato) => (
+                        <SelectItem key={candidato} value={candidato}>
+                          {candidato}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 
                 {/* Filtro por Partido */}
