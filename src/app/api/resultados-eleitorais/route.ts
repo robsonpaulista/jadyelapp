@@ -145,7 +145,7 @@ function aplicarFiltros(
  */
 function calcularEstatisticas(dados: ResultadoEleicaoRegistro[]): any {
   const totalVotos = dados.reduce((sum, item) => {
-    const votos = Number(item.votos || 0);
+    const votos = Number(item['votos nominais'] || item.votos || 0);
     return sum + votos;
   }, 0);
   
