@@ -359,13 +359,13 @@ export default function EvolucaoRepublicanosPage() {
         {/* Navbar interna do conteúdo */}
         <nav className="w-full bg-white border-b border-gray-100 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col md:flex-row md:items-center justify-between py-3 space-y-3 md:space-y-0">
+            <div className="flex flex-col md:flex-row md:items-center justify-between py-2 space-y-2 md:space-y-0">
               <div className="flex flex-col items-start">
-                <span className="text-base md:text-lg font-semibold text-gray-900">Evolução Republicanos</span>
-                <span className="text-xs text-gray-500 font-light">Análise temporal da evolução de votos nominais dos candidatos republicanos</span>
+                <span className="text-sm md:text-base font-semibold text-gray-900">Evolução Republicanos</span>
+                <span className="text-xs text-gray-500 font-light">Análise temporal da evolução de votos nominais</span>
               </div>
-              <Badge variant="secondary" className="hidden md:inline-flex">
-                <TrendingUp className="h-4 w-4 mr-1" />
+              <Badge variant="secondary" className="hidden md:inline-flex text-xs">
+                <TrendingUp className="h-3 w-3 mr-1" />
                 Análise Histórica
               </Badge>
             </div>
@@ -374,96 +374,96 @@ export default function EvolucaoRepublicanosPage() {
 
         {/* Conteúdo principal */}
         <main className="flex-1">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
 
           {/* Estatísticas Gerais */}
           {estatisticas && (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
               <Card className="border-gray-200">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2 text-gray-700">
-                    <Users className="h-4 w-4 text-gray-500" />
+                <CardHeader className="pb-1">
+                  <CardTitle className="text-xs font-medium flex items-center gap-1 text-gray-700">
+                    <Users className="h-3 w-3 text-gray-500" />
                     Total de Registros
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-gray-900">{formatarNumero(estatisticas.totalRegistros)}</div>
+                <CardContent className="pt-1">
+                  <div className="text-lg font-bold text-gray-900">{formatarNumero(estatisticas.totalRegistros)}</div>
                 </CardContent>
               </Card>
               
               <Card className="border-gray-200">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2 text-gray-700">
-                    <TrendingUp className="h-4 w-4 text-gray-500" />
+                <CardHeader className="pb-1">
+                  <CardTitle className="text-xs font-medium flex items-center gap-1 text-gray-700">
+                    <TrendingUp className="h-3 w-3 text-gray-500" />
                     Total de Votos
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-gray-900">{formatarNumero(estatisticas.totalVotos)}</div>
+                <CardContent className="pt-1">
+                  <div className="text-lg font-bold text-gray-900">{formatarNumero(estatisticas.totalVotos)}</div>
                 </CardContent>
               </Card>
               
               <Card className="border-gray-200">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2 text-gray-700">
-                    <MapPin className="h-4 w-4 text-gray-500" />
+                <CardHeader className="pb-1">
+                  <CardTitle className="text-xs font-medium flex items-center gap-1 text-gray-700">
+                    <MapPin className="h-3 w-3 text-gray-500" />
                     Municípios
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-gray-900">{formatarNumero(estatisticas.totalMunicipios)}</div>
+                <CardContent className="pt-1">
+                  <div className="text-lg font-bold text-gray-900">{formatarNumero(estatisticas.totalMunicipios)}</div>
                 </CardContent>
               </Card>
               
               <Card className="border-gray-200">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2 text-gray-700">
-                    <Filter className="h-4 w-4 text-gray-500" />
+                <CardHeader className="pb-1">
+                  <CardTitle className="text-xs font-medium flex items-center gap-1 text-gray-700">
+                    <Filter className="h-3 w-3 text-gray-500" />
                     Filtrados
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-gray-900">{formatarNumero(totalCandidatos)}</div>
+                <CardContent className="pt-1">
+                  <div className="text-lg font-bold text-gray-900">{formatarNumero(totalCandidatos)}</div>
                 </CardContent>
               </Card>
             </div>
           )}
 
           {/* Seção de Filtros */}
-          <Card className="border-gray-200 mb-6">
-            <CardHeader>
+          <Card className="border-gray-200 mb-4">
+            <CardHeader className="pb-2">
               <div 
                 className="flex items-center justify-between cursor-pointer"
                 onClick={() => setFiltrosExpandidos(!filtrosExpandidos)}
               >
                 <div className="flex items-center gap-2">
-                  <Filter className="h-4 w-4 text-gray-500" />
-                  <CardTitle className="text-base font-medium text-gray-900">Filtros</CardTitle>
+                  <Filter className="h-3 w-3 text-gray-500" />
+                  <CardTitle className="text-sm font-medium text-gray-900">Filtros</CardTitle>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-gray-500">
                     {filtrosExpandidos ? 'Ocultar' : 'Mostrar'} filtros
                   </span>
                   {filtrosExpandidos ? (
-                    <ChevronUp className="h-4 w-4 text-gray-500" />
+                    <ChevronUp className="h-3 w-3 text-gray-500" />
                   ) : (
-                    <ChevronDown className="h-4 w-4 text-gray-500" />
+                    <ChevronDown className="h-3 w-3 text-gray-500" />
                   )}
                 </div>
               </div>
               {filtrosExpandidos && (
-                <CardDescription className="text-sm text-gray-600 mt-2">
-                  Use os filtros para refinar sua análise da evolução dos votos republicanos
+                <CardDescription className="text-xs text-gray-600 mt-1">
+                  Use os filtros para refinar sua análise
                 </CardDescription>
               )}
             </CardHeader>
             {filtrosExpandidos && (
-              <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <CardContent className="pt-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {/* Filtro por Ano */}
                 <div>
-                  <label className="flex items-center gap-2 text-sm font-medium mb-2">
-                    <Calendar className="h-4 w-4" />
+                  <label className="flex items-center gap-1 text-xs font-medium mb-1">
+                    <Calendar className="h-3 w-3" />
                     Ano de Eleição
                   </label>
                   <Select value={filtroAno} onValueChange={setFiltroAno}>
@@ -483,8 +483,8 @@ export default function EvolucaoRepublicanosPage() {
                 
                 {/* Filtro por Cargo */}
                 <div>
-                  <label className="flex items-center gap-2 text-sm font-medium mb-2">
-                    <Users className="h-4 w-4" />
+                  <label className="flex items-center gap-1 text-xs font-medium mb-1">
+                    <Users className="h-3 w-3" />
                     Cargo
                   </label>
                   <Select value={filtroCargo} onValueChange={setFiltroCargo}>
@@ -504,8 +504,8 @@ export default function EvolucaoRepublicanosPage() {
                 
                 {/* Filtro por Município */}
                 <div>
-                  <label className="flex items-center gap-2 text-sm font-medium mb-2">
-                    <MapPin className="h-4 w-4" />
+                  <label className="flex items-center gap-1 text-xs font-medium mb-1">
+                    <MapPin className="h-3 w-3" />
                     Município
                   </label>
                   <Select value={filtroMunicipio} onValueChange={setFiltroMunicipio}>
@@ -525,8 +525,8 @@ export default function EvolucaoRepublicanosPage() {
                 
                 {/* Filtro por Nome do Candidato */}
                 <div>
-                  <label className="flex items-center gap-2 text-sm font-medium mb-2">
-                    <User className="h-4 w-4" />
+                  <label className="flex items-center gap-1 text-xs font-medium mb-1">
+                    <User className="h-3 w-3" />
                     Nome Candidato
                   </label>
                   <Select value={filtroNomeCandidato} onValueChange={setFiltroNomeCandidato}>
@@ -546,8 +546,8 @@ export default function EvolucaoRepublicanosPage() {
                 
                 {/* Filtro por Partido */}
                 <div>
-                  <label className="flex items-center gap-2 text-sm font-medium mb-2">
-                    <Badge className="h-4 w-4" />
+                  <label className="flex items-center gap-1 text-xs font-medium mb-1">
+                    <Badge className="h-3 w-3" />
                     Partido
                   </label>
                   <Select value={filtroPartido} onValueChange={setFiltroPartido}>
@@ -566,12 +566,12 @@ export default function EvolucaoRepublicanosPage() {
                 </div>
               </div>
               
-              <div className="flex gap-2 mt-6">
-                <Button onClick={aplicarFiltros} disabled={loading} className="flex items-center gap-2">
-                  <Search className="h-4 w-4" />
+              <div className="flex gap-2 mt-3">
+                <Button onClick={aplicarFiltros} disabled={loading} className="flex items-center gap-1 h-8 text-xs">
+                  <Search className="h-3 w-3" />
                   {loading ? 'Aplicando...' : 'Aplicar Filtros'}
                 </Button>
-                <Button variant="outline" onClick={limparFiltros}>
+                <Button variant="outline" onClick={limparFiltros} className="h-8 text-xs">
                   Limpar Filtros
                 </Button>
               </div>
@@ -581,19 +581,19 @@ export default function EvolucaoRepublicanosPage() {
 
           {/* Gráfico de Evolução */}
           {dadosGrafico.length > 0 && (
-            <Card className="border-gray-200 mb-6">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base font-medium text-gray-900">
-                  <TrendingUp className="h-4 w-4 text-gray-500" />
+            <Card className="border-gray-200 mb-4">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-1 text-sm font-medium text-gray-900">
+                  <TrendingUp className="h-3 w-3 text-gray-500" />
                   Evolução dos Votos Nominais ao Longo dos Anos
                 </CardTitle>
-                <CardDescription className="text-sm text-gray-600">
+                <CardDescription className="text-xs text-gray-600">
                   Análise temporal da votação republicana {filtroMunicipio && filtroMunicipio !== 'todos' && `em ${filtroMunicipio}`}
                   {filtroCargo && filtroCargo !== 'todos' && ` para ${filtroCargo}`}
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="w-full h-96">
+              <CardContent className="pt-2">
+                <div className="w-full h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={dadosGrafico} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" />
@@ -657,50 +657,50 @@ export default function EvolucaoRepublicanosPage() {
 
           {/* Tabela de Resultados */}
           <Card className="border-gray-200">
-            <CardHeader>
-              <CardTitle className="text-base font-medium text-gray-900">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-900">
                 Resultados por Ano ({formatarNumero(totalCandidatos)} candidatos)
               </CardTitle>
-              <CardDescription className="text-sm text-gray-600">
+              <CardDescription className="text-xs text-gray-600">
                 Clique no ano para expandir e ver a tabela completa de candidatos
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-2">
               {loading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                  <p>Carregando dados...</p>
+                <div className="text-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-1"></div>
+                  <p className="text-xs">Carregando dados...</p>
                 </div>
               ) : totalCandidatos === 0 ? (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-4 text-gray-500 text-sm">
                   Nenhum resultado encontrado com os filtros aplicados
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {Object.keys(dadosPorAno).sort().map((ano) => {
                     const candidatosDoAno = dadosPorAno[ano];
                     return (
                       <div key={ano} className="border border-gray-200 rounded-lg">
                         {/* Cabeçalho do Ano */}
                         <div 
-                          className="flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 cursor-pointer rounded-t-lg"
+                          className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 cursor-pointer rounded-t-lg"
                           onClick={() => toggleAno(ano)}
                         >
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
                             {anosExpandidos.has(ano) ? (
-                              <Minus className="h-5 w-5 text-gray-600" />
+                              <Minus className="h-4 w-4 text-gray-600" />
                             ) : (
-                              <Plus className="h-5 w-5 text-gray-600" />
+                              <Plus className="h-4 w-4 text-gray-600" />
                             )}
-                            <Badge variant="default" className="text-sm px-3 py-1">
+                            <Badge variant="default" className="text-xs px-2 py-1">
                               {ano}
                             </Badge>
-                            <span className="font-medium text-gray-700">
+                            <span className="text-sm font-medium text-gray-700">
                               {candidatosDoAno.length} candidato(s) com votos
                             </span>
                           </div>
-                          <div className="text-sm text-gray-500">
-                            {anosExpandidos.has(ano) ? 'Clique para recolher' : 'Clique para expandir'}
+                          <div className="text-xs text-gray-500">
+                            {anosExpandidos.has(ano) ? 'Recolher' : 'Expandir'}
                           </div>
                         </div>
 
@@ -708,14 +708,14 @@ export default function EvolucaoRepublicanosPage() {
                         {anosExpandidos.has(ano) && (
                           <div className="border-t border-gray-200">
                             {/* Filtros da Tabela */}
-                            <div className="p-3 bg-gray-50 border-b border-gray-200">
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                            <div className="p-2 bg-gray-50 border-b border-gray-200">
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
                                 <div>
                                   <Input
                                     placeholder="Filtrar município..."
                                     value={filtroTabelaMunicipio}
                                     onChange={(e) => setFiltroTabelaMunicipio(e.target.value)}
-                                    className="text-sm"
+                                    className="text-xs h-8"
                                   />
                                 </div>
                                 <div>
@@ -723,7 +723,7 @@ export default function EvolucaoRepublicanosPage() {
                                     placeholder="Filtrar cargo..."
                                     value={filtroTabelaCargo}
                                     onChange={(e) => setFiltroTabelaCargo(e.target.value)}
-                                    className="text-sm"
+                                    className="text-xs h-8"
                                   />
                                 </div>
                                 <div>
@@ -731,7 +731,7 @@ export default function EvolucaoRepublicanosPage() {
                                     placeholder="Filtrar candidato..."
                                     value={filtroTabelaCandidato}
                                     onChange={(e) => setFiltroTabelaCandidato(e.target.value)}
-                                    className="text-sm"
+                                    className="text-xs h-8"
                                   />
                                 </div>
                                 <div>
@@ -739,7 +739,7 @@ export default function EvolucaoRepublicanosPage() {
                                     placeholder="Filtrar partido..."
                                     value={filtroTabelaPartido}
                                     onChange={(e) => setFiltroTabelaPartido(e.target.value)}
-                                    className="text-sm"
+                                    className="text-xs h-8"
                                   />
                                 </div>
                               </div>
@@ -750,7 +750,7 @@ export default function EvolucaoRepublicanosPage() {
                                 <thead className="bg-gray-100">
                                   <tr>
                                     <th 
-                                      className="text-left p-3 font-medium text-gray-700 border-b border-gray-200 cursor-pointer hover:bg-gray-200 transition-colors"
+                                      className="text-left p-2 font-medium text-gray-700 border-b border-gray-200 cursor-pointer hover:bg-gray-200 transition-colors text-xs"
                                       onClick={() => handleOrdenacao('municipio')}
                                     >
                                       <div className="flex items-center gap-2">
@@ -759,7 +759,7 @@ export default function EvolucaoRepublicanosPage() {
                                       </div>
                                     </th>
                                     <th 
-                                      className="text-left p-3 font-medium text-gray-700 border-b border-gray-200 cursor-pointer hover:bg-gray-200 transition-colors"
+                                      className="text-left p-2 font-medium text-gray-700 border-b border-gray-200 cursor-pointer hover:bg-gray-200 transition-colors text-xs"
                                       onClick={() => handleOrdenacao('cargo')}
                                     >
                                       <div className="flex items-center gap-2">
@@ -768,7 +768,7 @@ export default function EvolucaoRepublicanosPage() {
                                       </div>
                                     </th>
                                     <th 
-                                      className="text-left p-3 font-medium text-gray-700 border-b border-gray-200 cursor-pointer hover:bg-gray-200 transition-colors"
+                                      className="text-left p-2 font-medium text-gray-700 border-b border-gray-200 cursor-pointer hover:bg-gray-200 transition-colors text-xs"
                                       onClick={() => handleOrdenacao('candidato')}
                                     >
                                       <div className="flex items-center gap-2">
@@ -777,7 +777,7 @@ export default function EvolucaoRepublicanosPage() {
                                       </div>
                                     </th>
                                     <th 
-                                      className="text-left p-3 font-medium text-gray-700 border-b border-gray-200 cursor-pointer hover:bg-gray-200 transition-colors"
+                                      className="text-left p-2 font-medium text-gray-700 border-b border-gray-200 cursor-pointer hover:bg-gray-200 transition-colors text-xs"
                                       onClick={() => handleOrdenacao('partido')}
                                     >
                                       <div className="flex items-center gap-2">
@@ -786,7 +786,7 @@ export default function EvolucaoRepublicanosPage() {
                                       </div>
                                     </th>
                                     <th 
-                                      className="text-right p-3 font-medium text-gray-700 border-b border-gray-200 cursor-pointer hover:bg-gray-200 transition-colors"
+                                      className="text-right p-2 font-medium text-gray-700 border-b border-gray-200 cursor-pointer hover:bg-gray-200 transition-colors text-xs"
                                       onClick={() => handleOrdenacao('votos')}
                                     >
                                       <div className="flex items-center justify-end gap-2">
@@ -795,7 +795,7 @@ export default function EvolucaoRepublicanosPage() {
                                       </div>
                                     </th>
                                     <th 
-                                      className="text-center p-3 font-medium text-gray-700 border-b border-gray-200 cursor-pointer hover:bg-gray-200 transition-colors"
+                                      className="text-center p-2 font-medium text-gray-700 border-b border-gray-200 cursor-pointer hover:bg-gray-200 transition-colors text-xs"
                                       onClick={() => handleOrdenacao('situacao')}
                                     >
                                       <div className="flex items-center justify-center gap-2">
@@ -812,13 +812,13 @@ export default function EvolucaoRepublicanosPage() {
                                     
                                     return candidatosOrdenados.map((candidato, index) => (
                                       <tr key={index} className="hover:bg-gray-50 border-b border-gray-100">
-                                        <td className="p-3 text-gray-900">
+                                        <td className="p-2 text-gray-900 text-xs">
                                           <div className="flex items-center gap-1">
                                             <MapPin className="h-3 w-3 text-gray-500" />
                                             {candidato.municipio}
                                           </div>
                                         </td>
-                                        <td className="p-3">
+                                        <td className="p-2 text-xs">
                                           <Badge variant="outline" className="text-xs">
                                             {candidato.cargo}
                                           </Badge>
@@ -829,7 +829,7 @@ export default function EvolucaoRepublicanosPage() {
                                             {candidato.candidato}
                                           </div>
                                         </td>
-                                        <td className="p-3">
+                                        <td className="p-2 text-xs">
                                           {candidato.partido && candidato.partido !== '-' && (
                                             <Badge variant="outline" className="text-xs">
                                               {candidato.partido}
@@ -861,7 +861,7 @@ export default function EvolucaoRepublicanosPage() {
                                 const totalOriginal = candidatosDoAno.length;
                                 
                                 return (
-                                  <div className="text-center py-3 text-sm text-gray-500 bg-gray-50 border-t border-gray-200">
+                                  <div className="text-center py-2 text-xs text-gray-500 bg-gray-50 border-t border-gray-200">
                                     {totalFiltrados === totalOriginal ? (
                                       `Mostrando todos os ${formatarNumero(totalOriginal)} candidatos do ano ${ano}`
                                     ) : (
