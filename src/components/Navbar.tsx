@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { 
   Settings, Users, BarChart, ListTree, FileText, Building2, UserCheck, Instagram, 
   MapPin, ArrowLeft, LogOut, Newspaper, BarChart2, Building, Coins, Users2,
-  Vote, UserCog, LineChart, Menu, X, Home, Plane
+  Vote, UserCog, LineChart, Menu, X, Home, Plane, TrendingUp
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { getCurrentUser } from '@/lib/storage';
@@ -65,7 +65,8 @@ const MENUS: Menu[] = [
       { label: 'Chapas Estaduais 2026', href: '/chapas-estaduais', icon: <Vote size={16} /> },
       { label: 'Pesquisas Eleitorais', href: '/pesquisas-eleitorais', icon: <BarChart2 size={16} /> },
       { label: 'Dashboard Municípios', href: '/eleicoes-anteriores', icon: <LineChart size={16} /> },
-      { label: 'Projeção por Municípios', href: '/eleicoes-anteriores/projecao-municipios', icon: <LineChart size={16} /> }
+      { label: 'Projeção por Municípios', href: '/eleicoes-anteriores/projecao-municipios', icon: <LineChart size={16} /> },
+      { label: 'Evolução Republicanos', href: '/evolucao-republicanos', icon: <TrendingUp size={16} /> }
     ]
   },
   {
