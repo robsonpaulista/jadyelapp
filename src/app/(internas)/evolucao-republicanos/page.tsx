@@ -568,19 +568,19 @@ export default function EvolucaoRepublicanosPage() {
                     <div key={ano} className="border border-gray-200 rounded-lg">
                       {/* Nível 1: Ano */}
                       <div 
-                        className="flex items-center justify-between p-3 bg-blue-50 hover:bg-blue-100 cursor-pointer border-b border-gray-200"
+                        className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 cursor-pointer border-b border-gray-200"
                         onClick={() => toggleAno(ano)}
                       >
                         <div className="flex items-center gap-2">
                           {anosExpandidos.has(ano) ? (
-                            <Minus className="h-4 w-4 text-blue-600" />
+                            <Minus className="h-4 w-4 text-gray-600" />
                           ) : (
-                            <Plus className="h-4 w-4 text-blue-600" />
+                            <Plus className="h-4 w-4 text-gray-600" />
                           )}
-                          <Badge variant="default" className="bg-blue-600">
+                          <Badge variant="default">
                             {ano}
                           </Badge>
-                          <span className="font-medium text-blue-900">
+                          <span className="font-medium text-gray-700">
                             {Object.keys(dadosArvore[ano]).length} cargo(s)
                           </span>
                         </div>
@@ -594,19 +594,19 @@ export default function EvolucaoRepublicanosPage() {
                             return (
                               <div key={anoCargoKey} className="border border-gray-100 rounded">
                                 <div 
-                                  className="flex items-center justify-between p-2 bg-green-50 hover:bg-green-100 cursor-pointer"
+                                  className="flex items-center justify-between p-2 bg-gray-50 hover:bg-gray-100 cursor-pointer"
                                   onClick={() => toggleCargo(anoCargoKey)}
                                 >
                                   <div className="flex items-center gap-2 ml-4">
                                     {cargosExpandidos.has(anoCargoKey) ? (
-                                      <Minus className="h-3 w-3 text-green-600" />
+                                      <Minus className="h-3 w-3 text-gray-600" />
                                     ) : (
-                                      <Plus className="h-3 w-3 text-green-600" />
+                                      <Plus className="h-3 w-3 text-gray-600" />
                                     )}
-                                    <Badge variant="outline" className="border-green-500 text-green-700">
+                                    <Badge variant="outline">
                                       {cargo}
                                     </Badge>
-                                    <span className="text-sm text-green-800">
+                                    <span className="text-sm text-gray-600">
                                       {Object.keys(dadosArvore[ano][cargo]).length} município(s)
                                     </span>
                                   </div>
@@ -620,18 +620,18 @@ export default function EvolucaoRepublicanosPage() {
                                       return (
                                         <div key={anoCargoMunicipioKey} className="border border-gray-100 rounded">
                                           <div 
-                                            className="flex items-center justify-between p-2 bg-purple-50 hover:bg-purple-100 cursor-pointer"
+                                            className="flex items-center justify-between p-2 bg-gray-50 hover:bg-gray-100 cursor-pointer"
                                             onClick={() => toggleMunicipio(anoCargoMunicipioKey)}
                                           >
                                             <div className="flex items-center gap-2 ml-8">
                                               {municipiosExpandidos.has(anoCargoMunicipioKey) ? (
-                                                <Minus className="h-3 w-3 text-purple-600" />
+                                                <Minus className="h-3 w-3 text-gray-600" />
                                               ) : (
-                                                <Plus className="h-3 w-3 text-purple-600" />
+                                                <Plus className="h-3 w-3 text-gray-600" />
                                               )}
-                                              <MapPin className="h-3 w-3 text-purple-600" />
-                                              <span className="font-medium text-purple-900">{municipio}</span>
-                                              <Badge variant="outline" className="border-purple-500 text-purple-700 text-xs">
+                                              <MapPin className="h-3 w-3 text-gray-600" />
+                                              <span className="font-medium text-gray-700">{municipio}</span>
+                                              <Badge variant="outline" className="text-xs">
                                                 {Object.keys(dadosArvore[ano][cargo][municipio]).length} candidato(s)
                                               </Badge>
                                             </div>
@@ -644,9 +644,9 @@ export default function EvolucaoRepublicanosPage() {
                                                 {Object.keys(dadosArvore[ano][cargo][municipio]).sort().map((candidato) => {
                                                   const dadosCandidato = dadosArvore[ano][cargo][municipio][candidato];
                                                   return (
-                                                    <div key={candidato} className="flex items-center justify-between p-2 ml-12 bg-gray-50 rounded border">
+                                                    <div key={candidato} className="flex items-center justify-between p-2 ml-12 bg-white rounded border border-gray-200 hover:bg-gray-50">
                                                       <div className="flex items-center gap-2">
-                                                        <User className="h-3 w-3 text-gray-600" />
+                                                        <User className="h-3 w-3 text-gray-500" />
                                                         <span className="font-medium text-gray-900">{candidato}</span>
                                                         {dadosCandidato.partido && dadosCandidato.partido !== '-' && (
                                                           <Badge variant="outline" className="text-xs">
