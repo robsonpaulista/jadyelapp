@@ -17,7 +17,8 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer
+  ResponsiveContainer,
+  LabelList
 } from 'recharts';
 
 export default function EvolucaoRepublicanosPage() {
@@ -595,16 +596,19 @@ export default function EvolucaoRepublicanosPage() {
               <CardContent className="pt-2">
                 <div className="w-full h-64">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={dadosGrafico} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" />
+                    <LineChart data={dadosGrafico} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                       <XAxis 
                         dataKey="ano" 
                         tick={{ fontSize: 12 }}
                         tickFormatter={(value) => value.toString()}
+                        axisLine={false}
+                        tickLine={false}
                       />
                       <YAxis 
                         tick={{ fontSize: 12 }}
                         tickFormatter={(value) => formatarNumero(value)}
+                        axisLine={false}
+                        tickLine={false}
                       />
                       <Tooltip 
                         formatter={(value, name) => [formatarNumero(value), name]}
@@ -619,7 +623,14 @@ export default function EvolucaoRepublicanosPage() {
                         name="Votos Nominais"
                         dot={{ fill: '#2563eb', strokeWidth: 2, r: 4 }}
                         activeDot={{ r: 6 }}
-                      />
+                      >
+                        <LabelList 
+                          dataKey="votosNominais" 
+                          position="top" 
+                          formatter={(value: any) => formatarNumero(value)}
+                          style={{ fontSize: '10px', fill: '#374151', fontWeight: 'bold' }}
+                        />
+                      </Line>
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
