@@ -38,6 +38,7 @@ export const ROUTE_PERMISSIONS: Record<UserLevel, string[]> = {
     '/pesquisas-eleitorais',
     '/eleicoes-anteriores',
     '/eleicoes-anteriores/projecao-municipios',
+    '/evolucao-republicanos',
     '/configuracoes',
     '/gerenciar-usuarios',
     '/usuarios',
@@ -68,6 +69,7 @@ export const ROUTE_PERMISSIONS: Record<UserLevel, string[]> = {
     '/pesquisas-eleitorais',
     '/eleicoes-anteriores',
     '/eleicoes-anteriores/projecao-municipios',
+    '/evolucao-republicanos',
     '/pessoas',
     '/pacientes',
     '/aeronave'
