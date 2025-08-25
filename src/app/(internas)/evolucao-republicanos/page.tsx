@@ -631,6 +631,21 @@ export default function EvolucaoRepublicanosPage() {
                           }))
                           .filter(item => item.votos > 0);
 
+                        // Calcular eleitos por ano para este cargo
+                        const eleitosPorAno = dadosFiltrados
+                          .filter(item => {
+                            const cargoItem = item.cargo || 'Cargo não informado';
+                            const situacao = (item['situacao totalizacao'] || '').toLowerCase();
+                            return cargoItem === cargo && situacao.includes('eleito');
+                          })
+                          .reduce((acc, item) => {
+                            const ano = Number(item['ano de eleicao'] || item.ano);
+                            acc[ano] = (acc[ano] || 0) + 1;
+                            return acc;
+                          }, {} as any);
+
+                        const totalEleitos = Object.values(eleitosPorAno).reduce((sum: number, count: any) => sum + count, 0);
+
                         return (
                           <div key={cargo} className="border border-gray-200 rounded-lg p-4 bg-white">
                             {/* Título do cargo */}
@@ -678,12 +693,15 @@ export default function EvolucaoRepublicanosPage() {
                             </div>
                             
                             {/* Estatísticas do cargo */}
-                            <div className="mt-3 text-center">
+                            <div className="mt-3 text-center space-y-1">
                               <div className="text-sm text-gray-600 font-medium">
-                                Total: {formatarNumero(dadosCargo.reduce((sum, item) => sum + item.votos, 0))}
+                                Total: {formatarNumero(dadosCargo.reduce((sum, item) => sum + item.votos, 0))} votos
                               </div>
                               <div className="text-xs text-gray-500">
-                                Máx: {formatarNumero(Math.max(...dadosCargo.map(item => item.votos)))}
+                                Máx: {formatarNumero(Math.max(...dadosCargo.map(item => item.votos)))} votos
+                              </div>
+                              <div className="text-xs text-green-600 font-medium">
+                                Eleitos: {totalEleitos} candidato{totalEleitos !== 1 ? 's' : ''}
                               </div>
                             </div>
                           </div>
