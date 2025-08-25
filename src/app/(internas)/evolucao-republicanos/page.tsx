@@ -616,52 +616,81 @@ export default function EvolucaoRepublicanosPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-2">
-                <div className="w-full h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={dadosGrafico} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                      <XAxis 
-                        dataKey="ano" 
-                        tick={{ fontSize: 12 }}
-                        tickFormatter={(value) => value.toString()}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <YAxis 
-                        tick={{ fontSize: 12 }}
-                        tickFormatter={(value) => formatarNumero(value)}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <Tooltip 
-                        formatter={(value, name) => [formatarNumero(value), name]}
-                        labelFormatter={(label) => `Ano: ${label}`}
-                      />
-                      <Legend />
-                      {dadosGrafico.length > 0 && 
-                        Object.keys(dadosGrafico[0])
-                          .filter(key => key !== 'ano')
-                          .map((cargo, index) => (
-                            <Line 
-                              key={cargo}
-                              type="monotone" 
-                              dataKey={cargo} 
-                              stroke={getCorCargo(index)} 
-                              strokeWidth={2}
-                              name={cargo}
-                              dot={{ fill: getCorCargo(index), strokeWidth: 2, r: 3 }}
-                              activeDot={{ r: 5, stroke: getCorCargo(index), strokeWidth: 2 }}
-                            >
-                              <LabelList 
-                                dataKey={cargo} 
-                                position="top" 
-                                formatter={(value: any) => value > 0 ? formatarNumero(value) : ''}
-                                style={{ fontSize: '9px', fill: getCorCargo(index), fontWeight: 'bold' }}
-                              />
-                            </Line>
-                          ))
-                      }
-                    </LineChart>
-                  </ResponsiveContainer>
+                {/* Múltiplos Pequenos - Um gráfico para cada cargo */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                  {dadosGrafico.length > 0 && 
+                    Object.keys(dadosGrafico[0])
+                      .filter(key => key !== 'ano')
+                      .map((cargo, index) => {
+                        // Filtrar dados para mostrar apenas o cargo atual
+                        const dadosCargo = dadosGrafico.map(item => ({
+                          ano: item.ano,
+                          votos: item[cargo] || 0
+                        }));
+
+                        return (
+                          <div key={cargo} className="border border-gray-200 rounded-lg p-3 bg-white">
+                            {/* Título do cargo */}
+                            <h4 className="text-xs font-semibold text-gray-700 mb-2 text-center truncate" title={cargo}>
+                              {cargo}
+                            </h4>
+                            
+                            {/* Gráfico individual */}
+                            <div className="w-full h-32">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={dadosCargo} margin={{ top: 15, right: 5, left: 5, bottom: 15 }}>
+                                  <XAxis 
+                                    dataKey="ano" 
+                                    tick={{ fontSize: 9 }}
+                                    tickFormatter={(value) => value.toString()}
+                                    axisLine={false}
+                                    tickLine={false}
+                                    interval={0}
+                                  />
+                                  <YAxis 
+                                    tick={{ fontSize: 8 }}
+                                    tickFormatter={(value) => value > 1000 ? `${Math.round(value/1000)}k` : value.toString()}
+                                    axisLine={false}
+                                    tickLine={false}
+                                    width={30}
+                                  />
+                                  <Tooltip 
+                                    formatter={(value) => [formatarNumero(value), 'Votos']}
+                                    labelFormatter={(label) => `${label}`}
+                                    contentStyle={{ fontSize: '10px' }}
+                                  />
+                                  <Line 
+                                    type="monotone" 
+                                    dataKey="votos" 
+                                    stroke={getCorCargo(index)} 
+                                    strokeWidth={2}
+                                    dot={{ fill: getCorCargo(index), strokeWidth: 1, r: 2 }}
+                                    activeDot={{ r: 3, stroke: getCorCargo(index), strokeWidth: 1 }}
+                                  >
+                                    <LabelList 
+                                      dataKey="votos" 
+                                      position="top" 
+                                      formatter={(value: any) => value > 0 ? (value > 1000 ? `${Math.round(value/1000)}k` : value.toString()) : ''}
+                                      style={{ fontSize: '7px', fill: getCorCargo(index), fontWeight: 'bold' }}
+                                    />
+                                  </Line>
+                                </LineChart>
+                              </ResponsiveContainer>
+                            </div>
+                            
+                            {/* Estatísticas do cargo */}
+                            <div className="mt-2 text-center">
+                              <div className="text-xs text-gray-500">
+                                Total: {formatarNumero(dadosCargo.reduce((sum, item) => sum + item.votos, 0))}
+                              </div>
+                              <div className="text-xs text-gray-400">
+                                Máx: {formatarNumero(Math.max(...dadosCargo.map(item => item.votos)))}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                  }
                 </div>
                 
                 {/* Resumo do Gráfico */}
