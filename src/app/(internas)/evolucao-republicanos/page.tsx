@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { ApiResponseResultadoEleicao, ResultadoEleicaoRegistro } from '@/types/resultadoEleicoes';
-import { Search, Filter, TrendingUp, Calendar, MapPin, User, Users, ChevronDown, ChevronUp, ChevronRight, Minus, Plus } from 'lucide-react';
+import { Search, Filter, TrendingUp, Calendar, MapPin, User, Users, ChevronDown, ChevronUp, ChevronRight, Minus, Plus, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import {
   LineChart,
@@ -45,6 +45,18 @@ export default function EvolucaoRepublicanosPage() {
   
   // Estados para controlar expansão da árvore
   const [anosExpandidos, setAnosExpandidos] = useState<Set<string>>(new Set());
+
+  // Estados para filtros da tabela
+  const [filtroTabelaMunicipio, setFiltroTabelaMunicipio] = useState('');
+  const [filtroTabelaCargo, setFiltroTabelaCargo] = useState('');
+  const [filtroTabelaCandidato, setFiltroTabelaCandidato] = useState('');
+  const [filtroTabelaPartido, setFiltroTabelaPartido] = useState('');
+
+  // Estados para ordenação da tabela
+  const [ordenacao, setOrdenacao] = useState<{coluna: string, direcao: 'asc' | 'desc' | null}>({
+    coluna: '',
+    direcao: null
+  });
 
   // Carregar dados iniciais e listas para filtros
   useEffect(() => {
@@ -231,6 +243,106 @@ export default function EvolucaoRepublicanosPage() {
       novosExpandidos.add(ano);
     }
     setAnosExpandidos(novosExpandidos);
+  };
+
+  // Função para ordenação da tabela
+  const handleOrdenacao = (coluna: string) => {
+    let novaDirecao: 'asc' | 'desc' | null = 'asc';
+    
+    if (ordenacao.coluna === coluna) {
+      if (ordenacao.direcao === 'asc') {
+        novaDirecao = 'desc';
+      } else if (ordenacao.direcao === 'desc') {
+        novaDirecao = null;
+      } else {
+        novaDirecao = 'asc';
+      }
+    }
+    
+    setOrdenacao({ coluna, direcao: novaDirecao });
+  };
+
+  // Função para aplicar filtros na tabela
+  const aplicarFiltrosTabela = (candidatos: any[]) => {
+    return candidatos.filter(candidato => {
+      const matchMunicipio = !filtroTabelaMunicipio || 
+        candidato.municipio.toLowerCase().includes(filtroTabelaMunicipio.toLowerCase());
+      const matchCargo = !filtroTabelaCargo || 
+        candidato.cargo.toLowerCase().includes(filtroTabelaCargo.toLowerCase());
+      const matchCandidato = !filtroTabelaCandidato || 
+        candidato.candidato.toLowerCase().includes(filtroTabelaCandidato.toLowerCase());
+      const matchPartido = !filtroTabelaPartido || 
+        candidato.partido.toLowerCase().includes(filtroTabelaPartido.toLowerCase());
+      
+      return matchMunicipio && matchCargo && matchCandidato && matchPartido;
+    });
+  };
+
+  // Função para aplicar ordenação na tabela
+  const aplicarOrdenacao = (candidatos: any[]) => {
+    if (!ordenacao.direcao || !ordenacao.coluna) {
+      return candidatos;
+    }
+
+    const candidatosOrdenados = [...candidatos].sort((a, b) => {
+      let valorA, valorB;
+      
+      switch (ordenacao.coluna) {
+        case 'municipio':
+          valorA = a.municipio;
+          valorB = b.municipio;
+          break;
+        case 'cargo':
+          valorA = a.cargo;
+          valorB = b.cargo;
+          break;
+        case 'candidato':
+          valorA = a.candidato;
+          valorB = b.candidato;
+          break;
+        case 'partido':
+          valorA = a.partido;
+          valorB = b.partido;
+          break;
+        case 'votos':
+          valorA = a.totalVotos;
+          valorB = b.totalVotos;
+          break;
+        case 'situacao':
+          valorA = a.situacao;
+          valorB = b.situacao;
+          break;
+        default:
+          return 0;
+      }
+
+      if (ordenacao.coluna === 'votos') {
+        // Para votos, usar comparação numérica
+        return ordenacao.direcao === 'asc' ? valorA - valorB : valorB - valorA;
+      } else {
+        // Para texto, usar comparação de string
+        if (valorA < valorB) return ordenacao.direcao === 'asc' ? -1 : 1;
+        if (valorA > valorB) return ordenacao.direcao === 'asc' ? 1 : -1;
+        return 0;
+      }
+    });
+
+    return candidatosOrdenados;
+  };
+
+  // Função para renderizar ícone de ordenação
+  const renderIconeOrdenacao = (coluna: string) => {
+    if (ordenacao.coluna !== coluna) {
+      return <ArrowUpDown className="h-3 w-3 text-gray-400" />;
+    }
+    
+    if (ordenacao.direcao === 'asc') {
+      return <ArrowUp className="h-3 w-3 text-blue-600" />;
+    } else if (ordenacao.direcao === 'desc') {
+      return <ArrowDown className="h-3 w-3 text-blue-600" />;
+    } else {
+      return <ArrowUpDown className="h-3 w-3 text-gray-400" />;
+    }
   };
 
   // Contar total de candidatos únicos para o card de filtrados
@@ -595,27 +707,110 @@ export default function EvolucaoRepublicanosPage() {
                         {/* Tabela de Candidatos */}
                         {anosExpandidos.has(ano) && (
                           <div className="border-t border-gray-200">
+                            {/* Filtros da Tabela */}
+                            <div className="p-3 bg-gray-50 border-b border-gray-200">
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                                <div>
+                                  <Input
+                                    placeholder="Filtrar município..."
+                                    value={filtroTabelaMunicipio}
+                                    onChange={(e) => setFiltroTabelaMunicipio(e.target.value)}
+                                    className="text-sm"
+                                  />
+                                </div>
+                                <div>
+                                  <Input
+                                    placeholder="Filtrar cargo..."
+                                    value={filtroTabelaCargo}
+                                    onChange={(e) => setFiltroTabelaCargo(e.target.value)}
+                                    className="text-sm"
+                                  />
+                                </div>
+                                <div>
+                                  <Input
+                                    placeholder="Filtrar candidato..."
+                                    value={filtroTabelaCandidato}
+                                    onChange={(e) => setFiltroTabelaCandidato(e.target.value)}
+                                    className="text-sm"
+                                  />
+                                </div>
+                                <div>
+                                  <Input
+                                    placeholder="Filtrar partido..."
+                                    value={filtroTabelaPartido}
+                                    onChange={(e) => setFiltroTabelaPartido(e.target.value)}
+                                    className="text-sm"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+
                             <div className="overflow-x-auto">
                               <table className="w-full">
                                 <thead className="bg-gray-100">
                                   <tr>
-                                    <th className="text-left p-3 font-medium text-gray-700 border-b border-gray-200">Município</th>
-                                    <th className="text-left p-3 font-medium text-gray-700 border-b border-gray-200">Cargo</th>
-                                    <th className="text-left p-3 font-medium text-gray-700 border-b border-gray-200">Candidato</th>
-                                    <th className="text-left p-3 font-medium text-gray-700 border-b border-gray-200">Partido</th>
-                                    <th className="text-right p-3 font-medium text-gray-700 border-b border-gray-200">Votos</th>
-                                    <th className="text-center p-3 font-medium text-gray-700 border-b border-gray-200">Situação</th>
+                                    <th 
+                                      className="text-left p-3 font-medium text-gray-700 border-b border-gray-200 cursor-pointer hover:bg-gray-200 transition-colors"
+                                      onClick={() => handleOrdenacao('municipio')}
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        Município
+                                        {renderIconeOrdenacao('municipio')}
+                                      </div>
+                                    </th>
+                                    <th 
+                                      className="text-left p-3 font-medium text-gray-700 border-b border-gray-200 cursor-pointer hover:bg-gray-200 transition-colors"
+                                      onClick={() => handleOrdenacao('cargo')}
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        Cargo
+                                        {renderIconeOrdenacao('cargo')}
+                                      </div>
+                                    </th>
+                                    <th 
+                                      className="text-left p-3 font-medium text-gray-700 border-b border-gray-200 cursor-pointer hover:bg-gray-200 transition-colors"
+                                      onClick={() => handleOrdenacao('candidato')}
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        Candidato
+                                        {renderIconeOrdenacao('candidato')}
+                                      </div>
+                                    </th>
+                                    <th 
+                                      className="text-left p-3 font-medium text-gray-700 border-b border-gray-200 cursor-pointer hover:bg-gray-200 transition-colors"
+                                      onClick={() => handleOrdenacao('partido')}
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        Partido
+                                        {renderIconeOrdenacao('partido')}
+                                      </div>
+                                    </th>
+                                    <th 
+                                      className="text-right p-3 font-medium text-gray-700 border-b border-gray-200 cursor-pointer hover:bg-gray-200 transition-colors"
+                                      onClick={() => handleOrdenacao('votos')}
+                                    >
+                                      <div className="flex items-center justify-end gap-2">
+                                        Votos
+                                        {renderIconeOrdenacao('votos')}
+                                      </div>
+                                    </th>
+                                    <th 
+                                      className="text-center p-3 font-medium text-gray-700 border-b border-gray-200 cursor-pointer hover:bg-gray-200 transition-colors"
+                                      onClick={() => handleOrdenacao('situacao')}
+                                    >
+                                      <div className="flex items-center justify-center gap-2">
+                                        Situação
+                                        {renderIconeOrdenacao('situacao')}
+                                      </div>
+                                    </th>
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  {candidatosDoAno
-                                    .sort((a, b) => {
-                                      // Ordenar por município, depois cargo, depois votos (desc)
-                                      if (a.municipio !== b.municipio) return a.municipio.localeCompare(b.municipio);
-                                      if (a.cargo !== b.cargo) return a.cargo.localeCompare(b.cargo);
-                                      return b.totalVotos - a.totalVotos;
-                                    })
-                                    .map((candidato, index) => (
+                                  {(() => {
+                                    const candidatosFiltrados = aplicarFiltrosTabela(candidatosDoAno);
+                                    const candidatosOrdenados = aplicarOrdenacao(candidatosFiltrados);
+                                    
+                                    return candidatosOrdenados.map((candidato, index) => (
                                       <tr key={index} className="hover:bg-gray-50 border-b border-gray-100">
                                         <td className="p-3 text-gray-900">
                                           <div className="flex items-center gap-1">
@@ -655,15 +850,26 @@ export default function EvolucaoRepublicanosPage() {
                                           )}
                                         </td>
                                       </tr>
-                                    ))}
+                                    ));
+                                  })()}
                                 </tbody>
                               </table>
                               
-                              {candidatosDoAno.length > 100 && (
-                                <div className="text-center py-3 text-sm text-gray-500 bg-gray-50 border-t border-gray-200">
-                                  Mostrando todos os {formatarNumero(candidatosDoAno.length)} candidatos do ano {ano}
-                                </div>
-                              )}
+                              {(() => {
+                                const candidatosFiltrados = aplicarFiltrosTabela(candidatosDoAno);
+                                const totalFiltrados = candidatosFiltrados.length;
+                                const totalOriginal = candidatosDoAno.length;
+                                
+                                return (
+                                  <div className="text-center py-3 text-sm text-gray-500 bg-gray-50 border-t border-gray-200">
+                                    {totalFiltrados === totalOriginal ? (
+                                      `Mostrando todos os ${formatarNumero(totalOriginal)} candidatos do ano ${ano}`
+                                    ) : (
+                                      `Mostrando ${formatarNumero(totalFiltrados)} de ${formatarNumero(totalOriginal)} candidatos (filtrados)`
+                                    )}
+                                  </div>
+                                );
+                              })()}
                             </div>
                           </div>
                         )}
