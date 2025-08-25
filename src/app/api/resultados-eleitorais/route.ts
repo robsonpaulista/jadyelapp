@@ -189,7 +189,7 @@ export async function GET(request: NextRequest) {
     // Aplicar paginação
     const totalFiltrados = dadosFiltrados.length;
     const offset = filtros.offset || 0;
-    const limite = Math.min(filtros.limite || 1000, 5000); // Máximo 5000 registros por vez
+    const limite = Math.min(filtros.limite || 1000, 15000); // Máximo 15000 registros por vez
     
     dadosFiltrados = dadosFiltrados.slice(offset, offset + limite);
     
@@ -234,7 +234,7 @@ export async function POST(request: NextRequest) {
     
     const totalFiltrados = dadosFiltrados.length;
     const offset = filtros.offset || 0;
-    const limite = Math.min(filtros.limite || 1000, 5000);
+    const limite = Math.min(filtros.limite || 1000, 15000);
     
     dadosFiltrados = dadosFiltrados.slice(offset, offset + limite);
     

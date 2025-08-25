@@ -54,8 +54,8 @@ export default function EvolucaoRepublicanosPage() {
         if (value) params.set(key, value.toString());
       });
       
-      // Buscar até 5000 registros para análise completa
-      params.set('limite', '5000');
+      // Buscar todos os registros para análise completa
+      params.set('limite', '15000');
       
       const response = await fetch(`/api/resultados-eleitorais?${params}`);
       const resultado: ApiResponseResultadoEleicao = await response.json();
