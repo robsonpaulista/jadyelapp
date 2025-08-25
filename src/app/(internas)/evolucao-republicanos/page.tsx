@@ -161,6 +161,55 @@ export default function EvolucaoRepublicanosPage() {
     return nomeCandidato.includes(filtroNomeCandidato.toLowerCase());
   });
 
+  // Agrupar dados por Ano > Município > Candidato
+  const dadosAgrupados = dadosFiltrados.reduce((acc, item) => {
+    const ano = item['ano de eleicao'] || item.ano;
+    const municipio = item.municipio || 'Município não informado';
+    const candidato = item['nome candidato'] || 'Candidato não informado';
+    const partido = item.partido || '-';
+    const cargo = item.cargo || '-';
+    const votos = Number(item['votos nominais'] || 0);
+    const situacao = item['situacao totalizacao'] || '-';
+
+    const chaveAno = ano.toString();
+    const chaveMunicipio = municipio.toString();
+    const chaveCandidato = candidato.toString();
+
+    if (!acc[chaveAno]) {
+      acc[chaveAno] = {};
+    }
+    if (!acc[chaveAno][chaveMunicipio]) {
+      acc[chaveAno][chaveMunicipio] = {};
+    }
+    if (!acc[chaveAno][chaveMunicipio][chaveCandidato]) {
+      acc[chaveAno][chaveMunicipio][chaveCandidato] = {
+        ano,
+        municipio,
+        candidato,
+        partido,
+        cargo,
+        totalVotos: 0,
+        situacao,
+        registros: 0
+      };
+    }
+
+    acc[chaveAno][chaveMunicipio][chaveCandidato].totalVotos += votos;
+    acc[chaveAno][chaveMunicipio][chaveCandidato].registros += 1;
+
+    return acc;
+  }, {} as any);
+
+  // Converter estrutura agrupada para array plano para exibição
+  const dadosParaTabela = [];
+  Object.keys(dadosAgrupados).sort().forEach(ano => {
+    Object.keys(dadosAgrupados[ano]).sort().forEach(municipio => {
+      Object.keys(dadosAgrupados[ano][municipio]).sort().forEach(candidato => {
+        dadosParaTabela.push(dadosAgrupados[ano][municipio][candidato]);
+      });
+    });
+  });
+
   return (
     <div className="min-h-screen bg-white text-gray-800 flex flex-col">
       <Navbar />
@@ -234,7 +283,7 @@ export default function EvolucaoRepublicanosPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-gray-900">{formatarNumero(dadosFiltrados.length)}</div>
+                  <div className="text-2xl font-bold text-gray-900">{formatarNumero(dadosParaTabela.length)}</div>
                 </CardContent>
               </Card>
             </div>
@@ -462,10 +511,10 @@ export default function EvolucaoRepublicanosPage() {
           <Card className="border-gray-200">
             <CardHeader>
               <CardTitle className="text-base font-medium text-gray-900">
-                Resultados Detalhados ({formatarNumero(dadosFiltrados.length)} registros)
+                Resultados Agrupados ({formatarNumero(dadosParaTabela.length)} candidatos)
               </CardTitle>
               <CardDescription className="text-sm text-gray-600">
-                Lista completa dos registros filtrados de candidatos republicanos
+                Dados agrupados por Ano > Município > Candidato com votação consolidada
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -474,7 +523,7 @@ export default function EvolucaoRepublicanosPage() {
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
                   <p>Carregando dados...</p>
                 </div>
-              ) : dadosFiltrados.length === 0 ? (
+              ) : dadosParaTabela.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   Nenhum resultado encontrado com os filtros aplicados
                 </div>
@@ -488,35 +537,41 @@ export default function EvolucaoRepublicanosPage() {
                         <th className="text-left p-3 border border-gray-200 font-medium">Candidato</th>
                         <th className="text-left p-3 border border-gray-200 font-medium">Partido</th>
                         <th className="text-left p-3 border border-gray-200 font-medium">Cargo</th>
-                        <th className="text-right p-3 border border-gray-200 font-medium">Votos Nominais</th>
+                        <th className="text-right p-3 border border-gray-200 font-medium">Total Votos</th>
+                        <th className="text-center p-3 border border-gray-200 font-medium">Registros</th>
                         <th className="text-center p-3 border border-gray-200 font-medium">Situação</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {dadosFiltrados.slice(0, 100).map((item, index) => (
+                      {dadosParaTabela.slice(0, 100).map((item, index) => (
                         <tr key={index} className="hover:bg-gray-50">
                           <td className="p-3 border border-gray-200">
                             <Badge variant="secondary">
-                              {item['ano de eleicao'] || item.ano || '-'}
+                              {item.ano || '-'}
                             </Badge>
                           </td>
                           <td className="p-3 border border-gray-200">{item.municipio || '-'}</td>
                           <td className="p-3 border border-gray-200 font-medium">
-                            {item['nome candidato'] || item.candidato || '-'}
+                            {item.candidato || '-'}
                           </td>
                           <td className="p-3 border border-gray-200">
-                            {item.partido && (
+                            {item.partido && item.partido !== '-' && (
                               <Badge variant="outline">{item.partido}</Badge>
                             )}
                           </td>
                           <td className="p-3 border border-gray-200">{item.cargo || '-'}</td>
                           <td className="p-3 border border-gray-200 text-right font-mono">
-                            {formatarNumero(item['votos nominais'] || item.votos)}
+                            {formatarNumero(item.totalVotos)}
                           </td>
                           <td className="p-3 border border-gray-200 text-center">
-                            {item['situacao totalizacao'] && (
-                              <Badge variant={item['situacao totalizacao'].toLowerCase().includes('eleito') ? 'default' : 'secondary'}>
-                                {item['situacao totalizacao']}
+                            <Badge variant="outline" className="text-xs">
+                              {item.registros}
+                            </Badge>
+                          </td>
+                          <td className="p-3 border border-gray-200 text-center">
+                            {item.situacao && item.situacao !== '-' && (
+                              <Badge variant={item.situacao.toLowerCase().includes('eleito') ? 'default' : 'secondary'}>
+                                {item.situacao}
                               </Badge>
                             )}
                           </td>
@@ -525,9 +580,9 @@ export default function EvolucaoRepublicanosPage() {
                     </tbody>
                   </table>
                   
-                  {dadosFiltrados.length > 100 && (
+                  {dadosParaTabela.length > 100 && (
                     <div className="text-center py-4 text-sm text-gray-500">
-                      Mostrando primeiros 100 registros de {formatarNumero(dadosFiltrados.length)}
+                      Mostrando primeiros 100 candidatos de {formatarNumero(dadosParaTabela.length)}
                     </div>
                   )}
                 </div>
