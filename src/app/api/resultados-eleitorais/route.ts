@@ -151,7 +151,7 @@ function calcularEstatisticas(dados: ResultadoEleicaoRegistro[]): any {
   
   const municipios = new Set(dados.map(item => item.municipio?.toString()).filter(Boolean));
   const cargos = new Set(dados.map(item => item.cargo?.toString()).filter(Boolean));
-  const anos = new Set(dados.map(item => Number(item.ano || item.ano_eleicao)).filter(Boolean));
+  const anos = new Set(dados.map(item => Number(item['ano de eleicao'] || item.ano)).filter(Boolean));
   const partidos = new Set(dados.map(item => item.partido?.toString()).filter(Boolean));
   
   return {
