@@ -617,7 +617,7 @@ export default function EvolucaoRepublicanosPage() {
               </CardHeader>
               <CardContent className="pt-2">
                 {/* Múltiplos Pequenos - Um gráfico para cada cargo */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {dadosGrafico.length > 0 && 
                     Object.keys(dadosGrafico[0])
                       .filter(key => key !== 'ano')
@@ -629,30 +629,26 @@ export default function EvolucaoRepublicanosPage() {
                         }));
 
                         return (
-                          <div key={cargo} className="border border-gray-200 rounded-lg p-3 bg-white">
+                          <div key={cargo} className="border border-gray-200 rounded-lg p-4 bg-white">
                             {/* Título do cargo */}
-                            <h4 className="text-xs font-semibold text-gray-700 mb-2 text-center truncate" title={cargo}>
+                            <h4 className="text-sm font-semibold text-gray-700 mb-3 text-center truncate" title={cargo}>
                               {cargo}
                             </h4>
                             
                             {/* Gráfico individual */}
-                            <div className="w-full h-32">
+                            <div className="w-full h-48">
                               <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={dadosCargo} margin={{ top: 15, right: 5, left: 5, bottom: 15 }}>
+                                <LineChart data={dadosCargo} margin={{ top: 20, right: 15, left: 15, bottom: 20 }}>
                                   <XAxis 
                                     dataKey="ano" 
-                                    tick={{ fontSize: 9 }}
+                                    tick={{ fontSize: 11 }}
                                     tickFormatter={(value) => value.toString()}
                                     axisLine={false}
                                     tickLine={false}
                                     interval={0}
                                   />
                                   <YAxis 
-                                    tick={{ fontSize: 8 }}
-                                    tickFormatter={(value) => value > 1000 ? `${Math.round(value/1000)}k` : value.toString()}
-                                    axisLine={false}
-                                    tickLine={false}
-                                    width={30}
+                                    hide={true}
                                   />
                                   <Tooltip 
                                     formatter={(value) => [formatarNumero(value), 'Votos']}
@@ -663,15 +659,15 @@ export default function EvolucaoRepublicanosPage() {
                                     type="monotone" 
                                     dataKey="votos" 
                                     stroke={getCorCargo(index)} 
-                                    strokeWidth={2}
-                                    dot={{ fill: getCorCargo(index), strokeWidth: 1, r: 2 }}
-                                    activeDot={{ r: 3, stroke: getCorCargo(index), strokeWidth: 1 }}
+                                    strokeWidth={3}
+                                    dot={{ fill: getCorCargo(index), strokeWidth: 2, r: 4 }}
+                                    activeDot={{ r: 5, stroke: getCorCargo(index), strokeWidth: 2 }}
                                   >
                                     <LabelList 
                                       dataKey="votos" 
                                       position="top" 
                                       formatter={(value: any) => value > 0 ? (value > 1000 ? `${Math.round(value/1000)}k` : value.toString()) : ''}
-                                      style={{ fontSize: '7px', fill: getCorCargo(index), fontWeight: 'bold' }}
+                                      style={{ fontSize: '9px', fill: getCorCargo(index), fontWeight: 'bold' }}
                                     />
                                   </Line>
                                 </LineChart>
@@ -679,11 +675,11 @@ export default function EvolucaoRepublicanosPage() {
                             </div>
                             
                             {/* Estatísticas do cargo */}
-                            <div className="mt-2 text-center">
-                              <div className="text-xs text-gray-500">
+                            <div className="mt-3 text-center">
+                              <div className="text-sm text-gray-600 font-medium">
                                 Total: {formatarNumero(dadosCargo.reduce((sum, item) => sum + item.votos, 0))}
                               </div>
-                              <div className="text-xs text-gray-400">
+                              <div className="text-xs text-gray-500">
                                 Máx: {formatarNumero(Math.max(...dadosCargo.map(item => item.votos)))}
                               </div>
                             </div>
