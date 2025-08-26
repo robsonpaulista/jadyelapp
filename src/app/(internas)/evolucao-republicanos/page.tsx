@@ -7,6 +7,18 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { ApiResponseResultadoEleicao, ResultadoEleicaoRegistro } from '@/types/resultadoEleicoes';
+
+// Tipo para os dados agrupados por ano
+interface CandidatoAgrupado {
+  ano: string;
+  cargo: string;
+  municipio: string;
+  candidato: string;
+  partido: string;
+  totalVotos: number;
+  situacao: string;
+  registros: number;
+}
 import { Search, Filter, TrendingUp, Calendar, MapPin, User, Users, ChevronDown, ChevronUp, ChevronRight, Minus, Plus, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import {
@@ -233,12 +245,12 @@ export default function EvolucaoRepublicanosPage() {
   // Agrupar candidatos por ano para estrutura simplificada
   const dadosPorAno = dadosComVotos.reduce((acc, item) => {
     const ano = (item['ano de eleicao'] || item.ano || 'Ano não informado').toString();
-    const cargo = item.cargo || 'Cargo não informado';
-    const municipio = item.municipio || 'Município não informado';
-    const candidato = item['nome candidato'] || 'Candidato não informado';
-    const partido = item.partido || '-';
+    const cargo = (item.cargo || 'Cargo não informado').toString();
+    const municipio = (item.municipio || 'Município não informado').toString();
+    const candidato = (item['nome candidato'] || 'Candidato não informado').toString();
+    const partido = (item.partido || '-').toString();
     const votos = Number(item['votos nominais'] || 0);
-    const situacao = item['situacao totalizacao'] || '-';
+    const situacao = (item['situacao totalizacao'] || '-').toString();
 
     if (!acc[ano]) {
       acc[ano] = [];
@@ -246,7 +258,7 @@ export default function EvolucaoRepublicanosPage() {
 
     // Verificar se candidato já existe para este ano/município/cargo
     const chave = `${cargo}-${municipio}-${candidato}`;
-    const existente = acc[ano].find(c => `${c.cargo}-${c.municipio}-${c.candidato}` === chave);
+    const existente = acc[ano].find((c: CandidatoAgrupado) => `${c.cargo}-${c.municipio}-${c.candidato}` === chave);
 
     if (existente) {
       existente.totalVotos += votos;
@@ -265,7 +277,7 @@ export default function EvolucaoRepublicanosPage() {
     }
 
     return acc;
-  }, {} as any);
+  }, {} as Record<string, CandidatoAgrupado[]>);
 
   // Função para controle de expansão
   const toggleAno = (ano: string) => {
@@ -646,7 +658,7 @@ export default function EvolucaoRepublicanosPage() {
                         dadosFiltrados
                           .filter(item => {
                             const cargoItem = item.cargo || 'Cargo não informado';
-                            const situacao = (item['situacao totalizacao'] || '').toLowerCase().trim();
+                            const situacao = (item['situacao totalizacao'] || '').toString().toLowerCase().trim();
                             return cargoItem === cargo && situacao === 'eleito';
                           })
                           .forEach(item => {
@@ -940,7 +952,7 @@ export default function EvolucaoRepublicanosPage() {
                                         <td className="p-3 text-center">
                                           {candidato.situacao && candidato.situacao !== '-' && (
                                             <Badge 
-                                              variant={candidato.situacao.toLowerCase().includes('eleito') ? 'default' : 'secondary'} 
+                                              variant={candidato.situacao.toString().toLowerCase().includes('eleito') ? 'default' : 'secondary'} 
                                               className="text-xs"
                                             >
                                               {candidato.situacao}
