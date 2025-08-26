@@ -107,12 +107,20 @@ export default function EvolucaoRepublicanosPage() {
           setPartidosDisponiveis(resultado.estatisticas?.partidosDisponiveis || []);
           
           // Extrair municípios únicos dos dados
-          const municipiosSet = new Set(resultado.data.map(item => item.municipio?.toString()).filter(Boolean));
+          const municipiosSet = new Set(
+            resultado.data
+              .map(item => item.municipio?.toString())
+              .filter((municipio): municipio is string => typeof municipio === 'string')
+          );
           const municipiosUnicos = Array.from(municipiosSet).sort();
           setMunicipiosDisponiveis(municipiosUnicos);
           
           // Extrair candidatos únicos dos dados
-          const candidatosSet = new Set(resultado.data.map(item => item['nome candidato']?.toString()).filter(Boolean));
+          const candidatosSet = new Set(
+            resultado.data
+              .map(item => item['nome candidato']?.toString())
+              .filter((candidato): candidato is string => typeof candidato === 'string')
+          );
           const candidatosUnicos = Array.from(candidatosSet).sort();
           setCandidatosDisponiveis(candidatosUnicos);
         }
