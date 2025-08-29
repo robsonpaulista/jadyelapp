@@ -11,21 +11,26 @@ interface SaldosBlocos {
   }
 }
 
-export const exportToCSV = (data: Emenda[], fileName: string = 'emendas', saldosBlocos?: SaldosBlocos) => {
-  const csvContent = convertToCSV(data, saldosBlocos);
+export const exportToCSV = (data: Emenda[], fileName: string = 'emendas', saldosBlocos?: SaldosBlocos, contingenciamentoAtivo: boolean = true) => {
+  const csvContent = convertToCSV(data, saldosBlocos, contingenciamentoAtivo);
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   saveAs(blob, `${fileName}.csv`);
 };
 
-export const exportToExcel = (data: Emenda[], fileName: string = 'emendas', saldosBlocos?: SaldosBlocos) => {
+export const exportToExcel = (data: Emenda[], fileName: string = 'emendas', saldosBlocos?: SaldosBlocos, contingenciamentoAtivo: boolean = true) => {
   const exportData = data.map(item => {
     const saldoMac = saldosBlocos?.[item.municipioBeneficiario || '']?.mac?.saldo || null;
     const saldoPap = saldosBlocos?.[item.municipioBeneficiario || '']?.pap?.saldo || null;
     
+    // Adicionar contingenciamento apenas para Bloco 3 e se estiver ativo
+    const contingenciamento = (item.bloco === 'BLOCO 3' && contingenciamentoAtivo) ? 
+      (item.valorIndicado || 0) * (17.14 / 100) : null;
+    
     return {
       ...item,
       saldoMac,
-      saldoPap
+      saldoPap,
+      contingenciamento
     };
   });
   
@@ -37,7 +42,7 @@ export const exportToExcel = (data: Emenda[], fileName: string = 'emendas', sald
   saveAs(blob, `${fileName}.xlsx`);
 };
 
-export const exportToPDF = (data: Emenda[], fileName: string = 'emendas', saldosBlocos?: SaldosBlocos) => {
+export const exportToPDF = (data: Emenda[], fileName: string = 'emendas', saldosBlocos?: SaldosBlocos, contingenciamentoAtivo: boolean = true) => {
   const doc = new jsPDF();
   
   // Adiciona título
@@ -46,11 +51,15 @@ export const exportToPDF = (data: Emenda[], fileName: string = 'emendas', saldos
   doc.setFontSize(10);
   doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 14, 22);
   
+  // Verificar se há dados do Bloco 3 para incluir coluna de contingenciamento
+  const hasBloco3 = data.some(item => item.bloco === 'BLOCO 3') && contingenciamentoAtivo;
+  
   const tableColumn = [
     'Bloco',
     'Emenda',
     'Município',
     'Valor Indicado',
+    ...(hasBloco3 ? ['Conting.17,14%'] : []),
     'Valor Empenhado',
     'Valor Pago',
     'Saldo MAC',
@@ -61,16 +70,28 @@ export const exportToPDF = (data: Emenda[], fileName: string = 'emendas', saldos
     const saldoMac = saldosBlocos?.[item.municipioBeneficiario || '']?.mac?.saldo || null;
     const saldoPap = saldosBlocos?.[item.municipioBeneficiario || '']?.pap?.saldo || null;
     
-    return [
+    const baseRow = [
       item.bloco || '',
       item.emenda || '',
       item.municipioBeneficiario || '',
-      formatCurrency(item.valorIndicado),
+      formatCurrency(item.valorIndicado)
+    ];
+    
+    // Adicionar contingenciamento apenas para Bloco 3 (antes do valor empenhado)
+    if (hasBloco3) {
+      const contingenciamento = item.bloco === 'BLOCO 3' ? 
+        formatCurrency((item.valorIndicado || 0) * (17.14 / 100)) : '';
+      baseRow.push(contingenciamento);
+    }
+    
+    baseRow.push(
       formatCurrency(item.valorEmpenhado),
       formatCurrency(item.valorPago),
       formatCurrency(saldoMac),
       formatCurrency(saldoPap)
-    ];
+    );
+    
+    return baseRow;
   });
 
   // Calcula totais
@@ -85,16 +106,24 @@ export const exportToPDF = (data: Emenda[], fileName: string = 'emendas', saldos
   });
 
   // Adiciona linha de totais
-  tableRows.push([
+  const totalRow = [
     'TOTAL',
     '',
     '',
-    formatCurrency(totais.valorIndicado),
+    formatCurrency(totais.valorIndicado)
+  ];
+  
+  if (hasBloco3) {
+    totalRow.push(''); // Coluna de contingenciamento vazia para totais
+  }
+  
+  totalRow.push(
     formatCurrency(totais.valorEmpenhado),
     formatCurrency(totais.valorPago),
-    '',
+    '', // Colunas de saldo vazias para totais
     ''
-  ]);
+  );
+  tableRows.push(totalRow);
 
   autoTable(doc, {
     head: [tableColumn],
@@ -108,10 +137,11 @@ export const exportToPDF = (data: Emenda[], fileName: string = 'emendas', saldos
     },
     columnStyles: {
       3: { halign: 'right' },
-      4: { halign: 'right' },
-      5: { halign: 'right' },
-      6: { halign: 'right' },
-      7: { halign: 'right' }
+      ...(hasBloco3 ? { 4: { halign: 'right' } } : {}),
+      [hasBloco3 ? 5 : 4]: { halign: 'right' },
+      [hasBloco3 ? 6 : 5]: { halign: 'right' },
+      [hasBloco3 ? 7 : 6]: { halign: 'right' },
+      [hasBloco3 ? 8 : 7]: { halign: 'right' }
     },
     // Estilo especial para a última linha (totais)
     didParseCell: function(data) {
@@ -131,7 +161,9 @@ export const exportToPDF = (data: Emenda[], fileName: string = 'emendas', saldos
   doc.save(`${fileName}.pdf`);
 };
 
-const convertToCSV = (data: Emenda[], saldosBlocos?: SaldosBlocos): string => {
+const convertToCSV = (data: Emenda[], saldosBlocos?: SaldosBlocos, contingenciamentoAtivo: boolean = true): string => {
+  const hasBloco3 = data.some(item => item.bloco === 'BLOCO 3') && contingenciamentoAtivo;
+  
   const headers = [
     'Bloco',
     'Emenda',
@@ -142,6 +174,7 @@ const convertToCSV = (data: Emenda[], saldosBlocos?: SaldosBlocos): string => {
     'Objeto',
     'Alteração',
     'Número Proposta',
+    ...(hasBloco3 ? ['Conting.17,14%'] : []),
     'Valor Empenhado',
     'Empenho',
     'Data Empenho',
@@ -159,7 +192,7 @@ const convertToCSV = (data: Emenda[], saldosBlocos?: SaldosBlocos): string => {
     const saldoMac = saldosBlocos?.[item.municipioBeneficiario || '']?.mac?.saldo || null;
     const saldoPap = saldosBlocos?.[item.municipioBeneficiario || '']?.pap?.saldo || null;
 
-    return [
+    const baseRow = [
       item.bloco || '',
       item.emenda || '',
       item.municipioBeneficiario || '',
@@ -168,7 +201,17 @@ const convertToCSV = (data: Emenda[], saldosBlocos?: SaldosBlocos): string => {
       formatCurrency(item.valorIndicado),
       item.objeto || '',
       item.alteracao || '',
-      item.numeroProposta || '',
+      item.numeroProposta || ''
+    ];
+    
+    // Adicionar contingenciamento apenas para Bloco 3 (antes do valor empenhado)
+    if (hasBloco3) {
+      const contingenciamento = item.bloco === 'BLOCO 3' ? 
+        formatCurrency((item.valorIndicado || 0) * (17.14 / 100)) : '';
+      baseRow.push(contingenciamento);
+    }
+    
+    baseRow.push(
       formatCurrency(item.valorEmpenhado),
       item.empenho || '',
       item.dataEmpenho || '',
@@ -180,7 +223,9 @@ const convertToCSV = (data: Emenda[], saldosBlocos?: SaldosBlocos): string => {
       item.liderancas || '',
       formatCurrency(saldoMac),
       formatCurrency(saldoPap)
-    ].join(';');
+    );
+    
+    return baseRow.join(';');
   });
 
   return [headers, ...rows].join('\n');

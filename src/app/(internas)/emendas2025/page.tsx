@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Loader2, RefreshCw, Search, Filter, ChevronDown, ChevronRight, ChevronUp, DollarSign, TrendingUp, CheckCircle, CreditCard, Printer, X, CheckCircle2 } from 'lucide-react';
+import { Loader2, RefreshCw, Search, Filter, ChevronDown, ChevronRight, ChevronUp, DollarSign, TrendingUp, CheckCircle, CreditCard, Printer, X, CheckCircle2, Shield } from 'lucide-react';
 import { type Emenda } from '@/types/emenda';
 import { EmendasTable } from '@/components/table/EmendasTable';
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,7 @@ interface BlocoData {
   totalValorAEmpenhar: number;
   totalValorEmpenhado: number;
   totalValorPago: number;
+  totalValorContingenciado: number;
   totalMunicipios: number;
 }
 
@@ -80,13 +81,14 @@ export default function Emendas2025() {
   const [skipNextFilterProcessing, setSkipNextFilterProcessing] = useState(false);
   
   // Filtros
-  const [filtroBloco, setFiltroBloco] = useState('TODOS_BLOCOS');
-  const [filtroMunicipio, setFiltroMunicipio] = useState('TODOS_MUNICIPIOS');
-  const [filtroEmenda, setFiltroEmenda] = useState('TODAS_EMENDAS');
-  const [filtroStatusEmpenho, setFiltroStatusEmpenho] = useState('TODOS_STATUS');
+  const [filtroBloco, setFiltroBloco] = useState<string>('TODOS_BLOCOS');
+  const [filtroMunicipio, setFiltroMunicipio] = useState<string>('TODOS_MUNICIPIOS');
+  const [filtroEmenda, setFiltroEmenda] = useState<string>('TODAS_EMENDAS');
+  const [filtroStatusEmpenho, setFiltroStatusEmpenho] = useState<string>('TODOS_STATUS');
+  const [filtroMunicipioSaldo, setFiltroMunicipioSaldo] = useState<string>('');
   
   // Ordenação
-  const [ordenacaoAtual, setOrdenacaoAtual] = useState<{campo: string, direcao: 'asc' | 'desc'} | null>(null);
+  const [ordenacaoAtual, setOrdenacaoAtual] = useState<{ campo: string; direcao: 'asc' | 'desc' } | null>(null);
   
   // Filtros retráteis
   const [filtrosVisiveis, setFiltrosVisiveis] = useState(true);
@@ -122,11 +124,13 @@ export default function Emendas2025() {
     }
   }>({});
 
-  // Estado para filtro por município ao clicar nos saldos
-  const [filtroMunicipioSaldo, setFiltroMunicipioSaldo] = useState<string | null>(null);
+
   
   // Estado para mostrar lista de municípios disponíveis para remanejamento
   const [mostrarMunicipiosDisponiveis, setMostrarMunicipiosDisponiveis] = useState(false);
+
+  // Estado para controlar o contingenciamento
+  const [contingenciamentoAtivo, setContingenciamentoAtivo] = useState(true);
 
   // Buscar dados das emendas do Firebase
   const fetchEmendas = async (forceRefresh = false) => {
@@ -255,25 +259,34 @@ export default function Emendas2025() {
         // 3. Forçar reprocessamento dos blocos usando a emenda atualizada
         // Atualizar os blocos diretamente sem depender do useEffect
         setBlocos(prev => 
-          prev.map(bloco => ({
-            ...bloco,
-            emendas: bloco.emendas.map(emenda => 
+          prev.map(bloco => {
+            const emendasAtualizadas = bloco.emendas.map(emenda => 
               emenda.id === dadosEdicao.id ? emendaAtualizada : emenda
-            ),
-            // Recalcular totais do bloco
-            totalValorIndicado: bloco.emendas
-              .map(e => e.id === dadosEdicao.id ? emendaAtualizada : e)
-              .reduce((acc, emenda) => acc + (emenda.valorIndicado || 0), 0),
-            totalValorAEmpenhar: bloco.emendas
-              .map(e => e.id === dadosEdicao.id ? emendaAtualizada : e)
-              .reduce((acc, emenda) => acc + (emenda.valorAEmpenhar || 0), 0),
-            totalValorEmpenhado: bloco.emendas
-              .map(e => e.id === dadosEdicao.id ? emendaAtualizada : e)
-              .reduce((acc, emenda) => acc + (emenda.valorEmpenhado || 0), 0),
-            totalValorPago: bloco.emendas
-              .map(e => e.id === dadosEdicao.id ? emendaAtualizada : e)
-              .reduce((acc, emenda) => acc + (emenda.valorPago || 0), 0)
-          }))
+            );
+            
+            const totalValorIndicado = emendasAtualizadas
+              .reduce((acc, emenda) => acc + (emenda.valorIndicado || 0), 0);
+            const totalValorAEmpenhar = emendasAtualizadas
+              .reduce((acc, emenda) => acc + (emenda.valorAEmpenhar || 0), 0);
+            const totalValorEmpenhado = emendasAtualizadas
+              .reduce((acc, emenda) => acc + (emenda.valorEmpenhado || 0), 0);
+            const totalValorPago = emendasAtualizadas
+              .reduce((acc, emenda) => acc + (emenda.valorPago || 0), 0);
+            
+            // Calcular total contingenciado apenas para Bloco 3 e se estiver ativo
+            const totalValorContingenciado = (bloco.bloco === 'BLOCO 3' && contingenciamentoAtivo) ? 
+              totalValorIndicado * (17.14 / 100) : 0;
+            
+            return {
+              ...bloco,
+              emendas: emendasAtualizadas,
+              totalValorIndicado,
+              totalValorAEmpenhar,
+              totalValorEmpenhado,
+              totalValorPago,
+              totalValorContingenciado
+            };
+          })
         );
         
         // Resetar o flag após um pequeno delay
@@ -293,6 +306,8 @@ export default function Emendas2025() {
 
   // Processar dados e agrupar por blocos
   const processarBlocos = (dados: Emenda[]) => {
+
+    
     const blocoMap = new Map<string, Emenda[]>();
     
     dados.forEach(emenda => {
@@ -330,7 +345,16 @@ export default function Emendas2025() {
       const totalValorIndicado = emendasOrdenadas.reduce((acc, emenda) => acc + (emenda.valorIndicado || 0), 0);
       const totalValorAEmpenhar = emendasOrdenadas.reduce((acc, emenda) => acc + (emenda.valorAEmpenhar || 0), 0);
       const totalValorEmpenhado = emendasOrdenadas.reduce((acc, emenda) => acc + (emenda.valorEmpenhado || 0), 0);
+      const totalValorPago = emendasOrdenadas.reduce((acc, emenda) => acc + (emenda.valorPago || 0), 0);
       const municipiosUnicos = new Set(emendasOrdenadas.map(e => e.municipioBeneficiario).filter(Boolean));
+      
+      // Calcular total contingenciado apenas para Bloco 3 e se estiver ativo
+      const totalValorContingenciado = (bloco === 'BLOCO 3' && contingenciamentoAtivo) ? 
+        totalValorIndicado * (17.14 / 100) : 0;
+      
+
+      
+
       
       return {
         bloco,
@@ -338,7 +362,8 @@ export default function Emendas2025() {
         totalValorIndicado,
         totalValorAEmpenhar,
         totalValorEmpenhado,
-        totalValorPago: emendasOrdenadas.reduce((acc, emenda) => acc + (emenda.valorPago || 0), 0),
+        totalValorPago,
+        totalValorContingenciado,
         totalMunicipios: municipiosUnicos.size
       };
     });
@@ -531,7 +556,8 @@ export default function Emendas2025() {
   };
 
   const formatarValor = (valor: number | null) => {
-    if (!valor || valor === 0) return 'R$ 0,00';
+    if (valor === null || valor === undefined) return 'R$ 0,00';
+    if (valor === 0) return 'R$ 0,00';
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
@@ -910,6 +936,7 @@ export default function Emendas2025() {
                     <th>Município/Beneficiário</th>
                     <th>Valor Indicado</th>
                     <th>Valor a Empenhar</th>
+                    ${bloco.bloco === 'BLOCO 3' ? '<th>Conting.17,14%</th>' : ''}
                     <th>Valor Empenhado</th>
                     <th>Valor Pago</th>
                     <th>Saldo MAC</th>
@@ -928,6 +955,7 @@ export default function Emendas2025() {
                         <td>${emenda.municipioBeneficiario || 'N/A'}</td>
                         <td class="valor">${formatarValor(emenda.valorIndicado)}</td>
                         <td class="valor">${formatarValor(emenda.valorAEmpenhar)}</td>
+                        ${bloco.bloco === 'BLOCO 3' && contingenciamentoAtivo ? `<td class="valor">${formatarValor((emenda.valorIndicado || 0) * (17.14 / 100))}</td>` : ''}
                         <td class="valor">${formatarValor(emenda.valorEmpenhado)}</td>
                         <td class="valor">${formatarValor(emenda.valorPago)}</td>
                         <td class="valor">${formatarValor(saldoMac)}</td>
@@ -1028,7 +1056,7 @@ export default function Emendas2025() {
   const handleCliqueSaldo = (municipio: string) => {
     if (filtroMunicipioSaldo === municipio) {
       // Se clicar no mesmo município, remove o filtro
-      setFiltroMunicipioSaldo(null);
+      setFiltroMunicipioSaldo('');
     } else {
       // Aplica o filtro para o município clicado
       setFiltroMunicipioSaldo(municipio);
@@ -1037,7 +1065,7 @@ export default function Emendas2025() {
 
   // Função para limpar filtro de saldo
   const limparFiltroSaldo = () => {
-    setFiltroMunicipioSaldo(null);
+    setFiltroMunicipioSaldo('');
   };
 
   // Função para calcular municípios disponíveis para remanejamento
@@ -1088,10 +1116,10 @@ export default function Emendas2025() {
         ) : (
           <>
             {isRefreshing && <PageLoading message="Atualizando emendas..." />}
-          <div className="flex flex-col gap-2">
-            <div className="flex justify-between items-center py-2">
+          <div className="flex flex-col gap-4">
+            <div className="flex justify-between items-center py-4">
               <h1 className="text-lg font-semibold text-gray-900">Emendas 2025</h1>
-              <div className="flex gap-2">
+              <div className="flex gap-3">
                 <Button
                   variant="outline"
                   onClick={() => fetchEmendas(true)}
@@ -1129,52 +1157,63 @@ export default function Emendas2025() {
                   <Printer className="h-4 w-4" />
                   <span className="ml-2">Imprimir PDF</span>
                 </Button>
+                <Button
+                  variant={contingenciamentoAtivo ? "default" : "outline"}
+                  onClick={() => setContingenciamentoAtivo(!contingenciamentoAtivo)}
+                  disabled={isRefreshing}
+                  className={contingenciamentoAtivo ? "bg-orange-600 hover:bg-orange-700 text-white" : "border-orange-200 text-orange-700 hover:bg-orange-50"}
+                >
+                  <Shield className="h-4 w-4" />
+                  <span className="ml-2">
+                    {contingenciamentoAtivo ? "Contingenciamento Ativo" : "Contingenciamento Inativo"}
+                  </span>
+                </Button>
 
               </div>
             </div>
 
             {/* Resumo geral */}
             <Card>
-              <CardHeader className="py-2">
+              <CardHeader className="py-4">
                 <CardTitle className="text-sm font-medium">Resumo Geral</CardTitle>
               </CardHeader>
-              <CardContent className="pt-2">
+              <CardContent className="pt-4">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="bg-gray-50 rounded-lg p-2">
-                    <div className="flex items-center gap-2 mb-1">
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
                       <DollarSign className="h-4 w-4 text-gray-600" />
                       <p className="text-xs font-medium text-gray-600">Valor Total Indicado</p>
                     </div>
                     <p className="text-sm font-semibold text-gray-900">{formatarValor(totaisGerais.valorIndicado)}</p>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-2">
-                    <div className="flex items-center gap-2 mb-1">
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
                       <TrendingUp className="h-4 w-4 text-gray-600" />
                       <p className="text-xs font-medium text-gray-600">Valor Total a Empenhar</p>
                     </div>
-                    <p className="text-sm font-semibold text-gray-900 mb-1">{formatarValor(totaisGerais.valorAEmpenhar)}</p>
+                    <p className="text-sm font-semibold text-gray-900 mb-2">{formatarValor(totaisGerais.valorAEmpenhar)}</p>
                     <BarraProgresso 
                       valor={totaisGerais.valorAEmpenhar} 
                       total={totaisGerais.valorIndicado} 
                     />
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-2">
-                    <div className="flex items-center gap-2 mb-1">
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
                       <CheckCircle className="h-4 w-4 text-gray-600" />
                       <p className="text-xs font-medium text-gray-600">Valor Total Empenhado</p>
                     </div>
-                    <p className="text-sm font-semibold text-gray-900 mb-1">{formatarValor(totaisGerais.valorEmpenhado)}</p>
+                    <p className="text-sm font-semibold text-gray-900 mb-2">{formatarValor(totaisGerais.valorEmpenhado)}</p>
                     <BarraProgresso 
                       valor={totaisGerais.valorEmpenhado} 
                       total={totaisGerais.valorIndicado} 
                     />
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-2">
-                    <div className="flex items-center gap-2 mb-1">
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
                       <CreditCard className="h-4 w-4 text-gray-600" />
                       <p className="text-xs font-medium text-gray-600">Valor Total Pago</p>
                     </div>
-                    <p className="text-sm font-semibold text-gray-900 mb-1">{formatarValor(totaisGerais.valorPago)}</p>
+                    <p className="text-sm font-semibold text-gray-900 mb-2">{formatarValor(totaisGerais.valorPago)}</p>
                     <BarraProgresso 
                       valor={totaisGerais.valorPago} 
                       total={totaisGerais.valorIndicado} 
@@ -1186,7 +1225,7 @@ export default function Emendas2025() {
 
             {/* Filtros */}
             <Card>
-              <CardHeader className="py-2">
+              <CardHeader className="py-4">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm font-medium">Filtros</CardTitle>
                   <Button
@@ -1204,7 +1243,7 @@ export default function Emendas2025() {
                 </div>
               </CardHeader>
               {filtrosVisiveis && (
-                <CardContent className="pt-2">
+                <CardContent className="pt-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="flex items-center gap-2">
                       <Filter className="h-4 w-4 text-gray-500" />
@@ -1592,6 +1631,14 @@ export default function Emendas2025() {
                               {formatarValor(bloco.totalValorIndicado)}
                             </span>
                           </div>
+                          {bloco.bloco === 'BLOCO 3' && contingenciamentoAtivo && (
+                            <div className="w-36">
+                              <span className="text-gray-500 text-sm">Conting.17,14%:</span>
+                              <span className="block font-medium text-orange-700 text-xs">
+                                {formatarValor(bloco.totalValorContingenciado)}
+                              </span>
+                            </div>
+                          )}
                           <div className="w-36">
                             <span className="text-gray-500 text-sm">Empenhado:</span>
                             <span className="block font-medium text-gray-900 mb-1 text-xs">
@@ -1651,6 +1698,7 @@ export default function Emendas2025() {
                           onDoubleClick={handleDuploClic}
                           saldosBlocos={saldosBlocos}
                           onCliqueSaldo={handleCliqueSaldo}
+                          contingenciamentoAtivo={contingenciamentoAtivo}
                         />
                       </div>
 
@@ -1680,6 +1728,14 @@ export default function Emendas2025() {
                                     <div className="text-gray-500 text-xs">A Empenhar</div>
                                     <div className="font-medium text-gray-900">{formatarValor(emenda.valorAEmpenhar)}</div>
                                   </div>
+                                  {bloco.bloco === 'BLOCO 3' && contingenciamentoAtivo && (
+                                    <div>
+                                      <div className="text-gray-500 text-xs">Conting.17,14%</div>
+                                      <div className="font-medium text-orange-700 bg-orange-50 px-1 rounded">
+                                        {formatarValor((emenda.valorIndicado || 0) * (17.14 / 100))}
+                                      </div>
+                                    </div>
+                                  )}
                                   <div>
                                     <div className="text-gray-500 text-xs">Empenhado</div>
                                     <div className="font-medium text-gray-900">{formatarValor(emenda.valorEmpenhado)}</div>

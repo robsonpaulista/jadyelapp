@@ -16,59 +16,86 @@ interface EmendasTableProps {
     }
   };
   onCliqueSaldo: (municipio: string) => void;
+  contingenciamentoAtivo?: boolean;
 }
 
-export function EmendasTable({ data, blocoName, ordenacaoAtual, onDoubleClick, saldosBlocos, onCliqueSaldo }: EmendasTableProps) {
-  const columns = React.useMemo<ColumnDef<Emenda>[]>(() => [
-    { 
-      id: 'emenda', 
-      accessorFn: (row) => row.emenda,
-      sortingFn: 'text'
-    },
-    { 
-      id: 'municipioBeneficiario', 
-      accessorFn: (row) => row.municipioBeneficiario,
-      sortingFn: 'text'
-    },
-    { 
-      id: 'valorIndicado', 
-      accessorFn: (row) => row.valorIndicado
-    },
-    { 
-      id: 'valorAEmpenhar', 
-      accessorFn: (row) => row.valorAEmpenhar
-    },
-    { 
-      id: 'valorEmpenhado', 
-      accessorFn: (row) => row.valorEmpenhado
-    },
-    { 
-      id: 'valorPago', 
-      accessorFn: (row) => row.valorPago
-    },
-    { 
-      id: 'saldoMac', 
-      accessorFn: (row) => {
-        if (!saldosBlocos || !row.municipioBeneficiario) return null;
-        return saldosBlocos[row.municipioBeneficiario]?.mac?.saldo || null;
+export function EmendasTable({ data, blocoName, ordenacaoAtual, onDoubleClick, saldosBlocos, onCliqueSaldo, contingenciamentoAtivo = true }: EmendasTableProps) {
+  // Verificar se é o Bloco 3 para mostrar a coluna de contingenciamento
+  const isBloco3 = blocoName === 'BLOCO 3';
+  const percentualContingenciamento = 17.14;
+  const mostrarContingenciamento = isBloco3 && contingenciamentoAtivo;
+
+  const columns = React.useMemo<ColumnDef<Emenda>[]>(() => {
+    const baseColumns = [
+      { 
+        id: 'emenda', 
+        accessorFn: (row: Emenda) => row.emenda,
+        sortingFn: 'text' as const
+      },
+      { 
+        id: 'municipioBeneficiario', 
+        accessorFn: (row: Emenda) => row.municipioBeneficiario,
+        sortingFn: 'text' as const
+      },
+      { 
+        id: 'valorIndicado', 
+        accessorFn: (row: Emenda) => row.valorIndicado
+      },
+      { 
+        id: 'valorAEmpenhar', 
+        accessorFn: (row: Emenda) => row.valorAEmpenhar
       }
-    },
-    { 
-      id: 'saldoPap', 
-      accessorFn: (row) => {
-        if (!saldosBlocos || !row.municipioBeneficiario) return null;
-        return saldosBlocos[row.municipioBeneficiario]?.pap?.saldo || null;
-      }
-    },
-    { 
-      id: 'liderancas', 
-      accessorFn: (row) => row.liderancas
-    },
-    { 
-      id: 'objeto', 
-      accessorFn: (row) => row.objeto
+    ];
+
+    // Adicionar coluna de contingenciamento apenas para o Bloco 3 (antes do valor empenhado)
+    if (mostrarContingenciamento) {
+      baseColumns.push({
+        id: 'contingenciamento',
+        accessorFn: (row: Emenda) => {
+          const valorIndicado = row.valorIndicado || 0;
+          return valorIndicado * (percentualContingenciamento / 100);
+        }
+      });
     }
-  ], [saldosBlocos]);
+
+    // Adicionar valor empenhado e demais colunas
+    baseColumns.push(
+      { 
+        id: 'valorEmpenhado', 
+        accessorFn: (row: Emenda) => row.valorEmpenhado
+      },
+      { 
+        id: 'valorPago', 
+        accessorFn: (row: Emenda) => row.valorPago
+      },
+      { 
+        id: 'saldoMac', 
+        accessorFn: (row: Emenda) => {
+          if (!saldosBlocos || !row.municipioBeneficiario) return null;
+          return saldosBlocos[row.municipioBeneficiario]?.mac?.saldo || null;
+        }
+      },
+      { 
+        id: 'saldoPap', 
+        accessorFn: (row: Emenda) => {
+          if (!saldosBlocos || !row.municipioBeneficiario) return null;
+          return saldosBlocos[row.municipioBeneficiario]?.pap?.saldo || null;
+        }
+      },
+      { 
+        id: 'liderancas', 
+        accessorFn: (row: Emenda) => row.liderancas,
+        sortingFn: 'text' as const
+      },
+      { 
+        id: 'objeto', 
+        accessorFn: (row: Emenda) => row.objeto,
+        sortingFn: 'text' as const
+      }
+    );
+
+    return baseColumns;
+  }, [saldosBlocos, isBloco3, percentualContingenciamento, mostrarContingenciamento]);
 
   const [columnWidths, setColumnWidths] = React.useState<Record<string, number>>({});
 
@@ -143,6 +170,9 @@ export function EmendasTable({ data, blocoName, ordenacaoAtual, onDoubleClick, s
       case 'valorAEmpenhar': return row.valorAEmpenhar;
       case 'valorEmpenhado': return row.valorEmpenhado;
       case 'valorPago': return row.valorPago;
+      case 'contingenciamento': 
+        const valorIndicado = row.valorIndicado || 0;
+        return valorIndicado * (percentualContingenciamento / 100);
       case 'saldoMac': 
         if (!saldosBlocos || !row.municipioBeneficiario) return null;
         return saldosBlocos[row.municipioBeneficiario]?.mac?.saldo || null;
@@ -167,7 +197,8 @@ export function EmendasTable({ data, blocoName, ordenacaoAtual, onDoubleClick, s
   });
 
   const formatarValor = (valor: number | null) => {
-    if (!valor || valor === 0) return 'R$ 0,00';
+    if (valor === null || valor === undefined) return 'R$ 0,00';
+    if (valor === 0) return 'R$ 0,00';
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
@@ -184,9 +215,9 @@ export function EmendasTable({ data, blocoName, ordenacaoAtual, onDoubleClick, s
               title="Emenda"
               onResize={(width) => handleColumnResize('emenda', width)}
               onResizeAll={handleAllColumnsResize}
-              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`, saldosBlocos)}
-              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`, saldosBlocos)}
-              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`, saldosBlocos)}
+              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`, saldosBlocos, contingenciamentoAtivo)}
+              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`, saldosBlocos, contingenciamentoAtivo)}
+              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`, saldosBlocos, contingenciamentoAtivo)}
             />
           </th>
           <th className="px-3 py-2" style={getColumnStyle('municipioBeneficiario')}>
@@ -195,9 +226,9 @@ export function EmendasTable({ data, blocoName, ordenacaoAtual, onDoubleClick, s
               title="Município/Beneficiário"
               onResize={(width) => handleColumnResize('municipioBeneficiario', width)}
               onResizeAll={handleAllColumnsResize}
-              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`, saldosBlocos)}
-              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`, saldosBlocos)}
-              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`, saldosBlocos)}
+              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`, saldosBlocos, contingenciamentoAtivo)}
+              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`, saldosBlocos, contingenciamentoAtivo)}
+              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`, saldosBlocos, contingenciamentoAtivo)}
             />
           </th>
           <th className="px-3 py-2" style={getColumnStyle('valorIndicado')}>
@@ -206,9 +237,9 @@ export function EmendasTable({ data, blocoName, ordenacaoAtual, onDoubleClick, s
               title="Valor Indicado"
               onResize={(width) => handleColumnResize('valorIndicado', width)}
               onResizeAll={handleAllColumnsResize}
-              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`, saldosBlocos)}
-              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`, saldosBlocos)}
-              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`, saldosBlocos)}
+              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`, saldosBlocos, contingenciamentoAtivo)}
+              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`, saldosBlocos, contingenciamentoAtivo)}
+              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`, saldosBlocos, contingenciamentoAtivo)}
             />
           </th>
           <th className="px-3 py-2" style={getColumnStyle('valorAEmpenhar')}>
@@ -217,75 +248,88 @@ export function EmendasTable({ data, blocoName, ordenacaoAtual, onDoubleClick, s
               title="Valor a Empenhar"
               onResize={(width) => handleColumnResize('valorAEmpenhar', width)}
               onResizeAll={handleAllColumnsResize}
-              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`, saldosBlocos)}
-              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`, saldosBlocos)}
-              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`, saldosBlocos)}
+              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`, saldosBlocos, contingenciamentoAtivo)}
+              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`, saldosBlocos, contingenciamentoAtivo)}
+              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`, saldosBlocos, contingenciamentoAtivo)}
             />
           </th>
+          {mostrarContingenciamento && (
+            <th className="px-3 py-2" style={getColumnStyle('contingenciamento')}>
+              <TableHeader
+                column={table.getHeaderGroups()[0].headers[4].column}
+                title={`Conting.${percentualContingenciamento}%`}
+                onResize={(width) => handleColumnResize('contingenciamento', width)}
+                onResizeAll={handleAllColumnsResize}
+                onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`, saldosBlocos, contingenciamentoAtivo)}
+                onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`, saldosBlocos, contingenciamentoAtivo)}
+                onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`, saldosBlocos, contingenciamentoAtivo)}
+              />
+            </th>
+          )}
           <th className="px-3 py-2" style={getColumnStyle('valorEmpenhado')}>
             <TableHeader
-              column={table.getHeaderGroups()[0].headers[4].column}
+              column={table.getHeaderGroups()[0].headers[mostrarContingenciamento ? 5 : 4].column}
               title="Valor Empenhado"
               onResize={(width) => handleColumnResize('valorEmpenhado', width)}
               onResizeAll={handleAllColumnsResize}
-              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`, saldosBlocos)}
-              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`, saldosBlocos)}
-              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`, saldosBlocos)}
+              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`, saldosBlocos, contingenciamentoAtivo)}
+              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`, saldosBlocos, contingenciamentoAtivo)}
+              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`, saldosBlocos, contingenciamentoAtivo)}
             />
           </th>
           <th className="px-3 py-2" style={getColumnStyle('valorPago')}>
             <TableHeader
-              column={table.getHeaderGroups()[0].headers[5].column}
+              column={table.getHeaderGroups()[0].headers[mostrarContingenciamento ? 6 : 5].column}
               title="Valor Pago"
               onResize={(width) => handleColumnResize('valorPago', width)}
               onResizeAll={handleAllColumnsResize}
-              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`, saldosBlocos)}
-              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`, saldosBlocos)}
-              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`, saldosBlocos)}
+              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`, saldosBlocos, contingenciamentoAtivo)}
+              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`, saldosBlocos, contingenciamentoAtivo)}
+              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`, saldosBlocos, contingenciamentoAtivo)}
             />
           </th>
           <th className="px-3 py-2" style={getColumnStyle('saldoMac')}>
             <TableHeader
-              column={table.getHeaderGroups()[0].headers[6].column}
+              column={table.getHeaderGroups()[0].headers[mostrarContingenciamento ? 7 : 6].column}
               title="Saldo MAC"
               onResize={(width) => handleColumnResize('saldoMac', width)}
               onResizeAll={handleAllColumnsResize}
-              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`, saldosBlocos)}
-              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`, saldosBlocos)}
-              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`, saldosBlocos)}
+              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`, saldosBlocos, contingenciamentoAtivo)}
+              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`, saldosBlocos, contingenciamentoAtivo)}
+              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`, saldosBlocos, contingenciamentoAtivo)}
             />
           </th>
           <th className="px-3 py-2" style={getColumnStyle('saldoPap')}>
             <TableHeader
-              column={table.getHeaderGroups()[0].headers[7].column}
+              column={table.getHeaderGroups()[0].headers[mostrarContingenciamento ? 8 : 7].column}
               title="Saldo PAP"
               onResize={(width) => handleColumnResize('saldoPap', width)}
               onResizeAll={handleAllColumnsResize}
-              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`, saldosBlocos)}
-              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`, saldosBlocos)}
-              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`, saldosBlocos)}
+              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`, saldosBlocos, contingenciamentoAtivo)}
+              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`, saldosBlocos, contingenciamentoAtivo)}
+              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`, saldosBlocos, contingenciamentoAtivo)}
             />
           </th>
           <th className="px-3 py-2" style={getColumnStyle('liderancas')}>
             <TableHeader
-              column={table.getHeaderGroups()[0].headers[8].column}
+              column={table.getHeaderGroups()[0].headers[mostrarContingenciamento ? 9 : 8].column}
               title="Lideranças"
               onResize={(width) => handleColumnResize('liderancas', width)}
               onResizeAll={handleAllColumnsResize}
-              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`, saldosBlocos)}
-              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`, saldosBlocos)}
-              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`, saldosBlocos)}
+              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`, saldosBlocos, contingenciamentoAtivo)}
+              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`, saldosBlocos, contingenciamentoAtivo)}
+              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`, saldosBlocos, contingenciamentoAtivo)}
             />
           </th>
           <th className="px-3 py-2" style={getColumnStyle('objeto')}>
             <TableHeader
-              column={table.getHeaderGroups()[0].headers[9].column}
+              column={table.getHeaderGroups()[0].headers[mostrarContingenciamento ? 10 : 9].column}
               title="Objeto"
               onResize={(width) => handleColumnResize('objeto', width)}
               onResizeAll={handleAllColumnsResize}
-              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`, saldosBlocos)}
-              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`, saldosBlocos)}
-              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`, saldosBlocos)}
+              onExportCSV={() => exportToCSV(data, `emendas_${blocoName}`, saldosBlocos, contingenciamentoAtivo)}
+              onExportExcel={() => exportToExcel(data, `emendas_${blocoName}`, saldosBlocos, contingenciamentoAtivo)}
+              onExportPDF={() => exportToPDF(data, `emendas_${blocoName}`, saldosBlocos, contingenciamentoAtivo)}
             />
           </th>
         </tr>
@@ -306,6 +350,11 @@ export function EmendasTable({ data, blocoName, ordenacaoAtual, onDoubleClick, s
             <td className="px-3 py-2 text-right font-medium text-gray-900" style={getColumnStyle('valorAEmpenhar')}>
               {formatarValor(emenda.valorAEmpenhar)}
             </td>
+            {mostrarContingenciamento && (
+              <td className="px-3 py-2 text-right font-medium text-orange-700 bg-orange-50" style={getColumnStyle('contingenciamento')}>
+                {formatarValor(getValueByColumnId(emenda, 'contingenciamento'))}
+              </td>
+            )}
             <td className="px-3 py-2 text-right font-medium text-gray-900" style={getColumnStyle('valorEmpenhado')}>
               {formatarValor(emenda.valorEmpenhado)}
             </td>
