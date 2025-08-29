@@ -20,7 +20,8 @@ const coresPartidos = {
   "PT": { cor: "bg-red-600", corTexto: "text-white" },
   "PSD/MDB": { cor: "bg-yellow-400", corTexto: "text-gray-900" },
   "PP": { cor: "bg-sky-400", corTexto: "text-white" },
-  "REPUBLICANOS": { cor: "bg-blue-900", corTexto: "text-white" }
+  "REPUBLICANOS": { cor: "bg-blue-900", corTexto: "text-white" },
+  "PODEMOS": { cor: "bg-purple-600", corTexto: "text-white" }
 };
 
 // Interface para partido local
@@ -57,6 +58,8 @@ const getMulheresPartido = (nomePartido: string): string[] => {
       return ['SAMANTA CAVALCA', 'MULHER 2', 'MULHER 3', 'MULHER 4'];
     case "REPUBLICANOS":
       return ['ANA FIDELIS', 'GABRIELA'];
+    case "PODEMOS":
+      return ['MULHER 1', 'MULHER 2'];
     default:
       return [];
   }
@@ -227,7 +230,8 @@ export default function ChapasPage() {
       "PT": "bg-red-600",
       "PSD/MDB": "bg-yellow-400",
       "PP": "bg-sky-400",
-      "REPUBLICANOS": "bg-blue-900"
+      "REPUBLICANOS": "bg-blue-900",
+      "PODEMOS": "bg-purple-600"
     };
     return cores[partido] || "bg-gray-200";
   }
@@ -237,7 +241,8 @@ export default function ChapasPage() {
       "PT": "text-white",
       "PSD/MDB": "text-gray-900",
       "PP": "text-white",
-      "REPUBLICANOS": "text-white"
+      "REPUBLICANOS": "text-white",
+      "PODEMOS": "text-white"
     };
     return cores[partido] || "text-gray-800";
   }
@@ -589,6 +594,10 @@ export default function ChapasPage() {
     return separarCandidatosPorGenero(candidatos);
   };
 
+  const separarCandidatosPodemos = (candidatos: { nome: string; votos: number; genero?: string }[]) => {
+    return separarCandidatosPorGenero(candidatos);
+  };
+
   const getVotosFusaoPSDJadyel = () => {
     const psdmdb = partidos.find(p => p.nome === "PSD/MDB");
     const republicanos = partidos.find(p => p.nome === "REPUBLICANOS");
@@ -797,7 +806,7 @@ export default function ChapasPage() {
 
   // Função para ordenar partidos na ordem fixa
   const ordenarPartidos = <T extends { nome: string }>(partidosParaOrdenar: T[]): T[] => {
-    const ordemPartidos = ["PT", "PSD/MDB", "PP", "REPUBLICANOS"];
+    const ordemPartidos = ["PT", "PSD/MDB", "PP", "REPUBLICANOS", "PODEMOS"];
     return ordemPartidos
       .map(nomePartido => partidosParaOrdenar.find(p => p.nome === nomePartido))
       .filter(Boolean) as T[];
@@ -1503,7 +1512,7 @@ export default function ChapasPage() {
         </div>
 
         {/* Grid de partidos */}
-        <div className="w-full grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="w-full grid grid-cols-1 md:grid-cols-5 gap-6">
           {ordenarPartidos(partidos).map((partido, pIdx) => {
             // Encontrar o índice real do partido no array original
             const partidoIdx = partidos.findIndex(p => p.nome === partido.nome);
@@ -1550,7 +1559,7 @@ export default function ChapasPage() {
               )}
               
               <div className="w-full flex flex-col flex-1">
-                {(partido.nome === "PT" || partido.nome === "PSD/MDB" || partido.nome === "PP" || partido.nome === "REPUBLICANOS") ? (
+                {(partido.nome === "PT" || partido.nome === "PSD/MDB" || partido.nome === "PP" || partido.nome === "REPUBLICANOS" || partido.nome === "PODEMOS") ? (
                   // Renderização especial para PT, PSD/MDB, PP e REPUBLICANOS com separação homens/mulheres
                   <div className="space-y-2">
                     {/* Bloco dos Homens */}
@@ -1563,7 +1572,9 @@ export default function ChapasPage() {
                             ? separarCandidatosPSDMDB(partido.candidatos)
                             : partido.nome === "PP"
                             ? separarCandidatosPP(partido.candidatos)
-                            : separarCandidatosRepublicanos(partido.candidatos);
+                            : partido.nome === "REPUBLICANOS"
+                            ? separarCandidatosRepublicanos(partido.candidatos)
+                            : separarCandidatosPodemos(partido.candidatos);
                           return homens.map((c, idx) => (
                             <tr 
                               key={`homem-${c.nome}-${idx}`}
@@ -1702,7 +1713,9 @@ export default function ChapasPage() {
                              ? separarCandidatosPSDMDB(partido.candidatos)
                              : partido.nome === "PP"
                              ? separarCandidatosPP(partido.candidatos)
-                             : separarCandidatosRepublicanos(partido.candidatos);
+                             : partido.nome === "REPUBLICANOS"
+                             ? separarCandidatosRepublicanos(partido.candidatos)
+                             : separarCandidatosPodemos(partido.candidatos);
                            return mulheres.map((c, idx) => (
                             <tr 
                               key={`mulher-${c.nome}-${idx}`}
@@ -2050,7 +2063,7 @@ export default function ChapasPage() {
                           disabled={salvandoCandidato}
                         />
                       </div>
-                      {(partido.nome === "PT" || partido.nome === "PSD/MDB" || partido.nome === "PP" || partido.nome === "REPUBLICANOS") && (
+                      {(partido.nome === "PT" || partido.nome === "PSD/MDB" || partido.nome === "PP" || partido.nome === "REPUBLICANOS" || partido.nome === "PODEMOS") && (
                         <div>
                           <label className="text-sm font-medium mb-2 block">Gênero</label>
                           <div className="flex gap-4">
@@ -2129,7 +2142,7 @@ export default function ChapasPage() {
               <strong>Fórmula:</strong> Quociente Partidário = Votos ÷ (Vagas Obtidas + 1)
             </div>
             
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-5 gap-4">
               {(() => {
                 const { resultados, ordenadosPorSobras } = calcularSobras();
                 
@@ -2328,7 +2341,7 @@ export default function ChapasPage() {
                     {/* Seção dos candidatos eleitos */}
                     <div className="bg-white p-4 rounded border">
                       <div className="text-sm font-semibold text-gray-900 mb-3">🏆 Candidatos Eleitos</div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                         {(() => {
                           try {
                             const candidatosEleitos = calcularCandidatosEleitos();
@@ -2408,7 +2421,7 @@ export default function ChapasPage() {
             return (
               <div className="space-y-3 text-sm">
                 {/* KPIs principais */}
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-5 gap-2">
                   <div className="p-2 bg-gray-50 rounded border text-center">
                     <div className="text-[11px] text-gray-600">Votos</div>
                     <div className="text-sm font-bold">{a.cenarios.atual.votos.toLocaleString('pt-BR')}</div>
