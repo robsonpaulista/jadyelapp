@@ -65,9 +65,30 @@ export default function ProjecaoMunicipios() {
   const [selectedMunicipio, setSelectedMunicipio] = useState('');
   const [liderancas, setLiderancas] = useState<any[]>([]);
   const [loadingLiderancas, setLoadingLiderancas] = useState(false);
+  const [filtroExpectativa, setFiltroExpectativa] = useState<string>('todos');
   // Variáveis relacionadas ao mapa temporariamente desabilitadas
   // const [filtroTerritorio, setFiltroTerritorio] = useState<string[]>([]);
   // const [territorioSelecionado, setTerritorioSelecionado] = useState<string>('');
+
+  const handleFiltroExpectativaChange = (novoFiltro: string) => {
+    setFiltroExpectativa(novoFiltro);
+    setCurrentPage(1); // Resetar para primeira página quando filtrar
+  };
+
+  // Calcular estatísticas por filtro de expectativa
+  const calcularEstatisticasFiltro = () => {
+    const totalMunicipios = projecoes.length;
+    const mais300 = projecoes.filter(item => item.expectativa2026 >= 300).length;
+    const mais500 = projecoes.filter(item => item.expectativa2026 >= 500).length;
+    const mais1000 = projecoes.filter(item => item.expectativa2026 >= 1000).length;
+    
+    return {
+      total: totalMunicipios,
+      mais300,
+      mais500,
+      mais1000
+    };
+  };
 
   const itemsPerPage = 10;
 
@@ -167,7 +188,7 @@ export default function ProjecaoMunicipios() {
       : (bValue as number) - (aValue as number);
   });
 
-  // Filtrar dados considerando busca de texto e território
+  // Filtrar dados considerando busca de texto, território e expectativa 2026
   const filteredData = sortedData.filter(item => {
     // Filtro por termo de busca
     const matchesSearch = item.municipio.toLowerCase().includes(searchTerm.toLowerCase());
@@ -179,7 +200,17 @@ export default function ProjecaoMunicipios() {
     //     normalizeString(municipioTerritorio) === normalizeString(item.municipio)
     //   );
     
-    return matchesSearch && matchesTerritory;
+    // Filtro por expectativa 2026
+    let matchesExpectativa = true;
+    if (filtroExpectativa === 'mais300') {
+      matchesExpectativa = item.expectativa2026 >= 300;
+    } else if (filtroExpectativa === 'mais500') {
+      matchesExpectativa = item.expectativa2026 >= 500;
+    } else if (filtroExpectativa === 'mais1000') {
+      matchesExpectativa = item.expectativa2026 >= 1000;
+    }
+    
+    return matchesSearch && matchesTerritory && matchesExpectativa;
   });
 
   const paginatedData = filteredData.slice(
@@ -232,6 +263,14 @@ export default function ProjecaoMunicipios() {
     doc.setFontSize(10);
     doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 14, 30);
     
+    // Informações do filtro ativo
+    if (filtroExpectativa !== 'todos') {
+      const filtroTexto = filtroExpectativa === 'mais300' ? '300+ votos' : 
+                          filtroExpectativa === 'mais500' ? '500+ votos' : '1000+ votos';
+      doc.text(`Filtro aplicado: Expectativa 2026 ${filtroTexto}`, 14, 38);
+      doc.text(`Municípios filtrados: ${filteredData.length} de ${projecoes.length}`, 14, 44);
+    }
+    
     // Dados da tabela
     const tableData = filteredData.map(item => [
       item.municipio,
@@ -254,10 +293,13 @@ export default function ProjecaoMunicipios() {
       formatPercentage(totais.alcance)
     ]);
 
+    // Ajustar posição Y da tabela baseado no filtro ativo
+    const startY = filtroExpectativa !== 'todos' ? 50 : 40;
+    
     autoTable(doc, {
       head: [['Município', 'Lideranças Atuais', 'Votação 2022', 'Expectativa 2026', 'Crescimento', 'Eleitores', 'Alcance']],
       body: tableData,
-      startY: 40,
+      startY: startY,
       styles: {
         fontSize: 8,
         cellPadding: 2,
@@ -287,6 +329,18 @@ export default function ProjecaoMunicipios() {
         }
       }
     });
+
+    // Adicionar resumo das estatísticas no final
+    const estatisticas = calcularEstatisticasFiltro();
+    const finalY = (doc as any).lastAutoTable.finalY || startY + (tableData.length * 10);
+    
+    doc.setFontSize(10);
+    doc.text('Resumo das Estatísticas:', 14, finalY + 10);
+    doc.setFontSize(8);
+    doc.text(`Total de municípios: ${estatisticas.total}`, 14, finalY + 18);
+    doc.text(`Municípios com 300+ votos: ${estatisticas.mais300}`, 14, finalY + 24);
+    doc.text(`Municípios com 500+ votos: ${estatisticas.mais500}`, 14, finalY + 30);
+    doc.text(`Municípios com 1000+ votos: ${estatisticas.mais1000}`, 14, finalY + 36);
 
     // Salvar o PDF
     doc.save('projecao-municipios-2026.pdf');
@@ -337,6 +391,54 @@ export default function ProjecaoMunicipios() {
             }}
             className="max-w-xs"
           />
+          
+          {/* Filtros de Expectativa 2026 */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700">Expectativa 2026:</span>
+            <div className="flex gap-1">
+              <Button
+                variant={filtroExpectativa === 'todos' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleFiltroExpectativaChange('todos')}
+                className="text-xs px-2 py-1 h-7"
+              >
+                Todos
+              </Button>
+              <Button
+                variant={filtroExpectativa === 'mais300' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleFiltroExpectativaChange('mais300')}
+                className="text-xs px-2 py-1 h-7"
+              >
+                300+ votos
+              </Button>
+              <Button
+                variant={filtroExpectativa === 'mais500' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleFiltroExpectativaChange('mais500')}
+                className="text-xs px-2 py-1 h-7"
+              >
+                500+ votos
+              </Button>
+              <Button
+                variant={filtroExpectativa === 'mais1000' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleFiltroExpectativaChange('mais1000')}
+                className="text-xs px-2 py-1 h-7"
+              >
+                1000+ votos
+              </Button>
+            </div>
+          </div>
+          
+          {/* Estatísticas dos filtros */}
+          <div className="flex items-center gap-4 text-xs text-gray-600">
+            <span>Total: {calcularEstatisticasFiltro().total}</span>
+            <span>300+: {calcularEstatisticasFiltro().mais300}</span>
+            <span>500+: {calcularEstatisticasFiltro().mais500}</span>
+            <span>1000+: {calcularEstatisticasFiltro().mais1000}</span>
+          </div>
+          
           {/* Filtro de território temporariamente desabilitado
           {territorioSelecionado && (
             <div className="flex items-center gap-2 px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm">
@@ -354,6 +456,11 @@ export default function ProjecaoMunicipios() {
         </div>
         <div className="text-sm text-gray-500">
           Mostrando {Math.min(itemsPerPage, filteredData.length)} de {filteredData.length} registros
+          {filtroExpectativa !== 'todos' && (
+            <span className="ml-2 text-blue-600">
+              (filtrado por expectativa {filtroExpectativa === 'mais300' ? '300+' : filtroExpectativa === 'mais500' ? '500+' : '1000+'} votos)
+            </span>
+          )}
           {/* Filtro de território temporariamente desabilitado
           {territorioSelecionado && (
             <span className="ml-2 text-orange-600">
