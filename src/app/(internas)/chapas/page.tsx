@@ -21,7 +21,7 @@ const coresPartidos = {
   "PSD/MDB": { cor: "bg-yellow-400", corTexto: "text-gray-900" },
   "PP": { cor: "bg-sky-400", corTexto: "text-white" },
   "REPUBLICANOS": { cor: "bg-blue-900", corTexto: "text-white" },
-  "PODEMOS": { cor: "bg-purple-600", corTexto: "text-white" }
+  "PODEMOS": { cor: "bg-green-600", corTexto: "text-white" }
 };
 
 // Interface para partido local
@@ -2364,11 +2364,13 @@ export default function ChapasPage() {
                               return acc;
                             }, {} as { [partido: string]: typeof candidatosEleitos });
 
-                            // Ordenar partidos na ordem fixa: PT, PSD/MDB, PP, REPUBLICANOS
-                            const ordemPartidos = ["PT", "PSD/MDB", "PP", "REPUBLICANOS"];
-                            const partidosOrdenados = ordemPartidos
-                              .map(nomePartido => ({ nome: nomePartido, candidatos: candidatosPorPartido[nomePartido] || [] }))
-                              .filter(item => item.candidatos.length > 0);
+                            // Usar a função global ordenarPartidos que já inclui o PODEMOS
+                            const partidosOrdenados = ordenarPartidos(
+                              Object.keys(candidatosPorPartido).map(nomePartido => ({ 
+                                nome: nomePartido, 
+                                candidatos: candidatosPorPartido[nomePartido] || [] 
+                              }))
+                            ).filter(item => item.candidatos.length > 0);
 
                             return partidosOrdenados.map(({ nome: partido, candidatos }) => (
                               <div key={partido} className="border rounded-lg p-3">
