@@ -135,6 +135,15 @@ export function usePermissions() {
     }
   }, [userLevel]);
 
+  const isSuporte = useCallback((): boolean => {
+    try {
+      return userLevel === 'suporte';
+    } catch (error) {
+      console.error('Erro em isSuporte:', error);
+      return false;
+    }
+  }, [userLevel]);
+
   const canAccessRoute = useCallback((route: string): boolean => {
     try {
       return hasAccess(route);
@@ -156,6 +165,8 @@ export function usePermissions() {
           return '/emendas2025';
         case 'gabinetejuridico':
           return '/projetos';
+        case 'suporte':
+          return '/chapas';
         default:
           return '/painel-aplicacoes';
       }
@@ -176,6 +187,7 @@ export function usePermissions() {
     isAdmin,
     isUser,
     isGabineteEmendas,
-    isGabineteJuridico
+    isGabineteJuridico,
+    isSuporte
   };
 } 

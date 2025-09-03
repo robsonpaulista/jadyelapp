@@ -1,4 +1,4 @@
-export type UserLevel = 'admin' | 'user' | 'gabineteemendas' | 'gabinetejuridico' | 'piloto';
+export type UserLevel = 'admin' | 'user' | 'gabineteemendas' | 'gabinetejuridico' | 'piloto' | 'suporte';
 
 export interface Permission {
   route: string;
@@ -70,6 +70,7 @@ export const ROUTE_PERMISSIONS: Record<UserLevel, string[]> = {
     '/eleicoes-anteriores',
     '/eleicoes-anteriores/projecao-municipios',
     '/evolucao-republicanos',
+    '/configuracoes',
     '/pessoas',
     '/pacientes',
     '/aeronave'
@@ -90,6 +91,12 @@ export const ROUTE_PERMISSIONS: Record<UserLevel, string[]> = {
     '/',
     '/painel-aplicacoes',
     '/aeronave'
+  ],
+  suporte: [
+    '/',
+    '/painel-aplicacoes',
+    '/chapas',
+    '/chapas-estaduais'
   ]
 };
 
@@ -105,7 +112,7 @@ export const MENU_PERMISSIONS: Record<UserLevel, UserPermissions['menuAccess']> 
     leads: true,
     municipios: false,
     eleicoes: true,
-    configuracoes: false
+    configuracoes: true
   },
   gabineteemendas: {
     leads: false,
@@ -123,6 +130,12 @@ export const MENU_PERMISSIONS: Record<UserLevel, UserPermissions['menuAccess']> 
     leads: true,
     municipios: false,
     eleicoes: false,
+    configuracoes: false
+  },
+  suporte: {
+    leads: false,
+    municipios: false,
+    eleicoes: true,
     configuracoes: false
   }
 };
