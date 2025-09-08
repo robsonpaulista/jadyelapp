@@ -68,7 +68,7 @@ export default function RelacionamentosDeputadosList({
   }
 
   // Preparar dados para a tabela - Deputados como colunas, Pessoas como linhas
-  const deputadosFederais = [...new Set(relacionamentos.map(rel => rel.deputadoFederal))];
+  const deputadosFederais = Array.from(new Set(relacionamentos.map(rel => rel.deputadoFederal)));
 
   // Calcular total geral de votos
   const totalGeralVotos = relacionamentos.reduce((total, rel) => {
