@@ -92,11 +92,12 @@ export default function RelacionamentosDeputadosList({
   }, {} as Record<string, number>);
   
   // Coletar todas as pessoas (prefeitos e vereadores) únicas
-  const todasPessoas = [];
+  const pessoasMap = new Map();
+  
   relacionamentos.forEach(rel => {
     // Adicionar prefeito se existir
     if (rel.prefeito && rel.votacaoPrefeito) {
-      todasPessoas.push({
+      pessoasMap.set(rel.prefeito, {
         nome: rel.prefeito,
         cargo: 'Prefeito',
         votos: rel.votacaoPrefeito,
@@ -110,7 +111,7 @@ export default function RelacionamentosDeputadosList({
       rel.vereadores.forEach(vereador => {
         const votacao = rel.votacoesVereadores.find(v => v.nome === vereador);
         if (votacao) {
-          todasPessoas.push({
+          pessoasMap.set(vereador, {
             nome: vereador,
             cargo: 'Vereador',
             votos: votacao.votos,
@@ -122,10 +123,23 @@ export default function RelacionamentosDeputadosList({
     }
   });
 
-  // Remover duplicatas baseado no nome
-  const pessoasUnicas = todasPessoas.filter((pessoa, index, array) => 
-    array.findIndex(p => p.nome === pessoa.nome) === index
+  // Converter Map para array
+  const pessoasUnicas = Array.from(pessoasMap.values());
+
+  // Debug: verificar dados
+  console.log('Relacionamentos:', relacionamentos);
+  console.log('Pessoas únicas:', pessoasUnicas);
+  console.log('Deputados federais:', deputadosFederais);
+  
+  // Debug específico para ZÉ CÍCERO
+  const zeCiceroRel = relacionamentos.find(rel => 
+    rel.prefeito === 'ZÉ CÍCERO' || 
+    rel.vereadores.includes('ZÉ CÍCERO')
   );
+  console.log('ZÉ CÍCERO relacionamento:', zeCiceroRel);
+  
+  const zeCiceroPessoa = pessoasUnicas.find(p => p.nome === 'ZÉ CÍCERO');
+  console.log('ZÉ CÍCERO pessoa:', zeCiceroPessoa);
 
   return (
     <div className="space-y-4">
@@ -152,8 +166,15 @@ export default function RelacionamentosDeputadosList({
       {/* Tabela - Deputados como colunas, Pessoas como linhas */}
       {pessoasUnicas.length > 0 ? (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="p-3 bg-gray-50 border-b border-gray-200">
+            <span className="text-sm text-gray-600">
+              Exibindo {pessoasUnicas.length} pessoa{pessoasUnicas.length !== 1 ? 's' : ''} • 
+              {pessoasUnicas.filter(p => p.cargo === 'Prefeito').length} prefeito{pessoasUnicas.filter(p => p.cargo === 'Prefeito').length !== 1 ? 's' : ''} • 
+              {pessoasUnicas.filter(p => p.cargo === 'Vereador').length} vereador{pessoasUnicas.filter(p => p.cargo === 'Vereador').length !== 1 ? 'es' : ''}
+            </span>
+          </div>
+          <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
+            <table className="w-full min-w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50">
