@@ -20,7 +20,7 @@ const coresPartidos = {
   "PT": { cor: "bg-red-600", corTexto: "text-white" },
   "MDB": { cor: "bg-yellow-400", corTexto: "text-gray-900" },
   "PP": { cor: "bg-sky-400", corTexto: "text-white" },
-  "REPUBLICANOS": { cor: "bg-green-600", corTexto: "text-white" }
+  "REPUBLICANOS": { cor: "bg-blue-600", corTexto: "text-white" }
 };
 
 // Interface para partido local
@@ -358,7 +358,7 @@ export default function ChapasEstaduaisPage() {
       "PT": "bg-red-600",
       "MDB": "bg-yellow-400",
       "PP": "bg-sky-400",
-      "REPUBLICANOS": "bg-green-600"
+      "REPUBLICANOS": "bg-blue-600"
     };
     return cores[partido] || "bg-gray-200";
   }
