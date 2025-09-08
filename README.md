@@ -46,10 +46,10 @@ Consulte os arquivos de documentação:
 - `COMO_RECRIAR_ENV_LOCAL.md` - Como configurar o .env.local
 - `DEPLOY_CHECKLIST.md` - Checklist para deploy no Vercel
 
-## 🔐 Credenciais Padrão
+# 🔐 Credenciais Padrão
 
 - **Email:** admin@exemplo.com
-- **Senha:** admin123
+- **Senha:** admin123#
 
 ## 📊 Integração com Google Sheets
 

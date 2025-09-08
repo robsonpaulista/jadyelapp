@@ -3,15 +3,18 @@
 import React, { useState, useEffect } from "react";
 
 import { useRouter } from "next/navigation";
-import { X, RefreshCw, Building, ArrowUpDown, CheckCircle2, Clock, AlertCircle, XCircle, HelpCircle, ChevronDown, Filter, Newspaper } from "lucide-react";
+import { X, RefreshCw, Building, ArrowUpDown, CheckCircle2, Clock, AlertCircle, XCircle, HelpCircle, ChevronDown, Filter, Newspaper, Users, Plus } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
 import { getLimiteMacByMunicipio } from '@/utils/limitesmac';
 import { getLimitePapByMunicipio } from '@/utils/limitepap';
 import { disableConsoleLogging } from '@/lib/logger';
 import Navbar from '@/components/Navbar';
+import RelacionamentosDeputadosModal from '@/components/RelacionamentosDeputadosModal';
+import RelacionamentosDeputadosList from '@/components/RelacionamentosDeputadosList';
 import {
   Dialog,
   DialogContent,
@@ -181,6 +184,18 @@ interface Lideranca {
   urlImagem?: string;
 }
 
+interface RelacionamentoDeputado {
+  id?: string;
+  municipio: string;
+  deputadoFederal: string;
+  prefeito?: string;
+  vereadores: string[];
+  nomesAdicionais: string[];
+  observacoes?: string;
+  dataCriacao?: string;
+  dataAtualizacao?: string;
+}
+
 export default function EleicoesAnterioresPage() {
   // Desabilitar logs de console para proteção de dados
   disableConsoleLogging();
@@ -230,6 +245,13 @@ export default function EleicoesAnterioresPage() {
   const [modalDemandasOpen, setModalDemandasOpen] = useState(false);
   const [demandas, setDemandas] = useState<ObraDemanda[]>([]);
   const [loadingDemandas, setLoadingDemandas] = useState(false);
+
+  // Estados para relacionamentos de deputados
+  const [relacionamentos, setRelacionamentos] = useState<RelacionamentoDeputado[]>([]);
+  const [modalRelacionamentosOpen, setModalRelacionamentosOpen] = useState(false);
+  const [modalCriarEditarOpen, setModalCriarEditarOpen] = useState(false);
+  const [relacionamentoEditando, setRelacionamentoEditando] = useState<RelacionamentoDeputado | null>(null);
+  const [loadingRelacionamentos, setLoadingRelacionamentos] = useState(false);
 
   // Função para formatar valor em moeda brasileira
   const formatCurrency = (value: number) => {
@@ -391,6 +413,96 @@ export default function EleicoesAnterioresPage() {
     }
   };
 
+  // Funções para gerenciar relacionamentos de deputados
+  const carregarRelacionamentos = async () => {
+    if (!cidade) return;
+    
+    setLoadingRelacionamentos(true);
+    try {
+      const response = await fetch(`/api/relacionamentos-deputados?municipio=${encodeURIComponent(cidade)}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setRelacionamentos(data.data);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar relacionamentos:', error);
+    } finally {
+      setLoadingRelacionamentos(false);
+    }
+  };
+
+  const salvarRelacionamento = async (relacionamento: RelacionamentoDeputado) => {
+    try {
+      const response = await fetch('/api/relacionamentos-deputados', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(relacionamento),
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        await carregarRelacionamentos(); // Recarregar lista
+        return data.data;
+      } else {
+        throw new Error(data.error || 'Erro ao salvar relacionamento');
+      }
+    } catch (error) {
+      console.error('Erro ao salvar relacionamento:', error);
+      throw error;
+    }
+  };
+
+  const removerRelacionamento = async (id: string) => {
+    if (!confirm('Tem certeza que deseja remover este relacionamento?')) return;
+    
+    try {
+      const response = await fetch(`/api/relacionamentos-deputados?id=${id}`, {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        await carregarRelacionamentos(); // Recarregar lista
+      } else {
+        throw new Error(data.error || 'Erro ao remover relacionamento');
+      }
+    } catch (error) {
+      console.error('Erro ao remover relacionamento:', error);
+      alert('Erro ao remover relacionamento');
+    }
+  };
+
+  const abrirModalRelacionamentos = (relacionamento?: RelacionamentoDeputado) => {
+    if (relacionamento) {
+      // Se está editando um relacionamento existente
+      setRelacionamentoEditando(relacionamento);
+      setModalRelacionamentosOpen(false);
+      setModalCriarEditarOpen(true);
+    } else {
+      // Se está criando um novo
+      setRelacionamentoEditando(null);
+      setModalRelacionamentosOpen(false);
+      setModalCriarEditarOpen(true);
+    }
+  };
+
+  const abrirListaRelacionamentos = () => {
+    setRelacionamentoEditando(null);
+    setModalCriarEditarOpen(false);
+    setModalRelacionamentosOpen(true);
+  };
+
+  const fecharModalRelacionamentos = () => {
+    setModalRelacionamentosOpen(false);
+    setModalCriarEditarOpen(false);
+    setRelacionamentoEditando(null);
+  };
+
   // Função para buscar dados do Google Sheets
   const buscarDados = async () => {
     if (!cidade || cidade === "selecionar") return;
@@ -473,6 +585,9 @@ export default function EleicoesAnterioresPage() {
 
       // Carregar emendas SUAS
       await loadEmendasSUAS();
+
+      // Carregar relacionamentos de deputados
+      await carregarRelacionamentos();
 
     } catch (err: any) {
       setError(err.message || "Erro ao buscar dados.");
@@ -745,6 +860,14 @@ export default function EleicoesAnterioresPage() {
                           <Newspaper className="h-4 w-4" />
                         )}
                         Notícias
+                      </button>
+                      <button
+                        onClick={() => abrirListaRelacionamentos()}
+                        disabled={!cidade}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-green-600 hover:bg-green-700 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto justify-center"
+                      >
+                        <Users className="h-4 w-4" />
+                        Relacionamentos
                       </button>
                     </div>
                   </div>
@@ -1568,6 +1691,67 @@ export default function EleicoesAnterioresPage() {
                 </div>
               </div>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de Criação/Edição de Relacionamentos */}
+        <RelacionamentosDeputadosModal
+          isOpen={modalCriarEditarOpen}
+          onClose={fecharModalRelacionamentos}
+          municipio={cidade}
+          deputadosFederais={dados
+            .filter(item => 
+              item.cargo?.toLowerCase().includes('federal') && 
+              item.anoEleicao === '2022'
+            )
+            .map(item => item.nomeUrnaCandidato)
+            .filter((nome, index, array) => array.indexOf(nome) === index) // Remove duplicatas
+          }
+          prefeitos={dados
+            .filter(item => 
+              item.cargo?.toLowerCase().includes('prefeito') && 
+              item.anoEleicao === '2024'
+            )
+            .map(item => item.nomeUrnaCandidato)
+            .filter((nome, index, array) => array.indexOf(nome) === index) // Remove duplicatas
+          }
+          vereadores={dados
+            .filter(item => 
+              item.cargo?.toLowerCase().includes('vereador') && 
+              item.anoEleicao === '2024'
+            )
+            .map(item => item.nomeUrnaCandidato)
+            .filter((nome, index, array) => array.indexOf(nome) === index) // Remove duplicatas
+          }
+          onSave={salvarRelacionamento}
+          relacionamentoExistente={relacionamentoEditando}
+        />
+
+        {/* Modal de Lista de Relacionamentos */}
+        <Dialog open={modalRelacionamentosOpen} onOpenChange={fecharModalRelacionamentos}>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  <span>Relacionamentos de Deputados - {cidade}</span>
+                </div>
+                <Button
+                  onClick={() => abrirModalRelacionamentos()}
+                  className="flex items-center gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  Novo Relacionamento
+                </Button>
+              </DialogTitle>
+            </DialogHeader>
+            
+            <RelacionamentosDeputadosList
+              relacionamentos={relacionamentos}
+              onEdit={abrirModalRelacionamentos}
+              onDelete={removerRelacionamento}
+              loading={loadingRelacionamentos}
+            />
           </DialogContent>
         </Dialog>
 
