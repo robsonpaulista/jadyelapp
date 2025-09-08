@@ -74,15 +74,15 @@ export default function RelacionamentosDeputadosList({
     return total + votosPrefeito + votosVereadores;
   }, 0);
 
-  // Preparar dados para a tabela
-  const dadosTabela = relacionamentos.flatMap(rel => {
-    const linhas = [];
-    
+  // Preparar dados para a tabela - Deputados como colunas, Pessoas como linhas
+  const deputadosFederais = [...new Set(relacionamentos.map(rel => rel.deputadoFederal))];
+  
+  // Coletar todas as pessoas (prefeitos e vereadores) únicas
+  const todasPessoas = [];
+  relacionamentos.forEach(rel => {
     // Adicionar prefeito se existir
     if (rel.prefeito && rel.votacaoPrefeito) {
-      linhas.push({
-        id: `${rel.id}_prefeito`,
-        deputadoFederal: rel.deputadoFederal,
+      todasPessoas.push({
         nome: rel.prefeito,
         cargo: 'Prefeito',
         votos: rel.votacaoPrefeito,
@@ -96,9 +96,7 @@ export default function RelacionamentosDeputadosList({
       rel.vereadores.forEach(vereador => {
         const votacao = rel.votacoesVereadores.find(v => v.nome === vereador);
         if (votacao) {
-          linhas.push({
-            id: `${rel.id}_vereador_${vereador}`,
-            deputadoFederal: rel.deputadoFederal,
+          todasPessoas.push({
             nome: vereador,
             cargo: 'Vereador',
             votos: votacao.votos,
@@ -108,9 +106,12 @@ export default function RelacionamentosDeputadosList({
         }
       });
     }
-    
-    return linhas;
   });
+
+  // Remover duplicatas baseado no nome
+  const pessoasUnicas = todasPessoas.filter((pessoa, index, array) => 
+    array.findIndex(p => p.nome === pessoa.nome) === index
+  );
 
   return (
     <div className="space-y-4">
@@ -127,74 +128,86 @@ export default function RelacionamentosDeputadosList({
                 {totalGeralVotos.toLocaleString()}
               </div>
               <div className="text-xs text-blue-600">
-                {relacionamentos.length} relacionamento{relacionamentos.length !== 1 ? 's' : ''} • {dadosTabela.length} pessoa{dadosTabela.length !== 1 ? 's' : ''}
+                {relacionamentos.length} relacionamento{relacionamentos.length !== 1 ? 's' : ''} • {pessoasUnicas.length} pessoa{pessoasUnicas.length !== 1 ? 's' : ''} • {deputadosFederais.length} deputado{deputadosFederais.length !== 1 ? 's' : ''}
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Tabela */}
-      {dadosTabela.length > 0 ? (
+      {/* Tabela - Deputados como colunas, Pessoas como linhas */}
+      {pessoasUnicas.length > 0 ? (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Deputado Federal
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50">
                     Nome
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-16 bg-gray-50">
                     Cargo
                   </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Votos
-                  </th>
+                  {deputadosFederais.map((deputado, index) => (
+                    <th key={index} className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
+                      <div className="flex flex-col items-center">
+                        <Users className="h-4 w-4 text-blue-600 mb-1" />
+                        <span className="text-xs leading-tight">{deputado}</span>
+                      </div>
+                    </th>
+                  ))}
                   <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Ações
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {dadosTabela.map((linha, index) => (
-                  <tr key={linha.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <Users className="h-4 w-4 text-blue-600 mr-2" />
-                        <span className="text-sm font-medium text-gray-900">
-                          {linha.deputadoFederal}
-                        </span>
-                      </div>
+                {pessoasUnicas.map((pessoa, index) => (
+                  <tr key={`${pessoa.nome}_${index}`} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 whitespace-nowrap sticky left-0 bg-white">
+                      <span className="text-sm font-medium text-gray-900">{pessoa.nome}</span>
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <span className="text-sm text-gray-900">{linha.nome}</span>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
+                    <td className="px-4 py-3 whitespace-nowrap sticky left-16 bg-white">
                       <Badge 
                         variant="secondary" 
                         className={
-                          linha.cargo === 'Prefeito' 
+                          pessoa.cargo === 'Prefeito' 
                             ? 'bg-green-100 text-green-800' 
                             : 'bg-blue-100 text-blue-800'
                         }
                       >
-                        {linha.cargo}
+                        {pessoa.cargo}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-right">
-                      <span className="text-sm font-medium text-gray-900">
-                        {linha.votos.toLocaleString()}
-                      </span>
-                    </td>
+                    {deputadosFederais.map((deputado, depIndex) => {
+                      // Verificar se esta pessoa está relacionada a este deputado
+                      const relacionamento = relacionamentos.find(rel => 
+                        rel.deputadoFederal === deputado && 
+                        ((rel.prefeito === pessoa.nome) || 
+                         (rel.vereadores.includes(pessoa.nome)))
+                      );
+                      
+                      return (
+                        <td key={depIndex} className="px-4 py-3 whitespace-nowrap text-center">
+                          {relacionamento ? (
+                            <div className="flex flex-col items-center">
+                              <span className="text-sm font-medium text-gray-900">
+                                {pessoa.votos.toLocaleString()}
+                              </span>
+                              <span className="text-xs text-gray-500">votos</span>
+                            </div>
+                          ) : (
+                            <span className="text-sm text-gray-400">-</span>
+                          )}
+                        </td>
+                      );
+                    })}
                     <td className="px-4 py-3 whitespace-nowrap text-center">
                       <div className="flex items-center justify-center gap-2">
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => onEdit(linha.relacionamento)}
+                          onClick={() => onEdit(pessoa.relacionamento)}
                           className="flex items-center gap-1"
                         >
                           <Edit className="h-3 w-3" />
@@ -203,8 +216,8 @@ export default function RelacionamentosDeputadosList({
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => linha.relacionamentoId && onDelete(linha.relacionamentoId)}
-                          disabled={!linha.relacionamentoId}
+                          onClick={() => pessoa.relacionamentoId && onDelete(pessoa.relacionamentoId)}
+                          disabled={!pessoa.relacionamentoId}
                           className="flex items-center gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
                         >
                           <Trash2 className="h-3 w-3" />
