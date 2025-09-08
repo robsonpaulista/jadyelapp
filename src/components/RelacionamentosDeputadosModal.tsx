@@ -327,6 +327,37 @@ export default function RelacionamentosDeputadosModal({
             </div>
           </div>
 
+          {/* Totalizador de Votos */}
+          {(() => {
+            const totalVotosPrefeito = formData.votacaoPrefeito || 0;
+            const totalVotosVereadores = formData.votacoesVereadores?.reduce((acc, v) => acc + v.votos, 0) || 0;
+            const totalGeral = totalVotosPrefeito + totalVotosVereadores;
+            
+            if (totalGeral > 0) {
+              return (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-5 w-5 text-blue-600" />
+                      <span className="text-sm font-medium text-blue-800">Total de Votos</span>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xl font-bold text-blue-900">
+                        {totalGeral.toLocaleString()}
+                      </div>
+                      <div className="text-xs text-blue-600">
+                        {totalVotosPrefeito > 0 && `${totalVotosPrefeito.toLocaleString()} prefeito`}
+                        {totalVotosPrefeito > 0 && totalVotosVereadores > 0 && ' + '}
+                        {totalVotosVereadores > 0 && `${totalVotosVereadores.toLocaleString()} vereadores`}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          })()}
+
           {/* Observações */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

@@ -67,8 +67,35 @@ export default function RelacionamentosDeputadosList({
     );
   }
 
+  // Calcular total geral de votos
+  const totalGeralVotos = relacionamentos.reduce((total, rel) => {
+    const votosPrefeito = rel.votacaoPrefeito || 0;
+    const votosVereadores = rel.votacoesVereadores?.reduce((acc, v) => acc + v.votos, 0) || 0;
+    return total + votosPrefeito + votosVereadores;
+  }, 0);
+
   return (
     <div className="space-y-4">
+      {/* Totalizador Geral */}
+      {totalGeralVotos > 0 && (
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-blue-600" />
+              <span className="text-sm font-medium text-blue-800">Total Geral de Votos</span>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-blue-900">
+                {totalGeralVotos.toLocaleString()}
+              </div>
+              <div className="text-xs text-blue-600">
+                {relacionamentos.length} relacionamento{relacionamentos.length !== 1 ? 's' : ''}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {relacionamentos.map((relacionamento) => (
         <Card key={relacionamento.id} className="hover:shadow-md transition-shadow">
           <CardHeader className="pb-3">
@@ -185,6 +212,37 @@ export default function RelacionamentosDeputadosList({
                   </p>
                 </div>
               )}
+
+              {/* Totalizador de Votos */}
+              {(() => {
+                const totalVotosPrefeito = relacionamento.votacaoPrefeito || 0;
+                const totalVotosVereadores = relacionamento.votacoesVereadores?.reduce((acc, v) => acc + v.votos, 0) || 0;
+                const totalGeral = totalVotosPrefeito + totalVotosVereadores;
+                
+                if (totalGeral > 0) {
+                  return (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-blue-600" />
+                          <span className="text-sm font-medium text-blue-800">Total de Votos</span>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-blue-900">
+                            {totalGeral.toLocaleString()}
+                          </div>
+                          <div className="text-xs text-blue-600">
+                            {totalVotosPrefeito > 0 && `${totalVotosPrefeito.toLocaleString()} prefeito`}
+                            {totalVotosPrefeito > 0 && totalVotosVereadores > 0 && ' + '}
+                            {totalVotosVereadores > 0 && `${totalVotosVereadores.toLocaleString()} vereadores`}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
 
               {/* Datas */}
               <div className="flex items-center gap-4 text-xs text-gray-500 pt-2 border-t">
