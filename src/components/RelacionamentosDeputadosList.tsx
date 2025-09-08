@@ -11,7 +11,9 @@ interface RelacionamentoDeputado {
   municipio: string;
   deputadoFederal: string;
   prefeito?: string;
+  votacaoPrefeito?: number;
   vereadores: string[];
+  votacoesVereadores: { nome: string; votos: number }[];
   nomesAdicionais: string[];
   observacoes?: string;
   dataCriacao?: string;
@@ -113,9 +115,16 @@ export default function RelacionamentosDeputadosList({
                     <User className="h-4 w-4 text-green-600" />
                     <span className="text-sm font-medium text-gray-700">Prefeito</span>
                   </div>
-                  <Badge variant="secondary" className="bg-green-100 text-green-800">
-                    {relacionamento.prefeito}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="bg-green-100 text-green-800">
+                      {relacionamento.prefeito}
+                    </Badge>
+                    {relacionamento.votacaoPrefeito && (
+                      <span className="text-sm text-gray-600">
+                        ({relacionamento.votacaoPrefeito.toLocaleString()} votos)
+                      </span>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -128,12 +137,22 @@ export default function RelacionamentosDeputadosList({
                       Vereadores ({relacionamento.vereadores.length})
                     </span>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {relacionamento.vereadores.map((vereador, index) => (
-                      <Badge key={index} variant="secondary" className="bg-blue-100 text-blue-800">
-                        {vereador}
-                      </Badge>
-                    ))}
+                  <div className="space-y-2">
+                    {relacionamento.vereadores.map((vereador, index) => {
+                      const votacao = relacionamento.votacoesVereadores?.find(v => v.nome === vereador);
+                      return (
+                        <div key={index} className="flex items-center gap-2">
+                          <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                            {vereador}
+                          </Badge>
+                          {votacao && (
+                            <span className="text-sm text-gray-600">
+                              ({votacao.votos.toLocaleString()} votos)
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}

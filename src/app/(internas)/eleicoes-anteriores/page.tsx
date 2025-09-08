@@ -189,7 +189,9 @@ interface RelacionamentoDeputado {
   municipio: string;
   deputadoFederal: string;
   prefeito?: string;
+  votacaoPrefeito?: number;
   vereadores: string[];
+  votacoesVereadores: { nome: string; votos: number }[];
   nomesAdicionais: string[];
   observacoes?: string;
   dataCriacao?: string;
@@ -1712,16 +1714,26 @@ export default function EleicoesAnterioresPage() {
               item.cargo?.toLowerCase().includes('prefeito') && 
               item.anoEleicao === '2024'
             )
-            .map(item => item.nomeUrnaCandidato)
-            .filter((nome, index, array) => array.indexOf(nome) === index) // Remove duplicatas
+            .map(item => ({
+              nome: item.nomeUrnaCandidato,
+              votos: parseInt(item.quantidadeVotosNominais || '0')
+            }))
+            .filter((item, index, array) => 
+              array.findIndex(i => i.nome === item.nome) === index
+            ) // Remove duplicatas
           }
           vereadores={dados
             .filter(item => 
               item.cargo?.toLowerCase().includes('vereador') && 
               item.anoEleicao === '2024'
             )
-            .map(item => item.nomeUrnaCandidato)
-            .filter((nome, index, array) => array.indexOf(nome) === index) // Remove duplicatas
+            .map(item => ({
+              nome: item.nomeUrnaCandidato,
+              votos: parseInt(item.quantidadeVotosNominais || '0')
+            }))
+            .filter((item, index, array) => 
+              array.findIndex(i => i.nome === item.nome) === index
+            ) // Remove duplicatas
           }
           onSave={salvarRelacionamento}
           relacionamentoExistente={relacionamentoEditando}

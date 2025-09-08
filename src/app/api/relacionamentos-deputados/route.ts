@@ -21,7 +21,9 @@ interface RelacionamentoDeputado {
   municipio: string;
   deputadoFederal: string;
   prefeito?: string;
+  votacaoPrefeito?: number;
   vereadores: string[];
+  votacoesVereadores: { nome: string; votos: number }[];
   nomesAdicionais: string[];
   observacoes?: string;
   dataCriacao: string;
@@ -84,7 +86,9 @@ export async function POST(request: NextRequest) {
       municipio: body.municipio,
       deputadoFederal: body.deputadoFederal,
       prefeito: body.prefeito || '',
+      votacaoPrefeito: body.votacaoPrefeito || 0,
       vereadores: body.vereadores || [],
+      votacoesVereadores: body.votacoesVereadores || [],
       nomesAdicionais: body.nomesAdicionais || [],
       observacoes: body.observacoes || '',
       dataCriacao: body.id ? body.dataCriacao : agora,

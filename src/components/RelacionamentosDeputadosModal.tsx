@@ -13,7 +13,9 @@ interface RelacionamentoDeputado {
   municipio: string;
   deputadoFederal: string;
   prefeito?: string;
+  votacaoPrefeito?: number;
   vereadores: string[];
+  votacoesVereadores: { nome: string; votos: number }[];
   nomesAdicionais: string[];
   observacoes?: string;
   dataCriacao?: string;
@@ -25,8 +27,8 @@ interface RelacionamentosDeputadosModalProps {
   onClose: () => void;
   municipio: string;
   deputadosFederais: string[];
-  prefeitos: string[];
-  vereadores: string[];
+  prefeitos: { nome: string; votos: number }[];
+  vereadores: { nome: string; votos: number }[];
   onSave: (relacionamento: RelacionamentoDeputado) => Promise<void>;
   relacionamentoExistente?: RelacionamentoDeputado | null;
 }
@@ -45,7 +47,9 @@ export default function RelacionamentosDeputadosModal({
     municipio: municipio,
     deputadoFederal: '',
     prefeito: '',
+    votacaoPrefeito: 0,
     vereadores: [],
+    votacoesVereadores: [],
     nomesAdicionais: [],
     observacoes: ''
   });
@@ -64,7 +68,9 @@ export default function RelacionamentosDeputadosModal({
           municipio: municipio,
           deputadoFederal: '',
           prefeito: '',
+          votacaoPrefeito: 0,
           vereadores: [],
+          votacoesVereadores: [],
           nomesAdicionais: [],
           observacoes: ''
         });
@@ -72,18 +78,33 @@ export default function RelacionamentosDeputadosModal({
     }
   }, [isOpen, relacionamentoExistente, municipio]);
 
-  const handleInputChange = (field: keyof RelacionamentoDeputado, value: string) => {
+  const handleInputChange = (field: keyof RelacionamentoDeputado, value: string | number) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
   };
 
+  const handlePrefeitoChange = (prefeitoNome: string) => {
+    const prefeitoSelecionado = prefeitos.find(p => p.nome === prefeitoNome);
+    const votos = prefeitoSelecionado?.votos || 0;
+    
+    setFormData(prev => ({
+      ...prev,
+      prefeito: prefeitoNome,
+      votacaoPrefeito: votos
+    }));
+  };
+
   const adicionarVereador = () => {
     if (novoVereador.trim() && !formData.vereadores.includes(novoVereador.trim())) {
+      const vereadorSelecionado = vereadores.find(v => v.nome === novoVereador.trim());
+      const votos = vereadorSelecionado?.votos || 0;
+      
       setFormData(prev => ({
         ...prev,
-        vereadores: [...prev.vereadores, novoVereador.trim()]
+        vereadores: [...prev.vereadores, novoVereador.trim()],
+        votacoesVereadores: [...prev.votacoesVereadores, { nome: novoVereador.trim(), votos }]
       }));
       setNovoVereador('');
     }
@@ -92,7 +113,8 @@ export default function RelacionamentosDeputadosModal({
   const removerVereador = (vereador: string) => {
     setFormData(prev => ({
       ...prev,
-      vereadores: prev.vereadores.filter(v => v !== vereador)
+      vereadores: prev.vereadores.filter(v => v !== vereador),
+      votacoesVereadores: prev.votacoesVereadores.filter(v => v.nome !== vereador)
     }));
   };
 
@@ -172,16 +194,21 @@ export default function RelacionamentosDeputadosModal({
             </label>
             <select
               value={formData.prefeito}
-              onChange={(e) => handleInputChange('prefeito', e.target.value)}
+              onChange={(e) => handlePrefeitoChange(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Selecione um Prefeito</option>
               {prefeitos.map((prefeito, index) => (
-                <option key={index} value={prefeito}>
-                  {prefeito}
+                <option key={index} value={prefeito.nome}>
+                  {prefeito.nome} ({prefeito.votos.toLocaleString()} votos)
                 </option>
               ))}
             </select>
+            {formData.prefeito && formData.votacaoPrefeito && (
+              <div className="mt-2 text-sm text-gray-600">
+                <span className="font-medium">Votação:</span> {formData.votacaoPrefeito.toLocaleString()} votos
+              </div>
+            )}
           </div>
 
           {/* Vereadores */}
@@ -193,19 +220,31 @@ export default function RelacionamentosDeputadosModal({
             
             {/* Lista de vereadores selecionados */}
             {formData.vereadores.length > 0 && (
-              <div className="mb-3 flex flex-wrap gap-2">
-                {formData.vereadores.map((vereador, index) => (
-                  <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                    {vereador}
-                    <button
-                      type="button"
-                      onClick={() => removerVereador(vereador)}
-                      className="ml-1 hover:text-red-600"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                ))}
+              <div className="mb-3 space-y-2">
+                {formData.vereadores.map((vereador, index) => {
+                  const votacao = formData.votacoesVereadores.find(v => v.nome === vereador);
+                  return (
+                    <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                          {vereador}
+                        </Badge>
+                        {votacao && (
+                          <span className="text-sm text-gray-600">
+                            {votacao.votos.toLocaleString()} votos
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removerVereador(vereador)}
+                        className="hover:text-red-600 p-1"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
@@ -218,10 +257,10 @@ export default function RelacionamentosDeputadosModal({
               >
                 <option value="">Selecione um Vereador</option>
                 {vereadores
-                  .filter(v => !formData.vereadores.includes(v))
+                  .filter(v => !formData.vereadores.includes(v.nome))
                   .map((vereador, index) => (
-                    <option key={index} value={vereador}>
-                      {vereador}
+                    <option key={index} value={vereador.nome}>
+                      {vereador.nome} ({vereador.votos.toLocaleString()} votos)
                     </option>
                   ))}
               </select>
