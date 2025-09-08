@@ -439,6 +439,16 @@ export default function EleicoesAnterioresPage() {
           .filter((nome, index, array) => array.indexOf(nome) === index);
         const deputadosCompletos = Array.from(new Set([...deputadosOriginais, ...deputadosExistentes]));
         setDeputadosFederaisCompletos(deputadosCompletos);
+      } else {
+        // Mesmo se não houver relacionamentos, manter a lista de deputados originais
+        const deputadosOriginais = dados
+          .filter(item => 
+            item.cargo?.toLowerCase().includes('federal') && 
+            item.anoEleicao === '2022'
+          )
+          .map(item => item.nomeUrnaCandidato)
+          .filter((nome, index, array) => array.indexOf(nome) === index);
+        setDeputadosFederaisCompletos(deputadosOriginais);
       }
     } catch (error) {
       console.error('Erro ao carregar relacionamentos:', error);
@@ -460,6 +470,16 @@ export default function EleicoesAnterioresPage() {
       const data = await response.json();
       
       if (data.success) {
+        // Atualizar lista de deputados imediatamente
+        if (relacionamento.deputadoFederal && !deputadosFederaisCompletos.includes(relacionamento.deputadoFederal)) {
+          console.log('Adicionando novo deputado:', relacionamento.deputadoFederal);
+          setDeputadosFederaisCompletos(prev => {
+            const novaLista = [...prev, relacionamento.deputadoFederal];
+            console.log('Nova lista de deputados:', novaLista);
+            return novaLista;
+          });
+        }
+        
         await carregarRelacionamentos(); // Recarregar lista
         return data.data;
       } else {
@@ -642,6 +662,22 @@ export default function EleicoesAnterioresPage() {
       document.body.style.overflow = 'unset';
     };
   }, [modalOpen]);
+
+  // Listener para novos deputados adicionados
+  useEffect(() => {
+    const handleDeputadoAdicionado = (event: CustomEvent) => {
+      const novoDeputado = event.detail.deputado;
+      if (novoDeputado && !deputadosFederaisCompletos.includes(novoDeputado)) {
+        setDeputadosFederaisCompletos(prev => [...prev, novoDeputado]);
+      }
+    };
+
+    window.addEventListener('deputadoAdicionado', handleDeputadoAdicionado as EventListener);
+    
+    return () => {
+      window.removeEventListener('deputadoAdicionado', handleDeputadoAdicionado as EventListener);
+    };
+  }, [deputadosFederaisCompletos]);
 
   // Função para paginar os dados
   const paginateData = (data: any[], page: number) => {

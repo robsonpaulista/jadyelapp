@@ -151,11 +151,19 @@ export default function RelacionamentosDeputadosModal({
 
   const adicionarNovoDeputado = () => {
     if (novoDeputadoFederal.trim() && !deputadosFederais.includes(novoDeputadoFederal.trim())) {
+      const novoDeputado = novoDeputadoFederal.trim();
       setFormData(prev => ({
         ...prev,
-        deputadoFederal: novoDeputadoFederal.trim()
+        deputadoFederal: novoDeputado
       }));
       setNovoDeputadoFederal('');
+      
+      // Notificar o componente pai para atualizar a lista
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('deputadoAdicionado', { 
+          detail: { deputado: novoDeputado } 
+        }));
+      }
     }
   };
 

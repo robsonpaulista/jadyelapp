@@ -126,20 +126,6 @@ export default function RelacionamentosDeputadosList({
   // Converter Map para array
   const pessoasUnicas = Array.from(pessoasMap.values());
 
-  // Debug: verificar dados
-  console.log('Relacionamentos:', relacionamentos);
-  console.log('Pessoas únicas:', pessoasUnicas);
-  console.log('Deputados federais:', deputadosFederais);
-  
-  // Debug específico para ZÉ CÍCERO
-  const zeCiceroRel = relacionamentos.find(rel => 
-    rel.prefeito === 'ZÉ CÍCERO' || 
-    rel.vereadores.includes('ZÉ CÍCERO')
-  );
-  console.log('ZÉ CÍCERO relacionamento:', zeCiceroRel);
-  
-  const zeCiceroPessoa = pessoasUnicas.find(p => p.nome === 'ZÉ CÍCERO');
-  console.log('ZÉ CÍCERO pessoa:', zeCiceroPessoa);
 
   return (
     <div className="space-y-4">

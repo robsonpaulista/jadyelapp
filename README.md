@@ -44,7 +44,7 @@ npm run dev
 Consulte os arquivos de documentação:
 - `ENVIRONMENT_SETUP.md` - Guia completo das variáveis de ambiente
 - `COMO_RECRIAR_ENV_LOCAL.md` - Como configurar o .env.local
-- `DEPLOY_CHECKLIST.md` - Checklist para deploy no Vercel
+- `DEPLOY_CHECKLI: ST.md` - Checklist para deploy no Vercel
 
 azer#
 
