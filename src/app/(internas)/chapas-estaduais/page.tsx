@@ -19,7 +19,8 @@ import { DialogFooter } from "@/components/ui/dialog";
 const coresPartidos = {
   "PT": { cor: "bg-red-600", corTexto: "text-white" },
   "MDB": { cor: "bg-yellow-400", corTexto: "text-gray-900" },
-  "PP": { cor: "bg-sky-400", corTexto: "text-white" }
+  "PP": { cor: "bg-sky-400", corTexto: "text-white" },
+  "REPUBLICANOS": { cor: "bg-green-600", corTexto: "text-white" }
 };
 
 // Interface para partido local
@@ -36,11 +37,36 @@ interface PartidoLocal {
 
 // Função para criar estrutura inicial de partidos
 const criarPartidosIniciais = (): PartidoLocal[] => {
-  return Object.keys(coresPartidos).map(nome => ({
-    nome,
-    ...coresPartidos[nome as keyof typeof coresPartidos],
-    candidatos: []
-  }));
+  return Object.keys(coresPartidos).map(nome => {
+    const partido = {
+      nome,
+      ...coresPartidos[nome as keyof typeof coresPartidos],
+      candidatos: [] as Array<{ nome: string; votos: number; genero?: string }>
+    };
+
+    // Adicionar candidatos iniciais para REPUBLICANOS
+    if (nome === "REPUBLICANOS") {
+      // 17 homens (HOMEM 1 a HOMEM 17)
+      for (let i = 1; i <= 17; i++) {
+        partido.candidatos.push({
+          nome: `HOMEM ${i}`,
+          votos: 0,
+          genero: 'homem'
+        });
+      }
+      
+      // 8 mulheres (MULHER 1 a MULHER 8)
+      for (let i = 1; i <= 8; i++) {
+        partido.candidatos.push({
+          nome: `MULHER ${i}`,
+          votos: 0,
+          genero: 'mulher'
+        });
+      }
+    }
+
+    return partido;
+  });
 };
 
 const initialQuociente = 190000;
@@ -54,6 +80,8 @@ const getMulheresPartido = (nomePartido: string): string[] => {
       return ['MULHER 1', 'MULHER 2', 'MULHER 3', 'MULHER 4'];
     case "PP":
       return ['MULHER 1', 'MULHER 2', 'MULHER 3'];
+    case "REPUBLICANOS":
+      return ['MULHER 1', 'MULHER 2', 'MULHER 3', 'MULHER 4', 'MULHER 5', 'MULHER 6', 'MULHER 7', 'MULHER 8'];
     default:
       return [];
   }
@@ -329,7 +357,8 @@ export default function ChapasEstaduaisPage() {
     const cores: { [key: string]: string } = {
       "PT": "bg-red-600",
       "MDB": "bg-yellow-400",
-      "PP": "bg-sky-400"
+      "PP": "bg-sky-400",
+      "REPUBLICANOS": "bg-green-600"
     };
     return cores[partido] || "bg-gray-200";
   }
@@ -338,7 +367,8 @@ export default function ChapasEstaduaisPage() {
     const cores: { [key: string]: string } = {
       "PT": "text-white",
       "MDB": "text-gray-900",
-      "PP": "text-white"
+      "PP": "text-white",
+      "REPUBLICANOS": "text-white"
     };
     return cores[partido] || "text-gray-800";
   }
@@ -686,6 +716,10 @@ export default function ChapasEstaduaisPage() {
     return separarCandidatosPorGenero(candidatos);
   };
 
+  const separarCandidatosREPUBLICANOS = (candidatos: { nome: string; votos: number; genero?: string }[]) => {
+    return separarCandidatosPorGenero(candidatos);
+  };
+
 
 
   // Função para excluir candidato
@@ -904,7 +938,7 @@ export default function ChapasEstaduaisPage() {
 
   // Função para ordenar partidos na ordem fixa
   const ordenarPartidos = <T extends { nome: string }>(partidosParaOrdenar: T[]): T[] => {
-    const ordemPartidos = ["PT", "MDB", "PP"];
+    const ordemPartidos = ["PT", "MDB", "PP", "REPUBLICANOS"];
     return ordemPartidos
       .map(nomePartido => partidosParaOrdenar.find(p => p.nome === nomePartido))
       .filter(Boolean) as T[];
@@ -1171,7 +1205,7 @@ export default function ChapasEstaduaisPage() {
         </div>
 
         {/* Grid de partidos */}
-        <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="w-full grid grid-cols-1 md:grid-cols-4 gap-6">
           {ordenarPartidos(partidos).map((partido, pIdx) => {
             // Encontrar o índice real do partido no array original
             const partidoIdx = partidos.findIndex(p => p.nome === partido.nome);
@@ -1206,8 +1240,8 @@ export default function ChapasEstaduaisPage() {
               )}
               
               <div className="w-full flex flex-col flex-1">
-                {(partido.nome === "PT" || partido.nome === "MDB" || partido.nome === "PP") ? (
-                  // Renderização especial para PT, MDB e PP com separação homens/mulheres
+                {(partido.nome === "PT" || partido.nome === "MDB" || partido.nome === "PP" || partido.nome === "REPUBLICANOS") ? (
+                  // Renderização especial para PT, MDB, PP e REPUBLICANOS com separação homens/mulheres
                   <div className="space-y-2">
                     {/* Bloco dos Homens */}
                     <table className="w-full text-xs">
@@ -1217,7 +1251,11 @@ export default function ChapasEstaduaisPage() {
                             ? separarCandidatosPT(partido.candidatos)
                             : partido.nome === "MDB"
                             ? separarCandidatosMDB(partido.candidatos)
-                            : separarCandidatosPP(partido.candidatos);
+                            : partido.nome === "PP"
+                            ? separarCandidatosPP(partido.candidatos)
+                            : partido.nome === "REPUBLICANOS"
+                            ? separarCandidatosREPUBLICANOS(partido.candidatos)
+                            : separarCandidatosPorGenero(partido.candidatos);
                           return homens.map((c, idx) => (
                             <tr 
                               key={`homem-${c.nome}-${idx}`}
@@ -1354,7 +1392,11 @@ export default function ChapasEstaduaisPage() {
                             ? separarCandidatosPT(partido.candidatos)
                             : partido.nome === "MDB"
                             ? separarCandidatosMDB(partido.candidatos)
-                            : separarCandidatosPP(partido.candidatos);
+                            : partido.nome === "PP"
+                            ? separarCandidatosPP(partido.candidatos)
+                            : partido.nome === "REPUBLICANOS"
+                            ? separarCandidatosREPUBLICANOS(partido.candidatos)
+                            : separarCandidatosPorGenero(partido.candidatos);
                           return mulheres.map((c, idx) => (
                             <tr 
                               key={`mulher-${c.nome}-${idx}`}
@@ -1702,7 +1744,7 @@ export default function ChapasEstaduaisPage() {
                           disabled={salvandoCandidato}
                         />
                       </div>
-                      {(partido.nome === "PT" || partido.nome === "MDB" || partido.nome === "PP") && (
+                      {(partido.nome === "PT" || partido.nome === "MDB" || partido.nome === "PP" || partido.nome === "REPUBLICANOS") && (
                         <div>
                           <label className="text-sm font-medium mb-2 block">Gênero</label>
                           <div className="flex gap-4">

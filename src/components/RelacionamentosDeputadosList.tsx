@@ -152,69 +152,69 @@ export default function RelacionamentosDeputadosList({
       {/* Tabela - Deputados como colunas, Pessoas como linhas */}
       {pessoasUnicas.length > 0 ? (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <div className="p-3 bg-gray-50 border-b border-gray-200">
-            <span className="text-sm text-gray-600">
+          <div className="px-2 py-1 bg-gray-50 border-b border-gray-200">
+            <span className="text-xs text-gray-600">
               Exibindo {pessoasUnicas.length} pessoa{pessoasUnicas.length !== 1 ? 's' : ''} • 
               {pessoasUnicas.filter(p => p.cargo === 'Prefeito').length} prefeito{pessoasUnicas.filter(p => p.cargo === 'Prefeito').length !== 1 ? 's' : ''} • 
               {pessoasUnicas.filter(p => p.cargo === 'Vereador').length} vereador{pessoasUnicas.filter(p => p.cargo === 'Vereador').length !== 1 ? 'es' : ''}
             </span>
           </div>
-          <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
+          <div className="overflow-x-auto">
             <table className="w-full min-w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50">
+                  <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50">
                     Nome
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-16 bg-gray-50">
+                  <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-12 bg-gray-50">
                     Cargo
                   </th>
                   {deputadosFederais.map((deputado, index) => (
-                    <th key={index} className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">
+                    <th key={index} className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[80px]">
                       <div className="flex flex-col items-center">
-                        <Users className="h-4 w-4 text-blue-600 mb-1" />
+                        <Users className="h-3 w-3 text-blue-600 mb-0.5" />
                         <span className="text-xs leading-tight">{deputado}</span>
                       </div>
                     </th>
                   ))}
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Ações
                   </th>
                 </tr>
                 {/* Linha de Totalizadores */}
                 <tr className="bg-blue-50 border-b-2 border-blue-200">
-                  <td className="px-4 py-2 sticky left-0 bg-blue-50">
-                    <span className="text-sm font-bold text-blue-900">TOTAL</span>
+                  <td className="px-2 py-1 sticky left-0 bg-blue-50">
+                    <span className="text-xs font-bold text-blue-900">TOTAL</span>
                   </td>
-                  <td className="px-4 py-2 sticky left-16 bg-blue-50">
-                    <span className="text-sm font-bold text-blue-900">-</span>
+                  <td className="px-2 py-1 sticky left-12 bg-blue-50">
+                    <span className="text-xs font-bold text-blue-900">-</span>
                   </td>
                   {deputadosFederais.map((deputado, depIndex) => (
-                    <td key={depIndex} className="px-4 py-2 text-center">
-                      <span className="text-sm font-bold text-blue-900">
+                    <td key={depIndex} className="px-2 py-1 text-center">
+                      <span className="text-xs font-bold text-blue-900">
                         {totalizadorPorDeputado[deputado]?.toLocaleString() || '0'}
                       </span>
                     </td>
                   ))}
-                  <td className="px-4 py-2 text-center">
-                    <span className="text-sm font-bold text-blue-900">-</span>
+                  <td className="px-2 py-1 text-center">
+                    <span className="text-xs font-bold text-blue-900">-</span>
                   </td>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {pessoasUnicas.map((pessoa, index) => (
                   <tr key={`${pessoa.nome}_${index}`} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 whitespace-nowrap sticky left-0 bg-white">
-                      <span className="text-sm font-medium text-gray-900">{pessoa.nome}</span>
+                    <td className="px-2 py-1 whitespace-nowrap sticky left-0 bg-white">
+                      <span className="text-xs font-medium text-gray-900">{pessoa.nome}</span>
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap sticky left-16 bg-white">
+                    <td className="px-2 py-1 whitespace-nowrap sticky left-12 bg-white">
                       <Badge 
                         variant="secondary" 
-                        className={
+                        className={`text-xs px-1.5 py-0.5 ${
                           pessoa.cargo === 'Prefeito' 
                             ? 'bg-green-100 text-green-800' 
                             : 'bg-blue-100 text-blue-800'
-                        }
+                        }`}
                       >
                         {pessoa.cargo}
                       </Badge>
@@ -228,24 +228,24 @@ export default function RelacionamentosDeputadosList({
                       );
                       
                       return (
-                        <td key={depIndex} className="px-4 py-3 whitespace-nowrap text-center">
+                        <td key={depIndex} className="px-2 py-1 whitespace-nowrap text-center">
                           {relacionamento ? (
-                            <span className="text-sm font-medium text-gray-900">
+                            <span className="text-xs font-medium text-gray-900">
                               {pessoa.votos.toLocaleString()}
                             </span>
                           ) : (
-                            <span className="text-sm text-gray-400">-</span>
+                            <span className="text-xs text-gray-400">-</span>
                           )}
                         </td>
                       );
                     })}
-                    <td className="px-4 py-3 whitespace-nowrap text-center">
-                      <div className="flex items-center justify-center gap-2">
+                    <td className="px-2 py-1 whitespace-nowrap text-center">
+                      <div className="flex items-center justify-center gap-1">
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => onEdit(pessoa.relacionamento)}
-                          className="flex items-center gap-1"
+                          className="flex items-center gap-1 text-xs px-2 py-1 h-6"
                         >
                           <Edit className="h-3 w-3" />
                           Editar
@@ -255,7 +255,7 @@ export default function RelacionamentosDeputadosList({
                           variant="outline"
                           onClick={() => pessoa.relacionamentoId && onDelete(pessoa.relacionamentoId)}
                           disabled={!pessoa.relacionamentoId}
-                          className="flex items-center gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          className="flex items-center gap-1 text-red-600 hover:text-red-700 hover:bg-red-50 text-xs px-2 py-1 h-6"
                         >
                           <Trash2 className="h-3 w-3" />
                           Remover
