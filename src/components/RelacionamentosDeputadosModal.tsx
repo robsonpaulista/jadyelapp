@@ -346,9 +346,9 @@ export default function RelacionamentosDeputadosModal({
                         {totalGeral.toLocaleString()}
                       </div>
                       <div className="text-xs text-blue-600">
-                        {totalVotosPrefeito > 0 && `${totalVotosPrefeito.toLocaleString()} prefeito`}
+                        {totalVotosPrefeito > 0 && `${totalVotosPrefeito.toLocaleString()} votos prefeito`}
                         {totalVotosPrefeito > 0 && totalVotosVereadores > 0 && ' + '}
-                        {totalVotosVereadores > 0 && `${totalVotosVereadores.toLocaleString()} vereadores`}
+                        {totalVotosVereadores > 0 && `${totalVotosVereadores.toLocaleString()} votos vereadores`}
                       </div>
                     </div>
                   </div>
