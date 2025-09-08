@@ -450,6 +450,12 @@ export default function EleicoesAnterioresPage() {
         await carregarRelacionamentos(); // Recarregar lista
         return data.data;
       } else {
+        // Mostrar erro específico para duplicatas
+        if (data.error && data.error.includes('já está relacionado')) {
+          alert(`❌ ${data.error}\n\nPor favor, remova o relacionamento existente antes de criar um novo.`);
+        } else {
+          alert(`❌ ${data.error || 'Erro ao salvar relacionamento'}`);
+        }
         throw new Error(data.error || 'Erro ao salvar relacionamento');
       }
     } catch (error) {
@@ -1737,6 +1743,7 @@ export default function EleicoesAnterioresPage() {
           }
           onSave={salvarRelacionamento}
           relacionamentoExistente={relacionamentoEditando}
+          relacionamentosExistentes={relacionamentos}
         />
 
         {/* Modal de Lista de Relacionamentos */}

@@ -31,6 +31,7 @@ interface RelacionamentosDeputadosModalProps {
   vereadores: { nome: string; votos: number }[];
   onSave: (relacionamento: RelacionamentoDeputado) => Promise<void>;
   relacionamentoExistente?: RelacionamentoDeputado | null;
+  relacionamentosExistentes?: RelacionamentoDeputado[];
 }
 
 export default function RelacionamentosDeputadosModal({
@@ -41,7 +42,8 @@ export default function RelacionamentosDeputadosModal({
   prefeitos,
   vereadores,
   onSave,
-  relacionamentoExistente
+  relacionamentoExistente,
+  relacionamentosExistentes = []
 }: RelacionamentosDeputadosModalProps) {
   const [formData, setFormData] = useState<RelacionamentoDeputado>({
     municipio: municipio,
@@ -57,6 +59,24 @@ export default function RelacionamentosDeputadosModal({
   const [novoVereador, setNovoVereador] = useState('');
   const [novoNomeAdicional, setNovoNomeAdicional] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Filtrar opções já utilizadas em outros relacionamentos
+  const prefeitosDisponiveis = prefeitos.filter(prefeito => {
+    const jaUtilizado = relacionamentosExistentes.some(rel => 
+      rel.id !== relacionamentoExistente?.id && 
+      rel.prefeito === prefeito.nome
+    );
+    return !jaUtilizado;
+  });
+
+  const vereadoresDisponiveis = vereadores.filter(vereador => {
+    const jaUtilizado = relacionamentosExistentes.some(rel => 
+      rel.id !== relacionamentoExistente?.id && 
+      rel.vereadores && 
+      rel.vereadores.includes(vereador.nome)
+    );
+    return !jaUtilizado;
+  });
 
   // Inicializar formulário quando modal abrir ou relacionamento existente mudar
   useEffect(() => {
@@ -198,12 +218,17 @@ export default function RelacionamentosDeputadosModal({
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Selecione um Prefeito</option>
-              {prefeitos.map((prefeito, index) => (
+              {prefeitosDisponiveis.map((prefeito, index) => (
                 <option key={index} value={prefeito.nome}>
                   {prefeito.nome} ({prefeito.votos.toLocaleString()} votos)
                 </option>
               ))}
             </select>
+            {prefeitosDisponiveis.length === 0 && prefeitos.length > 0 && (
+              <p className="text-sm text-orange-600 mt-1">
+                ⚠️ Todos os prefeitos já estão relacionados a outros deputados
+              </p>
+            )}
             {formData.prefeito && formData.votacaoPrefeito && (
               <div className="mt-2 text-sm text-gray-600">
                 <span className="font-medium">Votação:</span> {formData.votacaoPrefeito.toLocaleString()} votos
@@ -256,7 +281,7 @@ export default function RelacionamentosDeputadosModal({
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Selecione um Vereador</option>
-                {vereadores
+                {vereadoresDisponiveis
                   .filter(v => !formData.vereadores.includes(v.nome))
                   .map((vereador, index) => (
                     <option key={index} value={vereador.nome}>

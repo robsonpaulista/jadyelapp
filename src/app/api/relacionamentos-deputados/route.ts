@@ -79,6 +79,62 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validação de duplicatas
+    const municipio = body.municipio;
+    const deputadoFederal = body.deputadoFederal;
+    
+    // Buscar relacionamentos existentes no mesmo município
+    const relacionamentosExistentes = await getDocs(
+      query(
+        collection(db, 'relacionamentos_deputados'),
+        where('municipio', '==', municipio)
+      )
+    );
+
+    const relacionamentos = relacionamentosExistentes.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    // Verificar duplicatas de prefeito
+    if (body.prefeito) {
+      const prefeitoDuplicado = relacionamentos.find(rel => 
+        rel.id !== body.id && 
+        rel.prefeito === body.prefeito
+      );
+      
+      if (prefeitoDuplicado) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: `O prefeito "${body.prefeito}" já está relacionado ao deputado "${prefeitoDuplicado.deputadoFederal}" neste município` 
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Verificar duplicatas de vereadores
+    if (body.vereadores && body.vereadores.length > 0) {
+      for (const vereador of body.vereadores) {
+        const vereadorDuplicado = relacionamentos.find(rel => 
+          rel.id !== body.id && 
+          rel.vereadores && 
+          rel.vereadores.includes(vereador)
+        );
+        
+        if (vereadorDuplicado) {
+          return NextResponse.json(
+            { 
+              success: false, 
+              error: `O vereador "${vereador}" já está relacionado ao deputado "${vereadorDuplicado.deputadoFederal}" neste município` 
+            },
+            { status: 400 }
+          );
+        }
+      }
+    }
+
     const agora = new Date().toISOString();
     const id = body.id || `${body.municipio}_${body.deputadoFederal.replace(/\s+/g, '_')}`;
 
