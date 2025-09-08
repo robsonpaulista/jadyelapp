@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, getDocs, setDoc, doc, deleteDoc, query, where, orderBy } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, setDoc, doc, deleteDoc, query, where, orderBy, getDoc } from 'firebase/firestore';
 
 // Configuração do Firebase
 const firebaseConfig = {
@@ -138,16 +138,30 @@ export async function POST(request: NextRequest) {
     const agora = new Date().toISOString();
     const id = body.id || `${body.municipio}_${body.deputadoFederal.replace(/\s+/g, '_')}`;
 
+    // Se é uma edição, buscar dados existentes para preservar
+    let dadosExistentes = null;
+    if (body.id) {
+      try {
+        const docRef = doc(db, 'relacionamentos_deputados', id);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          dadosExistentes = docSnap.data();
+        }
+      } catch (error) {
+        console.error('Erro ao buscar dados existentes:', error);
+      }
+    }
+
     const relacionamentoData = {
       municipio: body.municipio,
       deputadoFederal: body.deputadoFederal,
-      prefeito: body.prefeito || '',
-      votacaoPrefeito: body.votacaoPrefeito || 0,
-      vereadores: body.vereadores || [],
-      votacoesVereadores: body.votacoesVereadores || [],
-      nomesAdicionais: body.nomesAdicionais || [],
-      observacoes: body.observacoes || '',
-      dataCriacao: body.id ? body.dataCriacao : agora,
+      prefeito: body.prefeito || dadosExistentes?.prefeito || '',
+      votacaoPrefeito: body.votacaoPrefeito || dadosExistentes?.votacaoPrefeito || 0,
+      vereadores: body.vereadores || dadosExistentes?.vereadores || [],
+      votacoesVereadores: body.votacoesVereadores || dadosExistentes?.votacoesVereadores || [],
+      nomesAdicionais: body.nomesAdicionais || dadosExistentes?.nomesAdicionais || [],
+      observacoes: body.observacoes || dadosExistentes?.observacoes || '',
+      dataCriacao: body.id ? (dadosExistentes?.dataCriacao || body.dataCriacao || agora) : agora,
       dataAtualizacao: agora
     };
 
