@@ -91,10 +91,10 @@ export async function POST(request: NextRequest) {
       )
     );
 
-    const relacionamentos = relacionamentosExistentes.docs.map(doc => ({
+    const relacionamentos: RelacionamentoDeputado[] = relacionamentosExistentes.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
-    }));
+    } as RelacionamentoDeputado));
 
     // Verificar duplicatas de prefeito
     if (body.prefeito) {
