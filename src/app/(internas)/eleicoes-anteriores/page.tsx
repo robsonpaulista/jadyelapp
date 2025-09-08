@@ -254,6 +254,7 @@ export default function EleicoesAnterioresPage() {
   const [modalCriarEditarOpen, setModalCriarEditarOpen] = useState(false);
   const [relacionamentoEditando, setRelacionamentoEditando] = useState<RelacionamentoDeputado | null>(null);
   const [loadingRelacionamentos, setLoadingRelacionamentos] = useState(false);
+  const [deputadosFederaisCompletos, setDeputadosFederaisCompletos] = useState<string[]>([]);
 
   // Função para formatar valor em moeda brasileira
   const formatCurrency = (value: number) => {
@@ -426,6 +427,18 @@ export default function EleicoesAnterioresPage() {
       
       if (data.success) {
         setRelacionamentos(data.data);
+        
+        // Atualizar lista completa de deputados federais
+        const deputadosExistentes = Array.from(new Set(data.data.map((rel: RelacionamentoDeputado) => rel.deputadoFederal)));
+        const deputadosOriginais = dados
+          .filter(item => 
+            item.cargo?.toLowerCase().includes('federal') && 
+            item.anoEleicao === '2022'
+          )
+          .map(item => item.nomeUrnaCandidato)
+          .filter((nome, index, array) => array.indexOf(nome) === index);
+        const deputadosCompletos = Array.from(new Set([...deputadosOriginais, ...deputadosExistentes]));
+        setDeputadosFederaisCompletos(deputadosCompletos);
       }
     } catch (error) {
       console.error('Erro ao carregar relacionamentos:', error);
@@ -1707,7 +1720,7 @@ export default function EleicoesAnterioresPage() {
           isOpen={modalCriarEditarOpen}
           onClose={fecharModalRelacionamentos}
           municipio={cidade}
-          deputadosFederais={dados
+          deputadosFederais={deputadosFederaisCompletos.length > 0 ? deputadosFederaisCompletos : dados
             .filter(item => 
               item.cargo?.toLowerCase().includes('federal') && 
               item.anoEleicao === '2022'

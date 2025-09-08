@@ -58,6 +58,7 @@ export default function RelacionamentosDeputadosModal({
 
   const [novoVereador, setNovoVereador] = useState('');
   const [novoNomeAdicional, setNovoNomeAdicional] = useState('');
+  const [novoDeputadoFederal, setNovoDeputadoFederal] = useState('');
   const [loading, setLoading] = useState(false);
 
   // Filtrar opções já utilizadas em outros relacionamentos
@@ -148,6 +149,16 @@ export default function RelacionamentosDeputadosModal({
     }
   };
 
+  const adicionarNovoDeputado = () => {
+    if (novoDeputadoFederal.trim() && !deputadosFederais.includes(novoDeputadoFederal.trim())) {
+      setFormData(prev => ({
+        ...prev,
+        deputadoFederal: novoDeputadoFederal.trim()
+      }));
+      setNovoDeputadoFederal('');
+    }
+  };
+
   const removerNomeAdicional = (nome: string) => {
     setFormData(prev => ({
       ...prev,
@@ -204,6 +215,28 @@ export default function RelacionamentosDeputadosModal({
                 </option>
               ))}
             </select>
+            
+            {/* Campo para adicionar novo deputado */}
+            <div className="mt-2 flex gap-2">
+              <input
+                type="text"
+                value={novoDeputadoFederal}
+                onChange={(e) => setNovoDeputadoFederal(e.target.value)}
+                placeholder="Ou digite um novo deputado federal"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              />
+              <Button
+                type="button"
+                onClick={adicionarNovoDeputado}
+                disabled={!novoDeputadoFederal.trim()}
+                size="sm"
+                variant="outline"
+                className="flex items-center gap-1"
+              >
+                <Users className="h-3 w-3" />
+                Adicionar
+              </Button>
+            </div>
           </div>
 
           {/* Prefeito */}
