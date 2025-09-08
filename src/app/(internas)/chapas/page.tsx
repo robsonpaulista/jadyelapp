@@ -2380,7 +2380,7 @@ export default function ChapasPage() {
 
                     {/* Seção de partidos ocultos */}
                     {Object.keys(partidosOcultos).some(partido => partidosOcultos[partido]) && (
-                      <div className="bg-yellow-50 p-4 rounded border border-yellow-200 mb-4 print:hidden">
+                      <div className="bg-yellow-50 p-4 rounded border border-yellow-200 mb-4" style={{ display: modoImpressao ? 'none' : 'block' }}>
                         <div className="text-sm font-semibold text-yellow-800 mb-3 flex items-center gap-2">
                           <EyeOff className="h-4 w-4" />
                           Partidos Ocultos
