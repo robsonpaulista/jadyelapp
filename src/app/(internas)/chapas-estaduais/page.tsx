@@ -44,26 +44,8 @@ const criarPartidosIniciais = (): PartidoLocal[] => {
       candidatos: [] as Array<{ nome: string; votos: number; genero?: string }>
     };
 
-    // Adicionar candidatos iniciais para REPUBLICANOS
-    if (nome === "REPUBLICANOS") {
-      // 17 homens (HOMEM 1 a HOMEM 17)
-      for (let i = 1; i <= 17; i++) {
-        partido.candidatos.push({
-          nome: `HOMEM ${i}`,
-          votos: 0,
-          genero: 'homem'
-        });
-      }
-      
-      // 8 mulheres (MULHER 1 a MULHER 8)
-      for (let i = 1; i <= 8; i++) {
-        partido.candidatos.push({
-          nome: `MULHER ${i}`,
-          votos: 0,
-          genero: 'mulher'
-        });
-      }
-    }
+    // Não adicionar candidatos automaticamente - eles devem vir do Firebase
+    // Os candidatos republicanos serão carregados do cenário base no Firebase
 
     return partido;
   });

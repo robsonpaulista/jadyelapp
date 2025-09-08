@@ -15,6 +15,8 @@ import { disableConsoleLogging } from '@/lib/logger';
 import Navbar from '@/components/Navbar';
 import RelacionamentosDeputadosModal from '@/components/RelacionamentosDeputadosModal';
 import RelacionamentosDeputadosList from '@/components/RelacionamentosDeputadosList';
+import ModalDeputadosRelacionados from '@/components/ModalDeputadosRelacionados';
+import ModalRelacionamentosList from '@/components/ModalRelacionamentosList';
 import {
   Dialog,
   DialogContent,
@@ -198,6 +200,18 @@ interface RelacionamentoDeputado {
   dataAtualizacao?: string;
 }
 
+interface RelacionamentoDuploClique {
+  id?: string;
+  municipio: string;
+  nomePolitico: string;
+  tipoPolitico: 'prefeito' | 'vereador';
+  deputadosRelacionados: string[];
+  votosPolitico?: number;
+  observacoes?: string;
+  dataCriacao?: string;
+  dataAtualizacao?: string;
+}
+
 export default function EleicoesAnterioresPage() {
   // Desabilitar logs de console para proteção de dados
   disableConsoleLogging();
@@ -255,6 +269,16 @@ export default function EleicoesAnterioresPage() {
   const [relacionamentoEditando, setRelacionamentoEditando] = useState<RelacionamentoDeputado | null>(null);
   const [loadingRelacionamentos, setLoadingRelacionamentos] = useState(false);
   const [deputadosFederaisCompletos, setDeputadosFederaisCompletos] = useState<string[]>([]);
+
+  // Estados para relacionamentos por duplo clique
+  const [modalDuploCliqueOpen, setModalDuploCliqueOpen] = useState(false);
+  const [politicoSelecionado, setPoliticoSelecionado] = useState<{
+    nome: string;
+    tipo: 'prefeito' | 'vereador';
+    votos: number;
+  } | null>(null);
+  const [relacionamentosDuploClique, setRelacionamentosDuploClique] = useState<RelacionamentoDuploClique[]>([]);
+  const [modalRelacionamentosListOpen, setModalRelacionamentosListOpen] = useState(false);
 
   // Função para formatar valor em moeda brasileira
   const formatCurrency = (value: number) => {
@@ -429,7 +453,7 @@ export default function EleicoesAnterioresPage() {
         setRelacionamentos(data.data);
         
         // Atualizar lista completa de deputados federais
-        const deputadosExistentes = Array.from(new Set(data.data.map((rel: RelacionamentoDeputado) => rel.deputadoFederal)));
+        // Primeiro, pegar todos os deputados originais da tabela
         const deputadosOriginais = dados
           .filter(item => 
             item.cargo?.toLowerCase().includes('federal') && 
@@ -437,7 +461,17 @@ export default function EleicoesAnterioresPage() {
           )
           .map(item => item.nomeUrnaCandidato)
           .filter((nome, index, array) => array.indexOf(nome) === index);
-        const deputadosCompletos = Array.from(new Set([...deputadosOriginais, ...deputadosExistentes]));
+        
+        // Depois, pegar deputados que foram adicionados manualmente (que não existem na tabela original)
+        const deputadosAdicionadosManualmente: string[] = Array.from(new Set(
+          data.data
+            .map((rel: RelacionamentoDeputado) => rel.deputadoFederal)
+            .filter((dep: string) => !deputadosOriginais.includes(dep))
+        ));
+        
+        // Combinar: todos os deputados originais + deputados adicionados manualmente
+        const deputadosCompletos = [...deputadosOriginais, ...deputadosAdicionadosManualmente];
+        
         setDeputadosFederaisCompletos(deputadosCompletos);
       } else {
         // Mesmo se não houver relacionamentos, manter a lista de deputados originais
@@ -516,6 +550,54 @@ export default function EleicoesAnterioresPage() {
       console.error('Erro ao remover relacionamento:', error);
       alert('Erro ao remover relacionamento');
     }
+  };
+
+  // Funções para gerenciar relacionamentos por duplo clique
+  const carregarRelacionamentosDuploClique = async () => {
+    if (!cidade) return;
+    
+    try {
+      const response = await fetch(`/api/relacionamentos-duplo-clique?municipio=${encodeURIComponent(cidade)}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setRelacionamentosDuploClique(data.data);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar relacionamentos por duplo clique:', error);
+    }
+  };
+
+  const salvarRelacionamentoDuploClique = async (relacionamento: RelacionamentoDuploClique) => {
+    try {
+      const response = await fetch('/api/relacionamentos-duplo-clique', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(relacionamento),
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        await carregarRelacionamentosDuploClique(); // Recarregar lista
+        // Notificar outros componentes sobre a atualização
+        window.dispatchEvent(new CustomEvent('relacionamentoAtualizado'));
+        return data.data;
+      } else {
+        alert(`❌ ${data.error || 'Erro ao salvar relacionamento'}`);
+        throw new Error(data.error || 'Erro ao salvar relacionamento');
+      }
+    } catch (error) {
+      console.error('Erro ao salvar relacionamento por duplo clique:', error);
+      throw error;
+    }
+  };
+
+  const handleDuploClique = (nome: string, tipo: 'prefeito' | 'vereador', votos: number) => {
+    setPoliticoSelecionado({ nome, tipo, votos });
+    setModalDuploCliqueOpen(true);
   };
 
   const abrirModalRelacionamentos = (relacionamento?: RelacionamentoDeputado) => {
@@ -627,8 +709,22 @@ export default function EleicoesAnterioresPage() {
       // Carregar emendas SUAS
       await loadEmendasSUAS();
 
-      // Carregar relacionamentos de deputados
+      // Primeiro, sempre inicializar lista de deputados federais com dados da tabela
+      const deputadosOriginais = dados
+        .filter(item => 
+          item.cargo?.toLowerCase().includes('federal') && 
+          item.anoEleicao === '2022'
+        )
+        .map(item => item.nomeUrnaCandidato)
+        .filter((nome, index, array) => array.indexOf(nome) === index);
+      
+      setDeputadosFederaisCompletos(deputadosOriginais);
+
+      // Depois carregar relacionamentos de deputados
       await carregarRelacionamentos();
+
+      // Carregar relacionamentos por duplo clique
+      await carregarRelacionamentosDuploClique();
 
     } catch (err: any) {
       setError(err.message || "Erro ao buscar dados.");
@@ -662,6 +758,7 @@ export default function EleicoesAnterioresPage() {
       document.body.style.overflow = 'unset';
     };
   }, [modalOpen]);
+
 
   // Listener para novos deputados adicionados
   useEffect(() => {
@@ -919,12 +1016,12 @@ export default function EleicoesAnterioresPage() {
                         Notícias
                       </button>
                       <button
-                        onClick={() => abrirListaRelacionamentos()}
+                        onClick={() => setModalRelacionamentosListOpen(true)}
                         disabled={!cidade}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-green-600 hover:bg-green-700 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto justify-center"
+                        className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-blue-600 hover:bg-blue-700 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto justify-center"
                       >
                         <Users className="h-4 w-4" />
-                        Relacionamentos
+                        Ver Relacionamentos
                       </button>
                     </div>
                   </div>
@@ -1203,7 +1300,20 @@ export default function EleicoesAnterioresPage() {
                                           {item.nomeUrnaCandidato}
                                         </span>
                                       ) : (
-                                      <span title={item.nomeUrnaCandidato}>{item.nomeUrnaCandidato}</span>
+                                      <span 
+                                        title={`${item.nomeUrnaCandidato} - Clique duplo para relacionar deputados`}
+                                        className={`cursor-pointer hover:text-blue-600 hover:underline ${
+                                          (tipo === 'prefeito_2024' || tipo === 'vereador_2024') ? 'hover:bg-blue-50 px-1 py-0.5 rounded' : ''
+                                        }`}
+                                        onDoubleClick={() => {
+                                          if (tipo === 'prefeito_2024' || tipo === 'vereador_2024') {
+                                            const votos = parseInt(item.quantidadeVotosNominais || '0');
+                                            handleDuploClique(item.nomeUrnaCandidato, tipo === 'prefeito_2024' ? 'prefeito' : 'vereador', votos);
+                                          }
+                                        }}
+                                      >
+                                        {item.nomeUrnaCandidato}
+                                      </span>
                                       )
                                     )}
                                   </td>
@@ -1756,7 +1866,7 @@ export default function EleicoesAnterioresPage() {
           isOpen={modalCriarEditarOpen}
           onClose={fecharModalRelacionamentos}
           municipio={cidade}
-          deputadosFederais={deputadosFederaisCompletos.length > 0 ? deputadosFederaisCompletos : dados
+          deputadosFederais={dados
             .filter(item => 
               item.cargo?.toLowerCase().includes('federal') && 
               item.anoEleicao === '2022'
@@ -1827,6 +1937,44 @@ export default function EleicoesAnterioresPage() {
         <div className="mt-8 text-center text-sm text-gray-500">
           © 2025 86 Dynamics - Todos os direitos reservados
         </div>
+
+        {/* Modal de Relacionamentos por Duplo Clique */}
+        {politicoSelecionado && (
+          <ModalDeputadosRelacionados
+            isOpen={modalDuploCliqueOpen}
+            onClose={() => {
+              setModalDuploCliqueOpen(false);
+              setPoliticoSelecionado(null);
+            }}
+            municipio={cidade}
+            nomePolitico={politicoSelecionado.nome}
+            tipoPolitico={politicoSelecionado.tipo}
+            votosPolitico={politicoSelecionado.votos}
+            deputadosFederais={dados
+              .filter(item => 
+                item.cargo?.toLowerCase().includes('federal') && 
+                item.anoEleicao === '2022'
+              )
+              .map(item => item.nomeUrnaCandidato)
+              .filter((nome, index, array) => array.indexOf(nome) === index)}
+            onSave={salvarRelacionamentoDuploClique}
+            relacionamentoExistente={relacionamentosDuploClique.find(rel => 
+              rel.nomePolitico === politicoSelecionado.nome && 
+              rel.tipoPolitico === politicoSelecionado.tipo
+            )}
+          />
+        )}
+
+        {/* Modal de Listagem de Relacionamentos */}
+        <ModalRelacionamentosList
+          isOpen={modalRelacionamentosListOpen}
+          onClose={() => setModalRelacionamentosListOpen(false)}
+          municipio={cidade}
+          onEdit={(relacionamento) => {
+            // Implementar edição se necessário
+            console.log('Editar relacionamento:', relacionamento);
+          }}
+        />
           </div>
         </main>
       </div>
