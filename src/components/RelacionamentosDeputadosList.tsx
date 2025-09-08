@@ -68,7 +68,7 @@ export default function RelacionamentosDeputadosList({
   }
 
   // Preparar dados para a tabela - Deputados como colunas, Pessoas como linhas
-  const deputadosFederais = Array.from(new Set(relacionamentos.map(rel => rel.deputadoFederal)));
+  const deputadosFederaisUnicos = Array.from(new Set(relacionamentos.map(rel => rel.deputadoFederal)));
 
   // Calcular total geral de votos
   const totalGeralVotos = relacionamentos.reduce((total, rel) => {
@@ -78,7 +78,7 @@ export default function RelacionamentosDeputadosList({
   }, 0);
 
   // Calcular totalizador por deputado
-  const totalizadorPorDeputado = deputadosFederais.reduce((acc, deputado) => {
+  const totalizadorPorDeputado = deputadosFederaisUnicos.reduce((acc, deputado) => {
     const total = relacionamentos
       .filter(rel => rel.deputadoFederal === deputado)
       .reduce((sum, rel) => {
@@ -90,6 +90,13 @@ export default function RelacionamentosDeputadosList({
     acc[deputado] = total;
     return acc;
   }, {} as Record<string, number>);
+
+  // Ordenar deputados por total de votos (do maior para o menor)
+  const deputadosFederais = deputadosFederaisUnicos.sort((a, b) => {
+    const totalA = totalizadorPorDeputado[a] || 0;
+    const totalB = totalizadorPorDeputado[b] || 0;
+    return totalB - totalA; // Ordem decrescente (maior para menor)
+  });
   
   // Coletar todas as pessoas (prefeitos e vereadores) únicas
   const pessoasMap = new Map();
