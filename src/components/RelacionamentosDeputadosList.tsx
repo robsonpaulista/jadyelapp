@@ -67,6 +67,9 @@ export default function RelacionamentosDeputadosList({
     );
   }
 
+  // Preparar dados para a tabela - Deputados como colunas, Pessoas como linhas
+  const deputadosFederais = [...new Set(relacionamentos.map(rel => rel.deputadoFederal))];
+
   // Calcular total geral de votos
   const totalGeralVotos = relacionamentos.reduce((total, rel) => {
     const votosPrefeito = rel.votacaoPrefeito || 0;
@@ -74,8 +77,19 @@ export default function RelacionamentosDeputadosList({
     return total + votosPrefeito + votosVereadores;
   }, 0);
 
-  // Preparar dados para a tabela - Deputados como colunas, Pessoas como linhas
-  const deputadosFederais = [...new Set(relacionamentos.map(rel => rel.deputadoFederal))];
+  // Calcular totalizador por deputado
+  const totalizadorPorDeputado = deputadosFederais.reduce((acc, deputado) => {
+    const total = relacionamentos
+      .filter(rel => rel.deputadoFederal === deputado)
+      .reduce((sum, rel) => {
+        const totalPrefeito = rel.votacaoPrefeito || 0;
+        const totalVereadores = rel.votacoesVereadores?.reduce((vSum, v) => vSum + v.votos, 0) || 0;
+        return sum + totalPrefeito + totalVereadores;
+      }, 0);
+    
+    acc[deputado] = total;
+    return acc;
+  }, {} as Record<string, number>);
   
   // Coletar todas as pessoas (prefeitos e vereadores) únicas
   const todasPessoas = [];
@@ -149,7 +163,7 @@ export default function RelacionamentosDeputadosList({
                     Cargo
                   </th>
                   {deputadosFederais.map((deputado, index) => (
-                    <th key={index} className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
+                    <th key={index} className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">
                       <div className="flex flex-col items-center">
                         <Users className="h-4 w-4 text-blue-600 mb-1" />
                         <span className="text-xs leading-tight">{deputado}</span>
@@ -159,6 +173,25 @@ export default function RelacionamentosDeputadosList({
                   <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Ações
                   </th>
+                </tr>
+                {/* Linha de Totalizadores */}
+                <tr className="bg-blue-50 border-b-2 border-blue-200">
+                  <td className="px-4 py-2 sticky left-0 bg-blue-50">
+                    <span className="text-sm font-bold text-blue-900">TOTAL</span>
+                  </td>
+                  <td className="px-4 py-2 sticky left-16 bg-blue-50">
+                    <span className="text-sm font-bold text-blue-900">-</span>
+                  </td>
+                  {deputadosFederais.map((deputado, depIndex) => (
+                    <td key={depIndex} className="px-4 py-2 text-center">
+                      <span className="text-sm font-bold text-blue-900">
+                        {totalizadorPorDeputado[deputado]?.toLocaleString() || '0'}
+                      </span>
+                    </td>
+                  ))}
+                  <td className="px-4 py-2 text-center">
+                    <span className="text-sm font-bold text-blue-900">-</span>
+                  </td>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -190,12 +223,9 @@ export default function RelacionamentosDeputadosList({
                       return (
                         <td key={depIndex} className="px-4 py-3 whitespace-nowrap text-center">
                           {relacionamento ? (
-                            <div className="flex flex-col items-center">
-                              <span className="text-sm font-medium text-gray-900">
-                                {pessoa.votos.toLocaleString()}
-                              </span>
-                              <span className="text-xs text-gray-500">votos</span>
-                            </div>
+                            <span className="text-sm font-medium text-gray-900">
+                              {pessoa.votos.toLocaleString()}
+                            </span>
                           ) : (
                             <span className="text-sm text-gray-400">-</span>
                           )}
