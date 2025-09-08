@@ -1977,31 +1977,25 @@ export default function ChapasPage() {
                 <div className="w-full mb-3 px-2">
                   <div className="flex items-center justify-between bg-gray-50 p-2 rounded-md border border-gray-200">
                     <span className="text-xs font-semibold text-gray-600">VOTOS LEGENDA:</span>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={
-                        votosLegendaTemp[partido.nome] !== undefined
-                          ? votosLegendaTemp[partido.nome]
-                          : (votosLegenda[partido.nome]?.toLocaleString('pt-BR') || '')
-                      }
-                      onChange={e => {
-                        // Permitir digitação livre
-                        setVotosLegendaTemp(prev => ({ ...prev, [partido.nome]: e.target.value }));
-                      }}
-                      onBlur={e => {
-                        const value = e.target.value.replace(/\D/g, '');
-                        const numValue = parseInt(value, 10) || 0;
-                        handleSalvarVotosLegenda(pIdx, numValue);
-                        setVotosLegendaTemp(prev => {
-                          const temp = { ...prev };
-                          delete temp[partido.nome];
-                          return temp;
-                        });
-                      }}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') {
-                          const value = (e.target as HTMLInputElement).value.replace(/\D/g, '');
+                    {modoImpressao ? (
+                      <span className="text-xs font-medium text-right w-24">
+                        {(votosLegenda[partido.nome] || 0).toLocaleString('pt-BR')}
+                      </span>
+                    ) : (
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={
+                          votosLegendaTemp[partido.nome] !== undefined
+                            ? votosLegendaTemp[partido.nome]
+                            : (votosLegenda[partido.nome]?.toLocaleString('pt-BR') || '')
+                        }
+                        onChange={e => {
+                          // Permitir digitação livre
+                          setVotosLegendaTemp(prev => ({ ...prev, [partido.nome]: e.target.value }));
+                        }}
+                        onBlur={e => {
+                          const value = e.target.value.replace(/\D/g, '');
                           const numValue = parseInt(value, 10) || 0;
                           handleSalvarVotosLegenda(pIdx, numValue);
                           setVotosLegendaTemp(prev => {
@@ -2009,11 +2003,23 @@ export default function ChapasPage() {
                             delete temp[partido.nome];
                             return temp;
                           });
-                          (e.target as HTMLInputElement).blur();
-                        }
-                      }}
-                      className="bg-white border border-gray-300 rounded px-2 py-1 text-xs w-24 text-right"
-                    />
+                        }}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            const value = (e.target as HTMLInputElement).value.replace(/\D/g, '');
+                            const numValue = parseInt(value, 10) || 0;
+                            handleSalvarVotosLegenda(pIdx, numValue);
+                            setVotosLegendaTemp(prev => {
+                              const temp = { ...prev };
+                              delete temp[partido.nome];
+                              return temp;
+                            });
+                            (e.target as HTMLInputElement).blur();
+                          }
+                        }}
+                        className="bg-white border border-gray-300 rounded px-2 py-1 text-xs w-24 text-right"
+                      />
+                    )}
                   </div>
                 </div>
 
