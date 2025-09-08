@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
-import { Trash2, Plus, Pencil, RefreshCw, Check, Printer, Info } from "lucide-react";
+import { Trash2, Plus, Pencil, RefreshCw, Check, Printer, Info, Eye, EyeOff } from "lucide-react";
 import generatePDF from 'react-to-pdf';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -93,10 +93,21 @@ export default function ChapasPage() {
   const [numVagas, setNumVagas] = useState(8); // Novo estado para número de vagas
   const [openAnaliseRepublicanos, setOpenAnaliseRepublicanos] = useState(false);
   const [mostrarDetalhesSobras, setMostrarDetalhesSobras] = useState(false);
+  
+  // Estado para gerenciar partidos ocultos
+  const [partidosOcultos, setPartidosOcultos] = useState<{ [partidoNome: string]: boolean }>({});
 
   const mostrarNotificacaoAutoSave = (mensagem: string) => {
     setNotificacaoAutoSave(mensagem);
     setTimeout(() => setNotificacaoAutoSave(null), 3000);
+  };
+
+  // Função para alternar visibilidade de partido
+  const togglePartidoVisibilidade = (partidoNome: string) => {
+    setPartidosOcultos(prev => ({
+      ...prev,
+      [partidoNome]: !prev[partidoNome]
+    }));
   };
 
   const handleImprimirPDF = async () => {
@@ -392,7 +403,9 @@ export default function ChapasPage() {
 
   // Obter partidos que podem participar da disputa das sobras
   const getPartidosElegiveisSobras = () => {
-    return partidos.filter(partido => partidoAtingiuMinimo(partido.nome));
+    return partidos.filter(partido => 
+      partidoAtingiuMinimo(partido.nome) && !partidosOcultos[partido.nome]
+    );
   };
   const getProjecaoEleitos = (votosTotal: number) => (votosTotal / quociente).toFixed(2);
   const getDivisaoPorDois = (votosTotal: number) => (votosTotal / 2).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -486,10 +499,12 @@ export default function ChapasPage() {
 
   // Calcular sobras seguindo o sistema proporcional brasileiro (MÉTODO D'HONDT)
   const calcularSobras = () => {
-    // Filtrar apenas partidos que atingiram o mínimo de 80% do quociente
+    // Filtrar apenas partidos que atingiram o mínimo de 80% do quociente e estão visíveis
     const partidosElegiveis = getPartidosElegiveisSobras();
     
-    const resultados = partidos.map(partido => {
+    const resultados = partidos
+      .filter(partido => !partidosOcultos[partido.nome])
+      .map(partido => {
       const votosTotal = getVotosProjetados(partido.candidatos, partido.nome);
       const vagasDiretas = calcularVagasDiretas(votosTotal);
       const divisao = votosTotal / quociente;
@@ -1505,7 +1520,7 @@ export default function ChapasPage() {
             <div className="flex items-center gap-2">
               <span className="font-semibold text-gray-700">Elegíveis:</span>
               <span className="text-sm font-bold text-gray-700">
-                {getPartidosElegiveisSobras().length}/{partidos.length}
+                {getPartidosElegiveisSobras().length}/{partidos.filter(p => !partidosOcultos[p.nome]).length}
               </span>
             </div>
           </div>
@@ -1513,7 +1528,9 @@ export default function ChapasPage() {
 
         {/* Grid de partidos */}
         <div className="w-full grid grid-cols-1 md:grid-cols-5 gap-6">
-          {ordenarPartidos(partidos).map((partido, pIdx) => {
+          {ordenarPartidos(partidos)
+            .filter(partido => !partidosOcultos[partido.nome])
+            .map((partido, pIdx) => {
             // Encontrar o índice real do partido no array original
             const partidoIdx = partidos.findIndex(p => p.nome === partido.nome);
             
@@ -1535,16 +1552,33 @@ export default function ChapasPage() {
               }`}>
                 <div className="flex items-center justify-center relative">
                   <span className="px-6">{partido.nome}</span>
-                  {partido.nome === 'REPUBLICANOS' && (
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                    {/* Botão de ocultar/mostrar */}
                     <button
                       type="button"
-                      aria-label="Análise do REPUBLICANOS"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-700 hover:text-blue-700"
-                      onClick={() => setOpenAnaliseRepublicanos(true)}
+                      aria-label={partidosOcultos[partido.nome] ? "Mostrar partido" : "Ocultar partido"}
+                      className="text-gray-500 hover:text-gray-700 transition-colors"
+                      onClick={() => togglePartidoVisibilidade(partido.nome)}
+                      title={partidosOcultos[partido.nome] ? "Mostrar partido" : "Ocultar partido"}
                     >
-                      <Info className="h-4 w-4" />
+                      {partidosOcultos[partido.nome] ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
                     </button>
-                  )}
+                    {/* Botão de análise para REPUBLICANOS */}
+                    {partido.nome === 'REPUBLICANOS' && (
+                      <button
+                        type="button"
+                        aria-label="Análise do REPUBLICANOS"
+                        className="text-gray-700 hover:text-blue-700 transition-colors"
+                        onClick={() => setOpenAnaliseRepublicanos(true)}
+                      >
+                        <Info className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
               
@@ -2343,6 +2377,31 @@ export default function ChapasPage() {
                         })}
                       </div>
                     </div>
+
+                    {/* Seção de partidos ocultos */}
+                    {Object.keys(partidosOcultos).some(partido => partidosOcultos[partido]) && (
+                      <div className="bg-yellow-50 p-4 rounded border border-yellow-200 mb-4">
+                        <div className="text-sm font-semibold text-yellow-800 mb-3 flex items-center gap-2">
+                          <EyeOff className="h-4 w-4" />
+                          Partidos Ocultos
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {Object.keys(partidosOcultos)
+                            .filter(partido => partidosOcultos[partido])
+                            .map(partido => (
+                              <button
+                                key={partido}
+                                onClick={() => togglePartidoVisibilidade(partido)}
+                                className="flex items-center gap-2 px-3 py-2 bg-yellow-100 hover:bg-yellow-200 border border-yellow-300 rounded-md text-sm font-medium text-yellow-800 transition-colors"
+                                title="Clique para mostrar o partido"
+                              >
+                                <Eye className="h-3 w-3" />
+                                {partido}
+                              </button>
+                            ))}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Seção dos candidatos eleitos */}
                     <div className="bg-white p-4 rounded border">

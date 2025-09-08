@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
-import { Trash2, Plus, Pencil, RefreshCw, Check, Printer } from "lucide-react";
+import { Trash2, Plus, Pencil, RefreshCw, Check, Printer, Eye, EyeOff } from "lucide-react";
 import generatePDF from 'react-to-pdf';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
