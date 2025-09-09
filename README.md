@@ -47,7 +47,7 @@ Consulte os arquivos de documentação:
 - `DEPLOY_CHECKLI: viST.md` - Checklist para deploy no Vercel
 
 azer#
-isso
+issoé na na p
 ## 📊 Integração com Google Sheets
 
 O sistema integra com múltiplas planilhas do Google Sheets:
