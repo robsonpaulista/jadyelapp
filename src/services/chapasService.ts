@@ -1,5 +1,6 @@
 import { db } from '@/lib/firebase';
 import { collection, getDocs, setDoc, doc, writeBatch, deleteDoc, getDoc, query, where, orderBy } from 'firebase/firestore';
+import { executeWithRetry, executeBatchWithRetry, limparEstadosTravados } from '@/lib/firebase-utils';
 
 
 
@@ -360,6 +361,9 @@ export async function atualizarCenario(
   quociente: number
 ): Promise<void> {
   try {
+    // Limpar estados travados antes de começar
+    await limparEstadosTravados();
+    
     // Atualizar dados do cenário e ativar automaticamente
     const dadosParaSalvar = {
       atualizadoEm: new Date().toISOString(),
@@ -367,33 +371,48 @@ export async function atualizarCenario(
       ativo: true // Sempre ativar o cenário quando for salvo
     };
     
-    await setDoc(doc(db, 'cenarios', cenarioId), dadosParaSalvar, { merge: true });
+    await executeWithRetry(
+      () => setDoc(doc(db, 'cenarios', cenarioId), dadosParaSalvar, { merge: true }),
+      'Atualizar dados do cenário'
+    );
     
     // Desativar outros cenários para garantir que apenas este esteja ativo
     const qAtivos = query(collection(db, 'cenarios'), where('ativo', '==', true));
     const snapshotAtivos = await getDocs(qAtivos);
-    const batchAtivos = writeBatch(db);
-    snapshotAtivos.docs.forEach(doc => {
-      if (doc.id !== cenarioId) {
-        batchAtivos.update(doc.ref, {
+    
+    const operacoesDesativar = snapshotAtivos.docs
+      .filter(doc => doc.id !== cenarioId)
+      .map(doc => () => {
+        const batch = writeBatch(db);
+        batch.update(doc.ref, {
           ativo: false,
           atualizadoEm: new Date().toISOString()
         });
-      }
-    });
-    await batchAtivos.commit();
+        return batch.commit();
+      });
+    
+    if (operacoesDesativar.length > 0) {
+      await executeBatchWithRetry(operacoesDesativar, 'Desativar outros cenários');
+    }
 
     // Limpar partidos existentes
     const q = query(collection(db, 'cenarios_partidos'), where('cenarioId', '==', cenarioId));
     const snapshot = await getDocs(q);
-    const batch = writeBatch(db);
-    snapshot.docs.forEach(doc => {
+    
+    const operacoesLimpeza = snapshot.docs.map(doc => () => {
+      const batch = writeBatch(db);
       batch.delete(doc.ref);
+      return batch.commit();
     });
+    
+    if (operacoesLimpeza.length > 0) {
+      await executeBatchWithRetry(operacoesLimpeza, 'Limpar partidos existentes');
+    }
 
     // Adicionar novos partidos
-    partidos.forEach(partido => {
-      partido.candidatos.forEach(candidato => {
+    const operacoesNovosPartidos = partidos.flatMap(partido => 
+      partido.candidatos.map(candidato => () => {
+        const batch = writeBatch(db);
         const id = `${cenarioId}_${safeId(partido.nome, candidato.nome)}`;
         batch.set(doc(db, 'cenarios_partidos', id), {
           cenarioId,
@@ -405,11 +424,21 @@ export async function atualizarCenario(
           corTexto: partido.corTexto,
           votosLegenda: partido.votosLegenda || 0
         });
-      });
-    });
-    await batch.commit();
+        return batch.commit();
+      })
+    );
+    
+    if (operacoesNovosPartidos.length > 0) {
+      await executeBatchWithRetry(operacoesNovosPartidos, 'Adicionar novos partidos');
+    }
   } catch (error) {
     console.error('Erro ao atualizar cenário:', error);
+    // Tentar limpar estados travados em caso de erro
+    try {
+      await limparEstadosTravados();
+    } catch (cleanupError) {
+      console.error('Erro ao limpar estados após falha:', cleanupError);
+    }
     throw error;
   }
 }

@@ -95,6 +95,7 @@ export default function ChapasEstaduaisPage() {
   const [notificacaoAutoSave, setNotificacaoAutoSave] = useState<string | null>(null);
   const [carregandoCenario, setCarregandoCenario] = useState(false);
   const [numVagas, setNumVagas] = useState(8); // Novo estado para número de vagas
+  const [dadosCarregados, setDadosCarregados] = useState(false); // Estado para controlar carregamento inicial
 
   const mostrarNotificacaoAutoSave = (mensagem: string) => {
     setNotificacaoAutoSave(mensagem);
@@ -190,6 +191,7 @@ export default function ChapasEstaduaisPage() {
             setPartidos(partidosOrdenados);
             if (!quocienteCarregado) {
               setQuociente(novoCenarioBase.quocienteEleitoral);
+              setQuocienteCarregado(true);
             }
             
             // Carregar número de vagas do cenário base
@@ -213,6 +215,7 @@ export default function ChapasEstaduaisPage() {
         setPartidos(partidosOrdenados);
         if (!quocienteCarregado) {
           setQuociente(cenarioBase.quocienteEleitoral);
+          setQuocienteCarregado(true);
         }
         
         // Carregar número de vagas do cenário base
@@ -265,6 +268,7 @@ export default function ChapasEstaduaisPage() {
           setPartidos(partidosOrdenados);
           if (!quocienteCarregado) {
             setQuociente(novoCenarioBase.quocienteEleitoral);
+            setQuocienteCarregado(true);
           }
           const votosLegendaTemp: { [partido: string]: number } = {};
           novoCenarioBase.partidos.forEach((partido: any) => {
@@ -290,8 +294,12 @@ export default function ChapasEstaduaisPage() {
 
   // Carregar dados do Firestore ao abrir a página
   useEffect(() => {
+    if (dadosCarregados) return; // Evitar carregamento múltiplo
+    
     async function carregarDadosIniciais() {
       try {
+        setDadosCarregados(true); // Marcar como carregando para evitar loops
+        
         // Primeiro tentar carregar cenário ativo (se existir)
         try {
           const cenarioAtivo = await obterCenarioAtivo();
@@ -328,11 +336,12 @@ export default function ChapasEstaduaisPage() {
       } catch (error) {
         console.error('Erro ao carregar dados iniciais:', error);
         alert('Erro ao carregar dados iniciais. Recarregue a página.');
+        setDadosCarregados(false); // Permitir nova tentativa em caso de erro
       }
     }
     
     carregarDadosIniciais();
-  }, []);
+  }, [dadosCarregados]);
 
   // Funções auxiliares para definir cores dos partidos
   function getPartidoCor(partido: string): string {
@@ -762,6 +771,7 @@ export default function ChapasEstaduaisPage() {
       const candidatoExistente = partido.candidatos.find(c => c.nome === novoCandidato.nome);
       if (candidatoExistente) {
         alert('Este candidato já existe no partido!');
+        setSalvandoCandidato(false);
         return;
       }
 
@@ -770,8 +780,8 @@ export default function ChapasEstaduaisPage() {
         throw new Error('Cenário base não encontrado');
       }
       
-      // Atualizar estado local UMA VEZ apenas
-      setPartidos(prev => prev.map((p, i) => {
+      // Criar nova lista de partidos com o candidato adicionado
+      const novosPartidos = partidos.map((p, i) => {
         if (i !== partidoIdx) return p;
         
         // O gênero é determinado pela seleção do usuário no modal
@@ -813,11 +823,27 @@ export default function ChapasEstaduaisPage() {
           ...p,
           candidatos: candidatosAtuais
         };
+      });
+
+      // Converter partidos para o formato do cenário usando a nova lista
+      const partidosOrdenados = ordenarPartidos(novosPartidos);
+      const partidosConvertidos = partidosOrdenados.map(partido => ({
+        nome: partido.nome,
+        cor: partido.cor,
+        corTexto: partido.corTexto,
+        candidatos: partido.candidatos.map(c => ({
+          nome: c.nome,
+          votos: c.votos,
+          genero: (c as any).genero
+        })),
+        votosLegenda: votosLegenda[partido.nome] || 0
       }));
 
-      // Salvar apenas os partidos, sem alterar o QE
-      const partidosConvertidos = converterPartidosParaCenario();
+      // Salvar no Firebase
       await atualizarCenario(cenarioAtivo.id, partidosConvertidos, cenarioAtivo.quocienteEleitoral, numVagas);
+
+      // Atualizar estado local APÓS salvar no Firebase
+      setPartidos(novosPartidos);
 
       // Limpar formulário e fechar dialog
       setNovoCandidato({ nome: '', votos: 0, genero: 'homem' });

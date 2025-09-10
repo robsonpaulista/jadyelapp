@@ -6,6 +6,7 @@ import generatePDF from 'react-to-pdf';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { carregarQuocienteEleitoral, salvarQuocienteEleitoral, CenarioCompleto, PartidoCenario, obterCenarioAtivo, atualizarCenario, carregarCenario, criarCenarioBase, dadosIniciais } from "@/services/chapasService";
+import { limparEstadosTravados, verificarOperacoesPendentes, setQuotaStatusCallback, getQuotaStatus } from "@/lib/firebase-utils";
 import CenariosTabs from "@/components/CenariosTabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -90,9 +91,14 @@ export default function ChapasPage() {
   const [salvandoMudancas, setSalvandoMudancas] = useState(false);
   const [notificacaoAutoSave, setNotificacaoAutoSave] = useState<string | null>(null);
   const [carregandoCenario, setCarregandoCenario] = useState(false);
+  const [dadosCarregados, setDadosCarregados] = useState(false); // Estado para controlar carregamento inicial
   const [numVagas, setNumVagas] = useState(8); // Novo estado para número de vagas
   const [openAnaliseRepublicanos, setOpenAnaliseRepublicanos] = useState(false);
   const [mostrarDetalhesSobras, setMostrarDetalhesSobras] = useState(false);
+  const [limpandoEstados, setLimpandoEstados] = useState(false);
+  const [quotaStatus, setQuotaStatus] = useState(getQuotaStatus());
+  const [erroCarregamento, setErroCarregamento] = useState<string | null>(null);
+  const [tipoErro, setTipoErro] = useState<'quota' | 'conexao' | 'dados' | 'timeout' | null>(null);
   
   // Estado para gerenciar partidos ocultos
   const [partidosOcultos, setPartidosOcultos] = useState<{ [partidoNome: string]: boolean }>({});
@@ -100,6 +106,23 @@ export default function ChapasPage() {
   const mostrarNotificacaoAutoSave = (mensagem: string) => {
     setNotificacaoAutoSave(mensagem);
     setTimeout(() => setNotificacaoAutoSave(null), 3000);
+  };
+
+  // Função para limpar estados travados (botão de emergência)
+  const handleLimparEstadosTravados = async () => {
+    setLimpandoEstados(true);
+    try {
+      await limparEstadosTravados();
+      mostrarNotificacaoAutoSave('Estados travados limpos com sucesso!');
+      
+      // Recarregar dados após limpeza
+      await carregarDadosFirestore();
+    } catch (error) {
+      console.error('Erro ao limpar estados travados:', error);
+      alert('Erro ao limpar estados travados. Tente novamente.');
+    } finally {
+      setLimpandoEstados(false);
+    }
   };
 
   // Função para alternar visibilidade de partido
@@ -162,6 +185,9 @@ export default function ChapasPage() {
   // Função para carregar dados do cenário base (fonte única de verdade)
   const carregarDadosFirestore = async () => {
     try {
+      setErroCarregamento(null);
+      setTipoErro(null);
+      
       // Tentar carregar do cenário base
       const cenarioBase = await carregarCenario('base');
       if (cenarioBase) {
@@ -170,6 +196,7 @@ export default function ChapasPage() {
         setPartidos(partidosOrdenados);
         if (!quocienteCarregado) {
           setQuociente(cenarioBase.quocienteEleitoral);
+          setQuocienteCarregado(true);
         }
         const votosLegendaTemp: { [partido: string]: number } = {};
         cenarioBase.partidos.forEach(partido => {
@@ -178,12 +205,30 @@ export default function ChapasPage() {
           }
         });
         setVotosLegenda(votosLegendaTemp);
+        mostrarNotificacaoAutoSave('Dados carregados com sucesso');
       } else {
+        setTipoErro('dados');
+        setErroCarregamento('Cenário base não encontrado no banco de dados');
         console.warn('Cenário base não encontrado no Firestore. Nenhuma ação será tomada.');
       }
-      mostrarNotificacaoAutoSave('Dados carregados com sucesso');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao carregar dados:', error);
+      
+      // Detectar tipo de erro
+      if (error.code === 'resource-exhausted' || error.message?.includes('Quota exceeded')) {
+        setTipoErro('quota');
+        setErroCarregamento('Quota do Firebase excedida - aguarde 1-2 horas para reset automático');
+      } else if (error.code === 'unavailable' || error.message?.includes('network')) {
+        setTipoErro('conexao');
+        setErroCarregamento('Problema de conexão com o Firebase - verifique sua internet');
+      } else if (error.message?.includes('timeout') || error.message?.includes('deadline')) {
+        setTipoErro('timeout');
+        setErroCarregamento('Timeout na conexão - o servidor está demorando para responder');
+      } else {
+        setTipoErro('dados');
+        setErroCarregamento('Erro ao carregar dados do banco - tente novamente');
+      }
+      
       alert('Erro ao carregar dados. Tente novamente.');
     }
   };
@@ -194,10 +239,32 @@ export default function ChapasPage() {
 
 
 
+  // Monitorar status da quota do Firebase
+  useEffect(() => {
+    setQuotaStatusCallback((status) => {
+      setQuotaStatus(status);
+      if (status.isExceeded) {
+        setTipoErro('quota');
+        setErroCarregamento(`Quota do Firebase excedida! Tentativa ${status.retryCount}/3`);
+        mostrarNotificacaoAutoSave(`⚠️ Quota do Firebase excedida! Tentativa ${status.retryCount}/3`);
+      } else {
+        // Reset erro quando quota volta ao normal
+        if (tipoErro === 'quota') {
+          setTipoErro(null);
+          setErroCarregamento(null);
+        }
+      }
+    });
+  }, [tipoErro]);
+
   // Carregar dados do Firestore ao abrir a página
   useEffect(() => {
+    if (dadosCarregados) return; // Evitar carregamento múltiplo
+    
     async function carregarDadosIniciais() {
       try {
+        setDadosCarregados(true); // Marcar como carregando para evitar loops
+        
         // Primeiro tentar carregar cenário ativo (se existir)
         try {
           const cenarioAtivo = await obterCenarioAtivo();
@@ -229,11 +296,12 @@ export default function ChapasPage() {
       } catch (error) {
         console.error('Erro ao carregar dados iniciais:', error);
         alert('Erro ao carregar dados iniciais. Recarregue a página.');
+        setDadosCarregados(false); // Permitir nova tentativa em caso de erro
       }
     }
     
     carregarDadosIniciais();
-  }, []);
+  }, [dadosCarregados]);
 
   // Funções auxiliares para definir cores dos partidos
   function getPartidoCor(partido: string): string {
@@ -1449,7 +1517,173 @@ export default function ChapasPage() {
         </div>
       )}
       
+      {/* Alerta de quota excedida */}
+      {quotaStatus.isExceeded && (
+        <div className="fixed top-16 right-4 z-50 bg-red-500 text-white px-4 py-3 rounded-lg shadow-lg max-w-sm">
+          <div className="flex items-start gap-3">
+            <div className="w-2 h-2 bg-white rounded-full animate-pulse mt-2"></div>
+            <div className="flex-1">
+              <div className="font-semibold text-sm">🚨 Quota Firebase Excedida</div>
+              <div className="text-xs mt-1 opacity-90">
+                O Firebase está temporariamente indisponível devido ao limite de operações.
+              </div>
+              <div className="text-xs mt-2 opacity-75">
+                • Tentativa: {quotaStatus.retryCount}/3<br/>
+                • Último erro: {quotaStatus.lastRetryTime?.toLocaleTimeString()}<br/>
+                • Aguarde 1-2 horas para reset automático
+              </div>
+              <div className="mt-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-xs bg-white/20 border-white/30 text-white hover:bg-white/30"
+                  onClick={handleLimparEstadosTravados}
+                  disabled={limpandoEstados}
+                >
+                  {limpandoEstados ? 'Limpando...' : 'Tentar Limpar Estados'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Aviso visual de erro de carregamento */}
+      {erroCarregamento && (
+        <div className="fixed top-32 right-4 z-50 bg-orange-500 text-white px-4 py-3 rounded-lg shadow-lg max-w-sm">
+          <div className="flex items-start gap-3">
+            <div className="w-2 h-2 bg-white rounded-full animate-pulse mt-2"></div>
+            <div className="flex-1">
+              <div className="font-semibold text-sm">
+                {tipoErro === 'quota' && '🚨 Quota Firebase Excedida'}
+                {tipoErro === 'conexao' && '🌐 Problema de Conexão'}
+                {tipoErro === 'timeout' && '⏱️ Timeout de Conexão'}
+                {tipoErro === 'dados' && '📊 Erro de Dados'}
+                {!tipoErro && '⚠️ Erro de Carregamento'}
+              </div>
+              <div className="text-xs mt-1 opacity-90">
+                {erroCarregamento}
+              </div>
+              <div className="text-xs mt-2 opacity-75">
+                {tipoErro === 'quota' && (
+                  <>
+                    • O Firebase atingiu o limite de operações<br/>
+                    • Aguarde 1-2 horas para reset automático<br/>
+                    • Use o botão "Limpar Estados Travados"
+                  </>
+                )}
+                {tipoErro === 'conexao' && (
+                  <>
+                    • Verifique sua conexão com a internet<br/>
+                    • Tente recarregar a página<br/>
+                    • Verifique se o Firebase está online
+                  </>
+                )}
+                {tipoErro === 'timeout' && (
+                  <>
+                    • O servidor está demorando para responder<br/>
+                    • Tente novamente em alguns minutos<br/>
+                    • Verifique se há muitos usuários online
+                  </>
+                )}
+                {tipoErro === 'dados' && (
+                  <>
+                    • Problema ao acessar dados do banco<br/>
+                    • Tente recarregar a página<br/>
+                    • Verifique se o cenário base existe
+                  </>
+                )}
+              </div>
+              <div className="mt-2 flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-xs bg-white/20 border-white/30 text-white hover:bg-white/30"
+                  onClick={() => {
+                    setErroCarregamento(null);
+                    setTipoErro(null);
+                    carregarDadosFirestore();
+                  }}
+                >
+                  🔄 Tentar Novamente
+                </Button>
+                {tipoErro === 'quota' && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs bg-white/20 border-white/30 text-white hover:bg-white/30"
+                    onClick={handleLimparEstadosTravados}
+                    disabled={limpandoEstados}
+                  >
+                    {limpandoEstados ? 'Limpando...' : '🧹 Limpar Estados'}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div ref={contentRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full space-y-4 py-4">
+        {/* Banner de aviso de problemas */}
+        {(erroCarregamento || quotaStatus.isExceeded) && (
+          <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white p-4 rounded-lg shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="text-2xl">
+                {tipoErro === 'quota' && '🚨'}
+                {tipoErro === 'conexao' && '🌐'}
+                {tipoErro === 'timeout' && '⏱️'}
+                {tipoErro === 'dados' && '📊'}
+                {!tipoErro && '⚠️'}
+              </div>
+              <div className="flex-1">
+                <div className="font-bold text-lg">
+                  {tipoErro === 'quota' && 'QUOTA DO FIREBASE EXCEDIDA'}
+                  {tipoErro === 'conexao' && 'PROBLEMA DE CONEXÃO'}
+                  {tipoErro === 'timeout' && 'TIMEOUT DE CONEXÃO'}
+                  {tipoErro === 'dados' && 'ERRO DE DADOS'}
+                  {!tipoErro && 'ERRO DE CARREGAMENTO'}
+                </div>
+                <div className="text-sm opacity-90 mt-1">
+                  {erroCarregamento || 'Os cenários não estão carregando devido a um problema técnico.'}
+                </div>
+                <div className="text-xs opacity-75 mt-2">
+                  {tipoErro === 'quota' && '• Aguarde 1-2 horas para reset automático • Use o botão "Limpar Estados Travados" • Evite múltiplas operações simultâneas'}
+                  {tipoErro === 'conexao' && '• Verifique sua conexão com a internet • Tente recarregar a página • Verifique se o Firebase está online'}
+                  {tipoErro === 'timeout' && '• O servidor está demorando para responder • Tente novamente em alguns minutos • Verifique se há muitos usuários online'}
+                  {tipoErro === 'dados' && '• Problema ao acessar dados do banco • Tente recarregar a página • Verifique se o cenário base existe'}
+                  {!tipoErro && '• Tente recarregar a página • Verifique sua conexão • Entre em contato com o suporte se o problema persistir'}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="bg-white/20 border-white/30 text-white hover:bg-white/30"
+                  onClick={() => {
+                    setErroCarregamento(null);
+                    setTipoErro(null);
+                    carregarDadosFirestore();
+                  }}
+                >
+                  🔄 Tentar Novamente
+                </Button>
+                {tipoErro === 'quota' && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="bg-white/20 border-white/30 text-white hover:bg-white/30"
+                    onClick={handleLimparEstadosTravados}
+                    disabled={limpandoEstados}
+                  >
+                    {limpandoEstados ? 'Limpando...' : '🧹 Limpar Estados'}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Header com controles de cenários e quociente */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -1460,7 +1694,56 @@ export default function ChapasPage() {
                 <span>Carregando cenário...</span>
               </div>
             )}
+            
+            {/* Indicador de status da quota do Firebase */}
+            {quotaStatus.isExceeded && (
+              <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 px-3 py-1 rounded-lg border border-red-200">
+                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                <span className="font-medium">Quota Firebase Excedida</span>
+                <span className="text-xs text-red-500">
+                  (Tentativa {quotaStatus.retryCount}/3)
+                </span>
+              </div>
+            )}
+
+            {/* Indicador de erro de carregamento */}
+            {erroCarregamento && (
+              <div className="flex items-center gap-2 text-sm text-orange-600 bg-orange-50 px-3 py-1 rounded-lg border border-orange-200">
+                <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                <span className="font-medium">
+                  {tipoErro === 'quota' && '🚨 Quota Excedida'}
+                  {tipoErro === 'conexao' && '🌐 Sem Conexão'}
+                  {tipoErro === 'timeout' && '⏱️ Timeout'}
+                  {tipoErro === 'dados' && '📊 Erro de Dados'}
+                  {!tipoErro && '⚠️ Erro de Carregamento'}
+                </span>
+                <span className="text-xs text-orange-500">
+                  Cenários não carregam
+                </span>
+              </div>
+            )}
           </div>
+          
+          {/* Botão de emergência para limpar estados travados */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleLimparEstadosTravados}
+            disabled={limpandoEstados}
+            className="text-orange-600 border-orange-200 hover:bg-orange-50"
+          >
+            {limpandoEstados ? (
+              <>
+                <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                Limpando...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Limpar Estados Travados
+              </>
+            )}
+          </Button>
         </div>
 
         {/* Gerenciador de Cenários com Abas */}
