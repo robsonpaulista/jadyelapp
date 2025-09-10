@@ -134,6 +134,7 @@ export async function limparEstadosTravados(): Promise<void> {
     // Limpar cenários estaduais
     const cenariosEstaduais = await getDocs(collection(db, 'cenarios_estaduais'));
     const batchEstaduais = writeBatch(db);
+    let hasEstaduaisUpdates = false;
     
     cenariosEstaduais.forEach(doc => {
       const data = doc.data();
@@ -144,16 +145,18 @@ export async function limparEstadosTravados(): Promise<void> {
           status: 'ativo',
           atualizadoEm: new Date().toISOString()
         });
+        hasEstaduaisUpdates = true;
       }
     });
     
-    if (!batchEstaduais.isEmpty) {
+    if (hasEstaduaisUpdates) {
       await executeWithRetry(() => batchEstaduais.commit(), 'Limpeza cenários estaduais');
     }
     
     // Limpar cenários federais
     const cenariosFederais = await getDocs(collection(db, 'cenarios'));
     const batchFederais = writeBatch(db);
+    let hasFederaisUpdates = false;
     
     cenariosFederais.forEach(doc => {
       const data = doc.data();
@@ -164,10 +167,11 @@ export async function limparEstadosTravados(): Promise<void> {
           status: 'ativo',
           atualizadoEm: new Date().toISOString()
         });
+        hasFederaisUpdates = true;
       }
     });
     
-    if (!batchFederais.isEmpty) {
+    if (hasFederaisUpdates) {
       await executeWithRetry(() => batchFederais.commit(), 'Limpeza cenários federais');
     }
     
