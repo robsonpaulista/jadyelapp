@@ -180,6 +180,12 @@ export default function ChapasEstaduaisPage() {
               cor: 'bg-sky-400',
               corTexto: 'text-white',
               candidatos: []
+            },
+            {
+              nome: 'REPUBLICANOS',
+              cor: 'bg-blue-600',
+              corTexto: 'text-white',
+              candidatos: []
             }
           ];
           await criarCenarioBase(partidosIniciais, 190000, numVagas);
@@ -249,6 +255,12 @@ export default function ChapasEstaduaisPage() {
           {
             nome: 'PP',
             cor: 'bg-sky-400',
+            corTexto: 'text-white',
+            candidatos: []
+          },
+          {
+            nome: 'REPUBLICANOS',
+            cor: 'bg-blue-600',
             corTexto: 'text-white',
             candidatos: []
           }
