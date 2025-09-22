@@ -899,11 +899,41 @@ export default function ChapasEstaduaisPage() {
     
     setCarregandoCenario(true);
     try {
-      // Carregar o novo cenário diretamente (sem salvar automaticamente)
+      // Carregar o novo cenário diretamente
       const novoCenario = await carregarCenario(cenarioId);
       if (novoCenario) {
-        handleCenarioChange(novoCenario as any);
-        mostrarNotificacaoAutoSave(`Cenário "${novoCenario.nome}" carregado com sucesso`);
+        // Verificar se o cenário tem REPUBLICANOS
+        const temRepublicanos = novoCenario.partidos.some(p => p.nome === 'REPUBLICANOS');
+        
+        if (!temRepublicanos) {
+          console.log('Cenário não tem REPUBLICANOS. Adicionando automaticamente...');
+          
+          // Adicionar REPUBLICANOS ao cenário
+          const partidosComRepublicanos = [
+            ...novoCenario.partidos,
+            {
+              nome: 'REPUBLICANOS',
+              cor: 'bg-blue-600',
+              corTexto: 'text-white',
+              candidatos: [],
+              votosLegenda: 0
+            }
+          ];
+          
+          // Salvar o cenário atualizado com REPUBLICANOS no Firestore
+          await atualizarCenario(novoCenario.id, partidosComRepublicanos, novoCenario.quocienteEleitoral, novoCenario.numeroVagas || 8);
+          console.log('REPUBLICANOS adicionado ao cenário no Firestore');
+          
+          // Recarregar o cenário atualizado
+          const cenarioAtualizado = await carregarCenario(cenarioId);
+          if (cenarioAtualizado) {
+            handleCenarioChange(cenarioAtualizado as any);
+            mostrarNotificacaoAutoSave(`Cenário "${cenarioAtualizado.nome}" carregado com REPUBLICANOS adicionado`);
+          }
+        } else {
+          handleCenarioChange(novoCenario as any);
+          mostrarNotificacaoAutoSave(`Cenário "${novoCenario.nome}" carregado com sucesso`);
+        }
       }
     } catch (error) {
       console.error('Erro ao carregar cenário:', error);
