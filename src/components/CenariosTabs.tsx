@@ -127,7 +127,12 @@ export default function CenariosTabs({
   };
 
   useEffect(() => {
-    carregarCenarios();
+    // Adicionar delay para evitar carregamento simultâneo com a página principal
+    const timeoutId = setTimeout(() => {
+      carregarCenarios();
+    }, 100);
+    
+    return () => clearTimeout(timeoutId);
   }, []);
 
   // Removida a criação automática do cenário base

@@ -304,51 +304,62 @@ export default function ChapasEstaduaisPage() {
 
 
 
-  // Carregar dados do Firestore ao abrir a página
+  // Carregar dados do Firestore ao abrir a página - OTIMIZADO
   useEffect(() => {
     if (dadosCarregados) return; // Evitar carregamento múltiplo
     
     async function carregarDadosIniciais() {
       try {
         setDadosCarregados(true); // Marcar como carregando para evitar loops
+        setLoading(true);
         
-        // Primeiro tentar carregar cenário ativo (se existir)
+        console.log('🚀 Iniciando carregamento otimizado...');
+        
+        // Estratégia otimizada: tentar cenário ativo primeiro, se falhar, usar base
+        let cenarioCarregado: CenarioCompleto | null = null;
+        
         try {
-          const cenarioAtivo = await obterCenarioAtivo();
-          if (cenarioAtivo) {
-            setCenarioAtivo(cenarioAtivo);
-            const partidosOrdenados = ordenarPartidos(cenarioAtivo.partidos);
-            setPartidos(partidosOrdenados);
-            // Carregar o QE do cenário ativo
-            setQuociente(cenarioAtivo.quocienteEleitoral);
-            setQuocienteCarregado(true);
-            
-            // Carregar número de vagas do cenário ativo
-            if (cenarioAtivo.numeroVagas) {
-              setNumVagas(cenarioAtivo.numeroVagas);
-            }
-            
-            // Carregar votos de legenda do cenário ativo
-            const votosLegendaTemp: { [partido: string]: number } = {};
-            cenarioAtivo.partidos.forEach((partido: any) => {
-              if (partido.votosLegenda) {
-                votosLegendaTemp[partido.nome] = partido.votosLegenda;
-              }
-            });
-            setVotosLegenda(votosLegendaTemp);
-            
-            return; // Sair da função se encontrou cenário ativo
-          }
-        } catch (cenarioError) {
-          // Nenhum cenário ativo encontrado, carregando cenário base
+          // Tentar carregar cenário ativo
+          cenarioCarregado = await obterCenarioAtivo();
+          console.log('✅ Cenário ativo carregado');
+        } catch (error) {
+          console.log('⚠️ Cenário ativo não encontrado, tentando base...');
+          // Se falhar, tentar carregar cenário base
+          cenarioCarregado = await carregarCenario('base');
+          console.log('✅ Cenário base carregado');
         }
         
-        // Se não há cenário ativo, carregar o cenário base
-        await carregarDadosFirestore();
+        if (cenarioCarregado) {
+          // Configurar todos os estados de uma vez para evitar re-renderizações
+          const partidosOrdenados = ordenarPartidos(cenarioCarregado.partidos);
+          const votosLegendaTemp: { [partido: string]: number } = {};
+          
+          cenarioCarregado.partidos.forEach((partido: any) => {
+            if (partido.votosLegenda) {
+              votosLegendaTemp[partido.nome] = partido.votosLegenda;
+            }
+          });
+          
+          // Atualizar todos os estados em batch
+          setCenarioAtivo(cenarioCarregado);
+          setPartidos(partidosOrdenados);
+          setQuociente(cenarioCarregado.quocienteEleitoral);
+          setQuocienteCarregado(true);
+          setNumVagas(cenarioCarregado.numeroVagas || 8);
+          setVotosLegenda(votosLegendaTemp);
+          
+          console.log('✅ Estados configurados com sucesso');
+        } else {
+          console.log('⚠️ Nenhum cenário encontrado, criando base...');
+          await carregarDadosFirestore();
+        }
+        
       } catch (error) {
-        console.error('Erro ao carregar dados iniciais:', error);
+        console.error('❌ Erro ao carregar dados iniciais:', error);
         alert('Erro ao carregar dados iniciais. Recarregue a página.');
         setDadosCarregados(false); // Permitir nova tentativa em caso de erro
+      } finally {
+        setLoading(false);
       }
     }
     
@@ -1151,6 +1162,17 @@ export default function ChapasEstaduaisPage() {
         <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2">
           <Check className="h-4 w-4" />
           <span className="text-sm">{notificacaoAutoSave}</span>
+        </div>
+      )}
+      
+      {/* Loading inicial */}
+      {loading && (
+        <div className="fixed inset-0 bg-white bg-opacity-90 flex items-center justify-center z-50">
+          <div className="text-center">
+            <RefreshCw className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Carregando Chapas Estaduais</h3>
+            <p className="text-sm text-gray-600">Aguarde enquanto carregamos os dados...</p>
+          </div>
         </div>
       )}
       
