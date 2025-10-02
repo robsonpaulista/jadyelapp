@@ -197,7 +197,7 @@ export async function verificarOperacoesPendentes(): Promise<boolean> {
     await Promise.race([operationPromise, timeoutPromise]);
     return false; // Nenhuma operação pendente
   } catch (error) {
-    console.warn('⚠️ Operações pendentes detectadas:', error.message);
+    console.warn('⚠️ Operações pendentes detectadas:', error instanceof Error ? error.message : String(error));
     return true; // Há operações pendentes
   }
 }
