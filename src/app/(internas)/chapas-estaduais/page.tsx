@@ -94,7 +94,7 @@ export default function ChapasEstaduaisPage() {
   const [salvandoMudancas, setSalvandoMudancas] = useState(false);
   const [notificacaoAutoSave, setNotificacaoAutoSave] = useState<string | null>(null);
   const [carregandoCenario, setCarregandoCenario] = useState(false);
-  const [numVagas, setNumVagas] = useState(8); // Novo estado para número de vagas
+  const [numVagas, setNumVagas] = useState(30); // Novo estado para número de vagas
   const [dadosCarregados, setDadosCarregados] = useState(false); // Estado para controlar carregamento inicial
 
   const mostrarNotificacaoAutoSave = (mensagem: string) => {
@@ -1223,7 +1223,7 @@ export default function ChapasEstaduaisPage() {
                 type="number"
                 value={numVagas}
                 onChange={(e) => {
-                  const novoValor = Math.max(1, parseInt(e.target.value) || 8);
+                  const novoValor = Math.max(1, parseInt(e.target.value) || 30);
                   setNumVagas(novoValor);
                   
                   // Salvar automaticamente se há um cenário ativo

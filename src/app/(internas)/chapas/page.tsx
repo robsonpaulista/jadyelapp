@@ -92,7 +92,7 @@ export default function ChapasPage() {
   const [notificacaoAutoSave, setNotificacaoAutoSave] = useState<string | null>(null);
   const [carregandoCenario, setCarregandoCenario] = useState(false);
   const [dadosCarregados, setDadosCarregados] = useState(false); // Estado para controlar carregamento inicial
-  const [numVagas, setNumVagas] = useState(8); // Novo estado para número de vagas
+  const [numVagas, setNumVagas] = useState(10); // Novo estado para número de vagas
   const [openAnaliseRepublicanos, setOpenAnaliseRepublicanos] = useState(false);
   const [mostrarDetalhesSobras, setMostrarDetalhesSobras] = useState(false);
   const [limpandoEstados, setLimpandoEstados] = useState(false);
@@ -1770,7 +1770,7 @@ export default function ChapasPage() {
               <input
                 type="number"
                 value={numVagas}
-                onChange={(e) => setNumVagas(Math.max(1, parseInt(e.target.value) || 8))}
+                onChange={(e) => setNumVagas(Math.max(1, parseInt(e.target.value) || 10))}
                 className="text-sm font-bold text-gray-700 bg-transparent border-b border-gray-200 focus:border-blue-400 outline-none w-20 text-center px-1"
                 min="1"
                 max="20"
