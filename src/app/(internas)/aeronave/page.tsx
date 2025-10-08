@@ -163,6 +163,7 @@ export default function AeronavePage() {
   const [editModal, setEditModal] = useState<{ type: 'piloto' | 'aeronave' | 'trecho' | null; id?: string; name: string }>({ type: null, name: '' });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<{ valor: string; tipo: string; descricao: string; piloto?: string; aeronave?: string; trecho?: string }>({ valor: '', tipo: '', descricao: '' });
+  const [confirmModal, setConfirmModal] = useState<{ open: boolean; action: 'aprovar' | 'pagar' | null; count: number }>({ open: false, action: null, count: 0 });
 
   function startEditRow(l: { id: string; valor: number; tipo: string; descricao?: string; piloto?: string; aeronave?: string; trecho?: string }) {
     setEditingId(l.id);
@@ -1551,11 +1552,41 @@ export default function AeronavePage() {
                 </Select>
               </div>
             </div>
-            <div className="flex justify-end gap-2">
-              <Button onClick={handleBuscarPrestacao} disabled={carregandoPrestacao}>
-                {carregandoPrestacao ? 'Carregando...' : 'Filtrar'}
-              </Button>
-              <Button variant="outline" onClick={exportPrestacaoPDF}>Exportar PDF</Button>
+            <div className="flex justify-between items-center gap-2">
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    if (linhas.length === 0) {
+                      toast.error('Nenhum registro para aprovar');
+                      return;
+                    }
+                    setConfirmModal({ open: true, action: 'aprovar', count: linhas.length });
+                  }}
+                  disabled={linhas.length === 0}
+                >
+                  Aprovar Todos
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    if (linhas.length === 0) {
+                      toast.error('Nenhum registro para marcar como pago');
+                      return;
+                    }
+                    setConfirmModal({ open: true, action: 'pagar', count: linhas.length });
+                  }}
+                  disabled={linhas.length === 0}
+                >
+                  Marcar Todos como Pago
+                </Button>
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={handleBuscarPrestacao} disabled={carregandoPrestacao}>
+                  {carregandoPrestacao ? 'Carregando...' : 'Filtrar'}
+                </Button>
+                <Button variant="outline" onClick={exportPrestacaoPDF}>Exportar PDF</Button>
+              </div>
             </div>
             <div className="overflow-x-auto">
               <Table>
@@ -1662,6 +1693,53 @@ export default function AeronavePage() {
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setEditModal({ type: null, name: '' })}>Cancelar</Button>
               <Button onClick={saveEditEntity}>Salvar</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={confirmModal.open} onOpenChange={(v) => !v && setConfirmModal({ open: false, action: null, count: 0 })}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Confirmar Ação</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-700">
+              {confirmModal.action === 'aprovar' 
+                ? `Tem certeza que deseja aprovar ${confirmModal.count} registro(s)?`
+                : `Tem certeza que deseja marcar ${confirmModal.count} registro(s) como pago?`
+              }
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setConfirmModal({ open: false, action: null, count: 0 })}
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={async () => {
+                  try {
+                    if (confirmModal.action === 'aprovar') {
+                      await Promise.all(
+                        linhas.map((l) => atualizarDespesaAeronave(l.id, { statusReembolso: 'aprovado' }))
+                      );
+                      toast.success('Todos os registros foram aprovados');
+                    } else if (confirmModal.action === 'pagar') {
+                      await Promise.all(
+                        linhas.map((l) => atualizarDespesaAeronave(l.id, { statusReembolso: 'pago' }))
+                      );
+                      toast.success('Todos os registros foram marcados como pagos');
+                    }
+                    setConfirmModal({ open: false, action: null, count: 0 });
+                    handleBuscarPrestacao();
+                  } catch (e) {
+                    toast.error('Erro ao processar registros');
+                  }
+                }}
+              >
+                Confirmar
+              </Button>
             </div>
           </div>
         </DialogContent>
