@@ -740,6 +740,35 @@ export default function ChapasPage() {
     }
   };
 
+  // Função para excluir partido completo
+  const handleExcluirPartido = async (partidoNome: string) => {
+    try {
+      if (!cenarioAtivo) {
+        throw new Error('Cenário base não encontrado');
+      }
+      
+      // Atualizar estado local primeiro - remove o partido
+      setPartidos(prev => prev.filter(p => p.nome !== partidoNome));
+      
+      // Remove também dos votos de legenda
+      setVotosLegenda(prev => {
+        const novo = { ...prev };
+        delete novo[partidoNome];
+        return novo;
+      });
+
+      // Salvar no Firestore
+      const partidosConvertidos = converterPartidosParaCenario().filter(p => p.nome !== partidoNome);
+      await atualizarCenario(cenarioAtivo.id, partidosConvertidos, cenarioAtivo.quocienteEleitoral);
+      
+      mostrarNotificacaoAutoSave(`Partido ${partidoNome} excluído com sucesso`);
+    } catch (error) {
+      console.error('Erro ao excluir partido:', error);
+      await carregarDadosFirestore();
+      alert('Erro ao excluir partido. Dados foram recarregados automaticamente.');
+    }
+  };
+
   // Função para adicionar novo candidato
   const handleAdicionarCandidato = async (partidoIdx: number) => {
     if (!novoCandidato.nome.trim()) {
@@ -1836,6 +1865,37 @@ export default function ChapasPage() {
                 <div className="flex items-center justify-center relative">
                   <span className="px-6">{partido.nome}</span>
                   <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                    {/* Botão de remover partido */}
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <button
+                          type="button"
+                          aria-label="Remover partido"
+                          className="text-red-500 hover:text-red-700 transition-colors"
+                          title="Remover partido"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Excluir partido</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Tem certeza que deseja excluir o partido {partido.nome} e todos os seus candidatos?
+                            Esta ação não pode ser desfeita.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleExcluirPartido(partido.nome)}
+                            className="bg-red-600 hover:bg-red-700"
+                          >
+                            Excluir
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                     {/* Botão de ocultar/mostrar */}
                     <button
                       type="button"
