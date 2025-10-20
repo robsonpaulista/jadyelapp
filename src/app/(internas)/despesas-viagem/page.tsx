@@ -206,22 +206,27 @@ export default function DespesasViagemPage() {
   useEffect(() => {
     const init = async () => {
       try {
-        const [motoristasList, veiculosList, trechosList, mDocs, vDocs, tDocs] = await Promise.all([
+        // Carregar dados básicos primeiro (mais rápido)
+        const [motoristasList, veiculosList, trechosList] = await Promise.all([
           listarMotoristas(),
           listarVeiculos(),
           listarTrechos(),
-          listarMotoristasWithIds(),
-          listarVeiculosWithIds(),
-          listarTrechosWithIds(),
         ]);
         setMotoristas(motoristasList);
         setVeiculos(veiculosList);
         setTrechos(trechosList);
+        
+        // Carregar dados com IDs em paralelo (para funcionalidades de edição)
+        const [mDocs, vDocs, tDocs] = await Promise.all([
+          listarMotoristasWithIds(),
+          listarVeiculosWithIds(),
+          listarTrechosWithIds(),
+        ]);
         setMotoristasDocs(mDocs);
         setVeiculosDocs(vDocs);
         setTrechosDocs(tDocs);
       } catch (e) {
-        console.error(e);
+        console.error('Erro ao carregar dados iniciais:', e);
       }
     };
     init();
@@ -243,10 +248,14 @@ export default function DespesasViagemPage() {
     } catch {}
   }, [prestacaoStatus]);
 
-  // Carregar automaticamente a prestação ao abrir a aba
+  // Carregar automaticamente a prestação ao abrir a aba (com debounce)
   useEffect(() => {
     if (tab === 'prestacao') {
-      handleBuscarPrestacao();
+      const timeoutId = setTimeout(() => {
+        handleBuscarPrestacao();
+      }, 100); // Pequeno delay para evitar carregamento desnecessário
+      
+      return () => clearTimeout(timeoutId);
     }
   }, [tab]);
 

@@ -78,6 +78,7 @@ export default function ProjecaoMunicipios() {
   // Calcular estatísticas por filtro de expectativa
   const calcularEstatisticasFiltro = () => {
     const totalMunicipios = projecoes.length;
+    const ate100 = projecoes.filter(item => item.expectativa2026 <= 100).length;
     const mais150 = projecoes.filter(item => item.expectativa2026 >= 150).length;
     const mais300 = projecoes.filter(item => item.expectativa2026 >= 300).length;
     const mais500 = projecoes.filter(item => item.expectativa2026 >= 500).length;
@@ -85,6 +86,7 @@ export default function ProjecaoMunicipios() {
     
     return {
       total: totalMunicipios,
+      ate100,
       mais150,
       mais300,
       mais500,
@@ -204,7 +206,9 @@ export default function ProjecaoMunicipios() {
     
     // Filtro por expectativa 2026
     let matchesExpectativa = true;
-    if (filtroExpectativa === 'mais150') {
+    if (filtroExpectativa === 'ate100') {
+      matchesExpectativa = item.expectativa2026 <= 100;
+    } else if (filtroExpectativa === 'mais150') {
       matchesExpectativa = item.expectativa2026 >= 150;
     } else if (filtroExpectativa === 'mais300') {
       matchesExpectativa = item.expectativa2026 >= 300;
@@ -269,7 +273,8 @@ export default function ProjecaoMunicipios() {
     
     // Informações do filtro ativo
     if (filtroExpectativa !== 'todos') {
-      const filtroTexto = filtroExpectativa === 'mais150' ? '150+ votos' : 
+      const filtroTexto = filtroExpectativa === 'ate100' ? 'até 100 votos' :
+                          filtroExpectativa === 'mais150' ? '150+ votos' : 
                           filtroExpectativa === 'mais300' ? '300+ votos' : 
                           filtroExpectativa === 'mais500' ? '500+ votos' : '1000+ votos';
       doc.text(`Filtro aplicado: Expectativa 2026 ${filtroTexto}`, 14, 38);
@@ -343,10 +348,11 @@ export default function ProjecaoMunicipios() {
     doc.text('Resumo das Estatísticas:', 14, finalY + 10);
     doc.setFontSize(8);
     doc.text(`Total de municípios: ${estatisticas.total}`, 14, finalY + 18);
-    doc.text(`Municípios com 150+ votos: ${estatisticas.mais150}`, 14, finalY + 24);
-    doc.text(`Municípios com 300+ votos: ${estatisticas.mais300}`, 14, finalY + 30);
-    doc.text(`Municípios com 500+ votos: ${estatisticas.mais500}`, 14, finalY + 36);
-    doc.text(`Municípios com 1000+ votos: ${estatisticas.mais1000}`, 14, finalY + 42);
+    doc.text(`Municípios com até 100 votos: ${estatisticas.ate100}`, 14, finalY + 24);
+    doc.text(`Municípios com 150+ votos: ${estatisticas.mais150}`, 14, finalY + 30);
+    doc.text(`Municípios com 300+ votos: ${estatisticas.mais300}`, 14, finalY + 36);
+    doc.text(`Municípios com 500+ votos: ${estatisticas.mais500}`, 14, finalY + 42);
+    doc.text(`Municípios com 1000+ votos: ${estatisticas.mais1000}`, 14, finalY + 48);
 
     // Salvar o PDF
     doc.save('projecao-municipios-2026.pdf');
@@ -411,6 +417,14 @@ export default function ProjecaoMunicipios() {
                 Todos
               </Button>
               <Button
+                variant={filtroExpectativa === 'ate100' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleFiltroExpectativaChange('ate100')}
+                className="text-xs px-2 py-1 h-7"
+              >
+                Até 100 votos
+              </Button>
+              <Button
                 variant={filtroExpectativa === 'mais150' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => handleFiltroExpectativaChange('mais150')}
@@ -448,6 +462,7 @@ export default function ProjecaoMunicipios() {
           {/* Estatísticas dos filtros */}
           <div className="flex items-center gap-4 text-xs text-gray-600">
             <span>Total: {calcularEstatisticasFiltro().total}</span>
+            <span>Até 100: {calcularEstatisticasFiltro().ate100}</span>
             <span>150+: {calcularEstatisticasFiltro().mais150}</span>
             <span>300+: {calcularEstatisticasFiltro().mais300}</span>
             <span>500+: {calcularEstatisticasFiltro().mais500}</span>
@@ -473,7 +488,7 @@ export default function ProjecaoMunicipios() {
           Mostrando {Math.min(itemsPerPage, filteredData.length)} de {filteredData.length} registros
           {filtroExpectativa !== 'todos' && (
             <span className="ml-2 text-blue-600">
-              (filtrado por expectativa {filtroExpectativa === 'mais150' ? '150+' : filtroExpectativa === 'mais300' ? '300+' : filtroExpectativa === 'mais500' ? '500+' : '1000+'} votos)
+              (filtrado por expectativa {filtroExpectativa === 'ate100' ? 'até 100' : filtroExpectativa === 'mais150' ? '150+' : filtroExpectativa === 'mais300' ? '300+' : filtroExpectativa === 'mais500' ? '500+' : '1000+'} votos)
             </span>
           )}
           {/* Filtro de território temporariamente desabilitado
