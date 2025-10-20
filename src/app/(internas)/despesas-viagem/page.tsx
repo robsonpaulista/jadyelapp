@@ -23,7 +23,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import toast from 'react-hot-toast';
-import { Car, PlusCircle, Search, Upload, Eye, Download, Wand2, Sparkles, Trash2 } from 'lucide-react';
+import { Car, PlusCircle, Search, Upload, Eye, Download, Wand2, Sparkles, Trash2, Paperclip } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toPng } from 'html-to-image';
 import { Bar, Doughnut } from 'react-chartjs-2';
@@ -957,12 +957,14 @@ export default function DespesasViagemPage() {
                   )}
                 </div>
                 <div className="flex items-center gap-2 mt-1">
-                  <Input
-                    type="file"
-                    accept="image/png, image/jpeg, application/pdf"
-                    disabled={ocrRunning}
-                    className="[&::-webkit-file-upload-button]:border-b-2 [&::-webkit-file-upload-button]:border-blue-500 [&::-webkit-file-upload-button]:focus:border-blue-600 [&::-webkit-file-upload-button]:hover:border-blue-400 [&::-webkit-file-upload-button]:transition-colors"
-                    onChange={async (e) => {
+                  <div className="relative flex-1">
+                    <Input
+                      type="file"
+                      accept="image/png, image/jpeg, application/pdf"
+                      disabled={ocrRunning}
+                      id="file-upload"
+                      className="hidden"
+                      onChange={async (e) => {
                       const file = e.target.files?.[0] || null;
                       if (!file) {
                         setForm((s) => ({ ...s, reciboFile: null, reciboPreview: undefined }));
@@ -987,7 +989,22 @@ export default function DespesasViagemPage() {
                       };
                       reader.readAsDataURL(file);
                     }}
-                  />
+                    />
+                    <label 
+                      htmlFor="file-upload" 
+                      className={`flex items-center justify-center gap-2 px-4 py-2 border-2 border-dashed rounded-lg cursor-pointer transition-all ${
+                        ocrRunning 
+                          ? 'bg-gray-100 border-gray-300 cursor-not-allowed' 
+                          : 'bg-white border-blue-400 hover:border-blue-500 hover:bg-blue-50'
+                      }`}
+                    >
+                      <Paperclip className="w-5 h-5 text-blue-600" />
+                      <span className="text-sm font-medium text-gray-700">
+                        {form.reciboFile ? form.reciboFile.name : 'Anexar Recibo'}
+                      </span>
+                      <Upload className="w-4 h-4 text-blue-600" />
+                    </label>
+                  </div>
                   {form.reciboPreview && form.reciboFile && form.reciboFile.type.startsWith('image/') && (
                     <Button
                       type="button"
