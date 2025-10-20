@@ -51,7 +51,8 @@ export const ROUTE_PERMISSIONS: Record<UserLevel, string[]> = {
     '/dashboardemendas',
     '/emendas',
     '/emendas/[id]',
-    '/aeronave'
+    '/aeronave',
+    '/despesas-viagem'
   ],
   user: [
     '/',
@@ -73,7 +74,8 @@ export const ROUTE_PERMISSIONS: Record<UserLevel, string[]> = {
     '/configuracoes',
     '/pessoas',
     '/pacientes',
-    '/aeronave'
+    '/aeronave',
+    '/despesas-viagem'
   ],
   gabineteemendas: [
     '/',
@@ -90,7 +92,8 @@ export const ROUTE_PERMISSIONS: Record<UserLevel, string[]> = {
   piloto: [
     '/',
     '/painel-aplicacoes',
-    '/aeronave'
+    '/aeronave',
+    '/despesas-viagem'
   ],
   suporte: [
     '/',
