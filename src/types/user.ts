@@ -4,7 +4,7 @@ export interface User {
   email: string;
   password?: string;
   role: 'admin' | 'user' | 'attendant';
-  level: 'admin' | 'user' | 'gabineteemendas' | 'gabinetejuridico';
+  level: 'admin' | 'user' | 'gabineteemendas' | 'gabinetejuridico' | 'piloto' | 'suporte' | 'motorista' | 'comunicacao';
   permissions: string[];
   active?: boolean;
   createdAt?: string;

@@ -1,4 +1,4 @@
-export type UserLevel = 'admin' | 'user' | 'gabineteemendas' | 'gabinetejuridico' | 'piloto' | 'suporte' | 'motorista';
+export type UserLevel = 'admin' | 'user' | 'gabineteemendas' | 'gabinetejuridico' | 'piloto' | 'suporte' | 'motorista' | 'comunicacao';
 
 export interface Permission {
   route: string;
@@ -105,6 +105,11 @@ export const ROUTE_PERMISSIONS: Record<UserLevel, string[]> = {
     '/',
     '/painel-aplicacoes',
     '/despesas-viagem'
+  ],
+  comunicacao: [
+    '/',
+    '/painel-aplicacoes',
+    '/monitoramento-noticias'
   ]
 };
 
@@ -148,6 +153,12 @@ export const MENU_PERMISSIONS: Record<UserLevel, UserPermissions['menuAccess']> 
   },
   motorista: {
     leads: true,
+    municipios: false,
+    eleicoes: false,
+    configuracoes: false
+  },
+  comunicacao: {
+    leads: false,
     municipios: false,
     eleicoes: false,
     configuracoes: false

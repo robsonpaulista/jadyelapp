@@ -144,6 +144,15 @@ export function usePermissions() {
     }
   }, [userLevel]);
 
+  const isComunicacao = useCallback((): boolean => {
+    try {
+      return userLevel === 'comunicacao';
+    } catch (error) {
+      console.error('Erro em isComunicacao:', error);
+      return false;
+    }
+  }, [userLevel]);
+
   const canAccessRoute = useCallback((route: string): boolean => {
     try {
       return hasAccess(route);
@@ -167,6 +176,8 @@ export function usePermissions() {
           return '/projetos';
         case 'suporte':
           return '/chapas';
+        case 'comunicacao':
+          return '/monitoramento-noticias';
         default:
           return '/painel-aplicacoes';
       }
@@ -188,6 +199,7 @@ export function usePermissions() {
     isUser,
     isGabineteEmendas,
     isGabineteJuridico,
-    isSuporte
+    isSuporte,
+    isComunicacao
   };
 } 
