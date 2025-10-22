@@ -16,9 +16,10 @@ interface NewsItem {
 
 const GOOGLE_FEED_JADYEL = 'https://www.google.com/alerts/feeds/17804356194972672813/9708043366942196058';
 const GOOGLE_FEED_DEPUTADOS = 'https://www.google.com.br/alerts/feeds/17804356194972672813/16104795190635819439';
+const GOOGLE_FEED_EPRAJAPET = 'https://www.google.com/alerts/feeds/17804356194972672813/13246538013054409877';
 const TALKWALKER_FEED = 'https://www.talkwalker.com/alerts/rss/YJOKITOAE6MRGBCKK7ZPOARQSR7XVFFNZNAHON7IXIAWNBVA3KJK3CVVVGAY4WZCAXCU4OZ6B7QSA67I3LHBFMGJHNF2YIZF6TWIZHW4SJUAMYHDGR4RRK4S4OOHSTH2';
 
-async function getNews(forceRefresh: boolean = false, feedType: 'jadyel' | 'deputados' = 'jadyel'): Promise<NewsItem[]> {
+async function getNews(forceRefresh: boolean = false, feedType: 'jadyel' | 'deputados' | 'eprajapet' = 'jadyel'): Promise<NewsItem[]> {
   try {
     const timestamp = new Date().getTime();
     const refreshParam = forceRefresh ? `&refresh=true` : '';
@@ -52,7 +53,7 @@ export default function MonitoramentoNoticiasPage() {
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [activeTab, setActiveTab] = useState<string>('jadyel');
 
-  const loadNews = async (forceRefresh: boolean = false, feedType: 'jadyel' | 'deputados' = 'jadyel') => {
+  const loadNews = async (forceRefresh: boolean = false, feedType: 'jadyel' | 'deputados' | 'eprajapet' = 'jadyel') => {
     setLoading(true);
     setError(null);
     
@@ -85,7 +86,7 @@ export default function MonitoramentoNoticiasPage() {
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
-    const feedType = value as 'jadyel' | 'deputados';
+    const feedType = value as 'jadyel' | 'deputados' | 'eprajapet';
     loadNews(false, feedType);
   };
 
@@ -114,7 +115,7 @@ export default function MonitoramentoNoticiasPage() {
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => loadNews(true, activeTab as 'jadyel' | 'deputados')}
+                  onClick={() => loadNews(true, activeTab as 'jadyel' | 'deputados' | 'eprajapet')}
                   className="flex items-center gap-1 px-3 py-1.5 rounded text-xs transition-colors border bg-white hover:bg-gray-50 text-gray-700 cursor-pointer border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={loading}
                 >
@@ -131,7 +132,7 @@ export default function MonitoramentoNoticiasPage() {
             {/* Sistema de Abas */}
             <div className="py-4">
               <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-                <TabsList className="grid w-full grid-cols-2 h-10">
+                <TabsList className="grid w-full grid-cols-3 h-10">
                   <TabsTrigger 
                     value="jadyel"
                     className="flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium"
@@ -145,6 +146,13 @@ export default function MonitoramentoNoticiasPage() {
                   >
                     <Newspaper className="h-4 w-4" />
                     Notícias Deputados Piauí
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="eprajapet"
+                    className="flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium"
+                  >
+                    <Newspaper className="h-4 w-4" />
+                    ÉPRAJÁPET
                   </TabsTrigger>
                 </TabsList>
 
@@ -274,6 +282,131 @@ export default function MonitoramentoNoticiasPage() {
                 </TabsContent>
 
                 <TabsContent value="deputados" className="mt-4">
+                  <div className="py-4 flex flex-col md:flex-row items-start md:items-center justify-between space-y-2 md:space-y-0">
+                    <div className="flex items-center gap-2 w-full md:w-auto">
+                      <Filter className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Filtrar por:</span>
+                      <select 
+                        className="text-sm border border-gray-200 rounded px-2 py-1 flex-1 md:flex-none"
+                        value={filter}
+                        onChange={(e) => setFilter(e.target.value)}
+                      >
+                        <option value="todos">Todas as fontes</option>
+                        <option value="Google Alertas">Google Alertas</option>
+                        <option value="Talkwalker Alerts">Talkwalker Alerts</option>
+                      </select>
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      Total: {filteredNews.length} notícia(s)
+                      {filter !== 'todos' && ` de ${filter}`}
+                    </div>
+                  </div>
+                  
+                  {loading && (
+                    <div className="flex-1 flex items-center justify-center min-h-[400px]">
+                      <Loading message={
+                        filter !== 'todos'
+                          ? `Carregando notícias de ${filter}...`
+                          : 'Carregando todas as notícias...'
+                      } />
+                    </div>
+                  )}
+                  
+                  {error && (
+                    <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg mb-4">
+                      {error}
+                    </div>
+                  )}
+                  
+                  {!loading && !error && filteredNews.length === 0 ? (
+                    <div className="text-center text-gray-500 py-16">
+                      {filter !== 'todos' 
+                        ? `Nenhuma notícia encontrada de ${filter}.` 
+                        : 'Nenhuma notícia encontrada ainda. Aguarde alguns minutos ou ajuste seus alertas.'}
+                    </div>
+                  ) : !loading && (
+                    <div className="md:overflow-x-auto">
+                      <div className="block md:hidden">
+                        <div className="divide-y divide-gray-200">
+                          {filteredNews.map((item, idx) => (
+                            <div key={idx} className="p-4 hover:bg-gray-50 transition-colors flex gap-3">
+                              <div className="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-600">
+                                <Newspaper className="h-6 w-6" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <a
+                                  href={item.link}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-sm text-gray-800 hover:underline font-medium leading-snug block mb-1"
+                                >
+                                  {item.title}
+                                </a>
+                                <div className="text-xs text-gray-500">
+                                  {item.pubDate && (
+                                    new Date(item.pubDate).toLocaleDateString('pt-BR', {
+                                      day: '2-digit',
+                                      month: 'short',
+                                      year: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="hidden md:block">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="bg-gray-50 border-b border-gray-200">
+                              <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4 w-16">Imagem</th>
+                              <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Título</th>
+                              <th className="text-right text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4 w-32">Data</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-200 bg-white">
+                            {filteredNews.map((item, idx) => (
+                              <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                                <td className="py-3 px-4 w-16">
+                                  <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-600">
+                                    <Newspaper className="h-6 w-6" />
+                                  </div>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <a
+                                    href={item.link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-sm text-gray-800 hover:underline font-medium leading-tight"
+                                  >
+                                    {item.title}
+                                  </a>
+                                </td>
+                                <td className="py-3 px-4 text-sm text-gray-500 text-right whitespace-nowrap w-32">
+                                  {item.pubDate && (
+                                    new Date(item.pubDate).toLocaleDateString('pt-BR', {
+                                      day: '2-digit',
+                                      month: 'short',
+                                      year: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="eprajapet" className="mt-4">
                   <div className="py-4 flex flex-col md:flex-row items-start md:items-center justify-between space-y-2 md:space-y-0">
                     <div className="flex items-center gap-2 w-full md:w-auto">
                       <Filter className="h-4 w-4 text-gray-500" />

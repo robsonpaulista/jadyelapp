@@ -3,6 +3,7 @@ import { fetchRssFeed } from '@/lib/rssFeedParser';
 
 const GOOGLE_FEED_JADYEL = 'https://www.google.com/alerts/feeds/17804356194972672813/9708043366942196058';
 const GOOGLE_FEED_DEPUTADOS = 'https://www.google.com.br/alerts/feeds/17804356194972672813/16104795190635819439';
+const GOOGLE_FEED_EPRAJAPET = 'https://www.google.com/alerts/feeds/17804356194972672813/13246538013054409877';
 const TALKWALKER_FEED = 'https://www.talkwalker.com/alerts/rss/YJOKITOAE6MRGBCKK7ZPOARQSR7XVFFNZNAHON7IXIAWNBVA3KJK3CVVVGAY4WZCAXCU4OZ6B7QSA67I3LHBFMGJHNF2YIZF6TWIZHW4SJUAMYHDGR4RRK4S4OOHSTH2';
 
 // Cache em memória para otimização
@@ -60,6 +61,12 @@ export async function GET(req: NextRequest) {
       // Feed de deputados do Piauí
       feeds = [
         fetchWithTimeout(GOOGLE_FEED_DEPUTADOS, 'Google Alertas'),
+        fetchWithTimeout(TALKWALKER_FEED, 'Talkwalker Alerts')
+      ];
+    } else if (feedType === 'eprajapet') {
+      // Feed do evento ÉPRAJÁPET
+      feeds = [
+        fetchWithTimeout(GOOGLE_FEED_EPRAJAPET, 'Google Alertas'),
         fetchWithTimeout(TALKWALKER_FEED, 'Talkwalker Alerts')
       ];
     } else {
