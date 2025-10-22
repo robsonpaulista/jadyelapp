@@ -3,6 +3,9 @@
 import { NextResponse } from 'next/server';
 import Parser from 'rss-parser';
 
+// Forçar rota dinâmica
+export const dynamic = 'force-dynamic';
+
 interface NewsItem {
   title: string;
   link: string;

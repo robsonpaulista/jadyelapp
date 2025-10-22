@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
+
+// Forçar rota dinâmica
+export const dynamic = 'force-dynamic';
 import path from 'path';
 import { 
   ResultadoEleicaoCompleto, 

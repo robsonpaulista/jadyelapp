@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, getDocs, setDoc, doc, deleteDoc, query, where, orderBy, getDoc } from 'firebase/firestore';
 
+// Forçar rota dinâmica
+export const dynamic = 'force-dynamic';
+
 // Configuração do Firebase
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
