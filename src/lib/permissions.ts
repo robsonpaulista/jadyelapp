@@ -158,7 +158,7 @@ export const MENU_PERMISSIONS: Record<UserLevel, UserPermissions['menuAccess']> 
     configuracoes: false
   },
   comunicacao: {
-    leads: false,
+    leads: true,
     municipios: false,
     eleicoes: false,
     configuracoes: false
