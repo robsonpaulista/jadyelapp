@@ -798,13 +798,21 @@ export default function AeronavePage() {
   async function handleBuscarPrestacao() {
     try {
       setCarregandoPrestacao(true);
-      const list = await listarDespesasAeronave({
+      
+      // Preparar filtros
+      const filtros: any = {
         inicio: prestacaoInicio ? new Date(prestacaoInicio) : undefined,
         fim: prestacaoFim ? new Date(prestacaoFim) : undefined,
         piloto: prestacaoPiloto === 'all' ? undefined : prestacaoPiloto,
         trecho: prestacaoTrecho === 'all' ? undefined : prestacaoTrecho,
-        statusReembolso: prestacaoStatus === 'all' ? undefined : (prestacaoStatus as any),
-      } as any);
+      };
+      
+      // Adicionar statusReembolso apenas se não for 'all'
+      if (prestacaoStatus && prestacaoStatus !== 'all') {
+        filtros.statusReembolso = prestacaoStatus as 'pendente' | 'enviado' | 'aprovado' | 'pago';
+      }
+      
+      const list = await listarDespesasAeronave(filtros);
       const mapped = list.map((d) => ({
         id: d.id,
         dataISO: d.data.toDate().toISOString().slice(0, 10),
@@ -818,8 +826,10 @@ export default function AeronavePage() {
       }));
       setLinhas(mapped);
       setPrestacaoPaginaAtual(1); // Resetar para primeira página ao buscar novos dados
-    } catch (e) {
-      toast.error('Erro ao carregar prestação');
+    } catch (e: any) {
+      console.error('Erro ao carregar prestação:', e);
+      const errorMessage = e?.message || 'Erro ao carregar prestação';
+      toast.error(errorMessage);
     } finally {
       setCarregandoPrestacao(false);
     }

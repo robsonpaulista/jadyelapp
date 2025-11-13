@@ -115,43 +115,101 @@ export async function adicionarDespesaAeronave(
 export async function listarDespesasAeronave(
   filtro: DespesasFiltro
 ): Promise<DespesaAeronave[]> {
-  let qRef = query(collection(db, DESPESAS_COLLECTION), orderBy('data', 'desc'));
+  try {
+    let qRef = query(collection(db, DESPESAS_COLLECTION), orderBy('data', 'desc'));
 
-  const whereClauses: QueryConstraint[] = [];
+    const whereClauses: QueryConstraint[] = [];
 
-  if (filtro.tipo) {
-    whereClauses.push(where('tipo', '==', filtro.tipo));
-  }
-  if (filtro.piloto) {
-    whereClauses.push(where('piloto', '==', filtro.piloto));
-  }
-  if (filtro.aeronave) {
-    whereClauses.push(where('aeronave', '==', filtro.aeronave));
-  }
-  if (filtro.inicio) {
-    whereClauses.push(where('data', '>=', Timestamp.fromDate(filtro.inicio)));
-  }
-  if (filtro.fim) {
-    whereClauses.push(where('data', '<=', Timestamp.fromDate(filtro.fim)));
-  }
-  if (filtro.trecho) {
-    whereClauses.push(where('trecho', '==', filtro.trecho));
-  }
-  if (filtro.statusReembolso) {
-    whereClauses.push(where('statusReembolso', '==', filtro.statusReembolso));
-  }
+    if (filtro.tipo) {
+      whereClauses.push(where('tipo', '==', filtro.tipo));
+    }
+    if (filtro.piloto) {
+      whereClauses.push(where('piloto', '==', filtro.piloto));
+    }
+    if (filtro.aeronave) {
+      whereClauses.push(where('aeronave', '==', filtro.aeronave));
+    }
+    if (filtro.inicio) {
+      whereClauses.push(where('data', '>=', Timestamp.fromDate(filtro.inicio)));
+    }
+    if (filtro.fim) {
+      whereClauses.push(where('data', '<=', Timestamp.fromDate(filtro.fim)));
+    }
+    if (filtro.trecho) {
+      whereClauses.push(where('trecho', '==', filtro.trecho));
+    }
+    if (filtro.statusReembolso) {
+      whereClauses.push(where('statusReembolso', '==', filtro.statusReembolso));
+    }
 
-  if (whereClauses.length > 0) {
-    qRef = query(qRef, ...whereClauses);
-  }
+    if (whereClauses.length > 0) {
+      qRef = query(qRef, ...whereClauses);
+    }
 
-  const snap = await getDocs(qRef);
-  const items: DespesaAeronave[] = [];
-  snap.forEach((docSnap) => {
-    const data = docSnap.data() as DocumentData;
-    items.push({ id: docSnap.id, ...(data as Omit<DespesaAeronave, 'id'>) });
-  });
-  return items;
+    const snap = await getDocs(qRef);
+    const items: DespesaAeronave[] = [];
+    snap.forEach((docSnap) => {
+      const data = docSnap.data() as DocumentData;
+      // Garantir que statusReembolso tenha um valor padrão se não existir
+      const item = {
+        id: docSnap.id,
+        ...(data as Omit<DespesaAeronave, 'id'>),
+        statusReembolso: (data.statusReembolso || 'pendente') as ReembolsoStatus,
+      };
+      items.push(item);
+    });
+    return items;
+  } catch (error: any) {
+    console.error('Erro ao listar despesas aeronave:', error);
+    // Se o erro for relacionado a índice composto, tentar sem orderBy quando há filtro de status
+    if (error?.code === 'failed-precondition' && filtro.statusReembolso) {
+      console.warn('Tentando buscar sem orderBy devido a índice composto...');
+      try {
+        const whereClauses: QueryConstraint[] = [];
+        if (filtro.tipo) {
+          whereClauses.push(where('tipo', '==', filtro.tipo));
+        }
+        if (filtro.piloto) {
+          whereClauses.push(where('piloto', '==', filtro.piloto));
+        }
+        if (filtro.aeronave) {
+          whereClauses.push(where('aeronave', '==', filtro.aeronave));
+        }
+        if (filtro.inicio) {
+          whereClauses.push(where('data', '>=', Timestamp.fromDate(filtro.inicio)));
+        }
+        if (filtro.fim) {
+          whereClauses.push(where('data', '<=', Timestamp.fromDate(filtro.fim)));
+        }
+        if (filtro.trecho) {
+          whereClauses.push(where('trecho', '==', filtro.trecho));
+        }
+        if (filtro.statusReembolso) {
+          whereClauses.push(where('statusReembolso', '==', filtro.statusReembolso));
+        }
+        
+        let qRef = query(collection(db, DESPESAS_COLLECTION), ...whereClauses);
+        const snap = await getDocs(qRef);
+        const items: DespesaAeronave[] = [];
+        snap.forEach((docSnap) => {
+          const data = docSnap.data() as DocumentData;
+          const item = {
+            id: docSnap.id,
+            ...(data as Omit<DespesaAeronave, 'id'>),
+            statusReembolso: (data.statusReembolso || 'pendente') as ReembolsoStatus,
+          };
+          items.push(item);
+        });
+        // Ordenar manualmente por data
+        items.sort((a, b) => b.data.toMillis() - a.data.toMillis());
+        return items;
+      } catch (retryError) {
+        console.error('Erro ao tentar buscar sem orderBy:', retryError);
+        throw retryError;
+      }
+    }
+    throw error;
+  }
 }
 
 export async function setDespesaReciboSmall(
