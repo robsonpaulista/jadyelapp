@@ -156,6 +156,8 @@ export default function AeronavePage() {
   const [prestacaoPiloto, setPrestacaoPiloto] = useState<string>('all');
   const [prestacaoTrecho, setPrestacaoTrecho] = useState<string>('all');
   const [tab, setTab] = useState<'inclusao' | 'relatorio' | 'prestacao'>('inclusao');
+  const [prestacaoPaginaAtual, setPrestacaoPaginaAtual] = useState<number>(1);
+  const ITENS_POR_PAGINA = 15;
 
   const [pilotosDocs, setPilotosDocs] = useState<Array<{ id: string; nome: string }>>([]);
   const [aeronavesDocs, setAeronavesDocs] = useState<Array<{ id: string; nome: string }>>([]);
@@ -253,6 +255,17 @@ export default function AeronavePage() {
   const total = useMemo(() => {
     return linhas.reduce((acc, cur) => acc + (cur.valor || 0), 0);
   }, [linhas]);
+
+  // Paginação para Prestação de Contas
+  const prestacaoTotalPaginas = useMemo(() => {
+    return Math.ceil(linhas.length / ITENS_POR_PAGINA);
+  }, [linhas.length]);
+
+  const prestacaoDadosPaginados = useMemo(() => {
+    const inicio = (prestacaoPaginaAtual - 1) * ITENS_POR_PAGINA;
+    const fim = inicio + ITENS_POR_PAGINA;
+    return linhas.slice(inicio, fim);
+  }, [linhas, prestacaoPaginaAtual]);
 
   // Registro global do Chart.js (feito uma vez)
   ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, ChartTooltip, ChartLegend, ChartTitle);
@@ -804,6 +817,7 @@ export default function AeronavePage() {
         statusReembolso: (d as any).statusReembolso,
       }));
       setLinhas(mapped);
+      setPrestacaoPaginaAtual(1); // Resetar para primeira página ao buscar novos dados
     } catch (e) {
       toast.error('Erro ao carregar prestação');
     } finally {
@@ -1620,26 +1634,75 @@ export default function AeronavePage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {linhas.map((l) => (
-                    <TableRow key={`p-${l.id}`}>
-                      <TableCell>{l.dataISO}</TableCell>
-                      <TableCell>{l.piloto || '-'}</TableCell>
-                      <TableCell>{l.trecho || '-'}</TableCell>
-                      <TableCell>{tipos.find((t) => t.value === l.tipo)?.label || l.tipo}</TableCell>
-                      <TableCell className="max-w-[260px] truncate" title={l.descricao}>{l.descricao || '-'}</TableCell>
-                      <TableCell className="text-right">{l.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                      <TableCell>{renderStatusChip(l.statusReembolso as any)}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline" onClick={async () => { await atualizarDespesaAeronave(l.id, { statusReembolso: 'aprovado' }); toast.success('Status atualizado'); handleBuscarPrestacao(); }}>Aprovar</Button>
-                          <Button size="sm" variant="outline" onClick={async () => { await atualizarDespesaAeronave(l.id, { statusReembolso: 'pago' }); toast.success('Status atualizado'); handleBuscarPrestacao(); }}>Marcar pago</Button>
-                        </div>
+                  {prestacaoDadosPaginados.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center text-gray-500 py-8">
+                        Nenhum registro encontrado
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    <>
+                      {prestacaoDadosPaginados.map((l) => (
+                        <TableRow key={`p-${l.id}`}>
+                          <TableCell>{l.dataISO}</TableCell>
+                          <TableCell>{l.piloto || '-'}</TableCell>
+                          <TableCell>{l.trecho || '-'}</TableCell>
+                          <TableCell>{tipos.find((t) => t.value === l.tipo)?.label || l.tipo}</TableCell>
+                          <TableCell className="max-w-[260px] truncate" title={l.descricao}>{l.descricao || '-'}</TableCell>
+                          <TableCell className="text-right">{l.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                          <TableCell>{renderStatusChip(l.statusReembolso as any)}</TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="outline" onClick={async () => { await atualizarDespesaAeronave(l.id, { statusReembolso: 'aprovado' }); toast.success('Status atualizado'); handleBuscarPrestacao(); }}>Aprovar</Button>
+                              <Button size="sm" variant="outline" onClick={async () => { await atualizarDespesaAeronave(l.id, { statusReembolso: 'pago' }); toast.success('Status atualizado'); handleBuscarPrestacao(); }}>Marcar pago</Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {/* Linha de totalizador */}
+                      <TableRow className="bg-gray-50 font-semibold">
+                        <TableCell colSpan={5} className="text-right">
+                          <strong>Total:</strong>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <strong>{total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                        </TableCell>
+                        <TableCell colSpan={2}></TableCell>
+                      </TableRow>
+                    </>
+                  )}
                 </TableBody>
               </Table>
             </div>
+            {/* Controles de paginação */}
+            {prestacaoTotalPaginas > 1 && (
+              <div className="flex items-center justify-between mt-4">
+                <div className="text-sm text-gray-600">
+                  Mostrando {((prestacaoPaginaAtual - 1) * ITENS_POR_PAGINA) + 1} a {Math.min(prestacaoPaginaAtual * ITENS_POR_PAGINA, linhas.length)} de {linhas.length} registro(s)
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPrestacaoPaginaAtual(prev => Math.max(1, prev - 1))}
+                    disabled={prestacaoPaginaAtual === 1}
+                  >
+                    Anterior
+                  </Button>
+                  <div className="text-sm text-gray-600">
+                    Página {prestacaoPaginaAtual} de {prestacaoTotalPaginas}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPrestacaoPaginaAtual(prev => Math.min(prestacaoTotalPaginas, prev + 1))}
+                    disabled={prestacaoPaginaAtual === prestacaoTotalPaginas}
+                  >
+                    Próxima
+                  </Button>
+                </div>
+              </div>
+            )}
           </Card>
         </TabsContent>
       </Tabs>
