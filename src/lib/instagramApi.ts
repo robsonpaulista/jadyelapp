@@ -1,4 +1,30 @@
-import { toast } from 'react-hot-toast';
+// Toast opcional - só funciona no cliente
+const safeToast = {
+  error: (message: string) => {
+    if (typeof window !== 'undefined') {
+      try {
+        const { toast } = require('react-hot-toast');
+        toast.error(message);
+      } catch {
+        console.error('[Toast]', message);
+      }
+    } else {
+      console.error('[Toast]', message);
+    }
+  },
+  success: (message: string) => {
+    if (typeof window !== 'undefined') {
+      try {
+        const { toast } = require('react-hot-toast');
+        toast.success(message);
+      } catch {
+        console.log('[Toast]', message);
+      }
+    } else {
+      console.log('[Toast]', message);
+    }
+  }
+};
 
 // Interface para os dados do Instagram
 export interface InstagramMetrics {
@@ -169,7 +195,7 @@ export async function fetchInstagramData(
     // Validar parâmetros
     if (!token || !businessAccountId) {
       console.error('Token ou Business ID não fornecidos');
-      toast.error('Configurações do Instagram incompletas');
+      safeToast.error('Configurações do Instagram incompletas');
       return null;
     }
 
@@ -179,7 +205,7 @@ export async function fetchInstagramData(
     const isValid = await validateInstagramToken(token, businessAccountId);
     if (!isValid) {
       console.error('Token inválido ou expirado na fetchInstagramData');
-      toast.error('Token do Instagram expirado. Por favor, reconecte sua conta.');
+      safeToast.error('Token do Instagram expirado. Por favor, reconecte sua conta.');
       clearInstagramConfig();
       return null;
     }
@@ -195,9 +221,9 @@ export async function fetchInstagramData(
       
       if (errorResponse.error?.code === 190 || errorResponse.error?.code === 100) {
         clearInstagramConfig();
-        toast.error('Token do Instagram expirado. Por favor, reconecte sua conta.');
+        safeToast.error('Token do Instagram expirado. Por favor, reconecte sua conta.');
       } else {
-        toast.error(`Erro na API do Instagram: ${errorResponse.error?.message || 'Erro desconhecido'}`);
+        safeToast.error(`Erro na API do Instagram: ${errorResponse.error?.message || 'Erro desconhecido'}`);
       }
       return null;
     }
@@ -207,7 +233,7 @@ export async function fetchInstagramData(
     
     if (!pageData.instagram_business_account?.id) {
       console.error('Página não tem conta Instagram Business associada');
-      toast.error('Esta página do Facebook não tem uma conta de Instagram Business associada');
+      safeToast.error('Esta página do Facebook não tem uma conta de Instagram Business associada');
       return null;
     }
     
@@ -224,7 +250,7 @@ export async function fetchInstagramData(
       const errorResponse = mediaResponse.clone();
       const error = await errorResponse.json();
       console.error('Erro ao buscar publicações do Instagram:', error);
-      toast.error(`Erro ao buscar publicações: ${error.error?.message || 'Erro desconhecido'}`);
+      safeToast.error(`Erro ao buscar publicações: ${error.error?.message || 'Erro desconhecido'}`);
       return null;
     }
 
@@ -261,7 +287,7 @@ export async function fetchInstagramData(
       const errorResponse = basicInsightsResponse.clone();
       const error = await errorResponse.json();
       console.error('Erro ao buscar insights básicos do Instagram:', error);
-      toast.error(`Erro ao buscar insights básicos: ${error.error?.message || 'Erro desconhecido'}`);
+      safeToast.error(`Erro ao buscar insights básicos: ${error.error?.message || 'Erro desconhecido'}`);
     } else {
       insightsData = await basicInsightsResponse.json();
       console.log('Dados de insights básicos:', insightsData);
@@ -487,8 +513,10 @@ export async function fetchInstagramData(
       const commentSentiment = await fetchAndAnalyzeComments(post.id, token, forceRefresh);
       const engagementValue = post.like_count + post.comments_count;
       
-      // Buscar visualizações do post - APENAS dados reais da API
+      // Buscar visualizações, salvamentos e compartilhamentos do post - APENAS dados reais da API
       let views: number | undefined = undefined;
+      let saves: number | undefined = undefined;
+      let shares: number | undefined = undefined;
       let debugInfo: any = {
         postId: post.id,
         postType: type,
@@ -599,6 +627,56 @@ export async function fetchInstagramData(
         console.log(`[DEBUG INFO] Detalhes do erro:`, JSON.stringify(debugInfo, null, 2));
       }
       
+      // Buscar salvamentos (saves)
+      try {
+        const savesResponse = await fetch(
+          `https://graph.facebook.com/v18.0/${post.id}/insights?metric=saved&access_token=${token}`
+        );
+        
+        if (savesResponse.ok) {
+          const savesData = await savesResponse.json();
+          if (savesData.data && Array.isArray(savesData.data) && savesData.data.length > 0) {
+            const savedMetric = savesData.data.find((m: any) => m.name === 'saved');
+            if (savedMetric) {
+              const value = savedMetric.values?.[0]?.value || savedMetric.value || savedMetric.values?.value;
+              if (value !== undefined && value !== null && value !== '') {
+                const numValue = Number(value);
+                if (!isNaN(numValue) && numValue >= 0) {
+                  saves = numValue;
+                }
+              }
+            }
+          }
+        }
+      } catch (error) {
+        // Ignorar erros silenciosamente - saves pode não estar disponível
+      }
+      
+      // Buscar compartilhamentos (shares) - pode não estar disponível para todos os tipos
+      try {
+        const sharesResponse = await fetch(
+          `https://graph.facebook.com/v18.0/${post.id}/insights?metric=shares&access_token=${token}`
+        );
+        
+        if (sharesResponse.ok) {
+          const sharesData = await sharesResponse.json();
+          if (sharesData.data && Array.isArray(sharesData.data) && sharesData.data.length > 0) {
+            const sharesMetric = sharesData.data.find((m: any) => m.name === 'shares');
+            if (sharesMetric) {
+              const value = sharesMetric.values?.[0]?.value || sharesMetric.value || sharesMetric.values?.value;
+              if (value !== undefined && value !== null && value !== '') {
+                const numValue = Number(value);
+                if (!isNaN(numValue) && numValue >= 0) {
+                  shares = numValue;
+                }
+              }
+            }
+          }
+        }
+      } catch (error) {
+        // Ignorar erros silenciosamente - shares pode não estar disponível
+      }
+      
       // Armazenar info de debug no post para análise posterior
       (post as any)._viewsDebug = debugInfo;
       
@@ -611,6 +689,8 @@ export async function fetchInstagramData(
           postId: post.id,
           postType: type,
           views: views,
+          saves: saves,
+          shares: shares,
           debugInfo: debugInfo,
           timestamp: new Date().toISOString()
         });
@@ -626,8 +706,8 @@ export async function fetchInstagramData(
         metrics: {
           likes: post.like_count || 0,
           comments: post.comments_count || 0,
-          shares: 0,
-          saves: 0,
+          shares: shares !== undefined ? shares : 0,
+          saves: saves !== undefined ? saves : 0,
           engagement: engagementValue,
           views: views
         },
@@ -675,7 +755,7 @@ export async function fetchInstagramData(
     return instagramMetrics;
   } catch (error) {
     console.error('Erro ao buscar dados do Instagram:', error);
-    toast.error(`Erro ao conectar com a API do Instagram: ${(error as Error).message}`);
+    safeToast.error(`Erro ao conectar com a API do Instagram: ${(error as Error).message}`);
     return null;
   }
 }

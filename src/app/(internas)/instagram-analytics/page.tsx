@@ -723,7 +723,7 @@ export default function InstagramAnalyticsPage() {
                                   {post.caption}
                                 </p>
                                 
-                                <div className="mt-4 grid grid-cols-4 gap-2 text-center">
+                                <div className="mt-4 grid grid-cols-5 gap-2 text-center">
                                   <div>
                                     <div className="flex items-center justify-center">
                                       <Heart className="h-4 w-4 text-red-500 mr-1" />
@@ -767,10 +767,25 @@ export default function InstagramAnalyticsPage() {
                                   </div>
                                   <div>
                                     <div className="flex items-center justify-center">
-                                      <BarChart4 className="h-4 w-4 text-green-500 mr-1" />
-                                      <span className="text-sm font-medium">{post.metrics.engagement.toLocaleString()}</span>
+                                      <Share2 className="h-4 w-4 text-green-500 mr-1" />
+                                      <span className="text-sm font-medium">
+                                        {post.metrics.shares > 0 
+                                          ? post.metrics.shares.toLocaleString()
+                                          : 'N/A'}
+                                      </span>
                                     </div>
-                                    <span className="text-xs text-gray-500">Engajamento</span>
+                                    <span className="text-xs text-gray-500">Compartilhamentos</span>
+                                  </div>
+                                  <div>
+                                    <div className="flex items-center justify-center">
+                                      <Download className="h-4 w-4 text-orange-500 mr-1" />
+                                      <span className="text-sm font-medium">
+                                        {post.metrics.saves > 0 
+                                          ? post.metrics.saves.toLocaleString()
+                                          : 'N/A'}
+                                      </span>
+                                    </div>
+                                    <span className="text-xs text-gray-500">Salvamentos</span>
                                   </div>
                                 </div>
                               </div>
