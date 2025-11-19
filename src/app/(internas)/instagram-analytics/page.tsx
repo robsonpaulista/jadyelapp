@@ -1414,57 +1414,58 @@ export default function InstagramAnalyticsPage() {
                       <div className="space-y-4">
                         {/* Imagens */}
                         <div className="border-2 border-blue-300 rounded-lg p-4">
-                        <CardHeader className="pb-3">
-                          <CardTitle className="text-lg flex items-center gap-2">
-                            <Camera className="h-5 w-5 text-blue-500" />
-                            Imagens
-                          </CardTitle>
-                          <p className="text-sm text-gray-500">{contentStats.image.posts} postagens</p>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                          <div>
-                            <p className="text-xs text-gray-500 mb-1">Média por postagem</p>
-                            <div className="space-y-2 text-sm">
-                              <div className="flex justify-between">
-                                <span className="flex items-center gap-1">
-                                  <Heart className="h-3 w-3 text-red-500" />
-                                  Curtidas:
-                                </span>
-                                <span className="font-semibold">{contentStats.image.avgLikes.toLocaleString()}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="flex items-center gap-1">
-                                  <MessageCircle className="h-3 w-3 text-blue-500" />
-                                  Comentários:
-                                </span>
-                                <span className="font-semibold">{contentStats.image.avgComments.toLocaleString()}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="flex items-center gap-1">
-                                  <Eye className="h-3 w-3 text-purple-500" />
-                                  Visualizações:
-                                </span>
-                                <span className="font-semibold">
-                                  {contentStats.image.avgViews > 0 ? contentStats.image.avgViews.toLocaleString() : 'N/A'}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="flex items-center gap-1">
-                                  <Share2 className="h-3 w-3 text-green-500" />
-                                  Compartilhamentos:
-                                </span>
-                                <span className="font-semibold">
-                                  {contentStats.image.avgShares > 0 ? contentStats.image.avgShares.toLocaleString() : 'N/A'}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="flex items-center gap-1">
-                                  <Download className="h-3 w-3 text-orange-500" />
-                                  Salvamentos:
-                                </span>
-                                <span className="font-semibold">
-                                  {contentStats.image.avgSaves > 0 ? contentStats.image.avgSaves.toLocaleString() : 'N/A'}
-                                </span>
+                          <div className="mb-3">
+                            <h3 className="text-lg font-semibold flex items-center gap-2">
+                              <Camera className="h-5 w-5 text-blue-500" />
+                              Imagens
+                            </h3>
+                            <p className="text-sm text-gray-500">{contentStats.image.posts} postagens</p>
+                          </div>
+                          <div className="space-y-3">
+                            <div>
+                              <p className="text-xs text-gray-500 mb-1">Média por postagem</p>
+                              <div className="space-y-2 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="flex items-center gap-1">
+                                    <Heart className="h-3 w-3 text-red-500" />
+                                    Curtidas:
+                                  </span>
+                                  <span className="font-semibold">{contentStats.image.avgLikes.toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="flex items-center gap-1">
+                                    <MessageCircle className="h-3 w-3 text-blue-500" />
+                                    Comentários:
+                                  </span>
+                                  <span className="font-semibold">{contentStats.image.avgComments.toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="flex items-center gap-1">
+                                    <Eye className="h-3 w-3 text-purple-500" />
+                                    Visualizações:
+                                  </span>
+                                  <span className="font-semibold">
+                                    {contentStats.image.avgViews > 0 ? contentStats.image.avgViews.toLocaleString() : 'N/A'}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="flex items-center gap-1">
+                                    <Share2 className="h-3 w-3 text-green-500" />
+                                    Compartilhamentos:
+                                  </span>
+                                  <span className="font-semibold">
+                                    {contentStats.image.avgShares > 0 ? contentStats.image.avgShares.toLocaleString() : 'N/A'}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="flex items-center gap-1">
+                                    <Download className="h-3 w-3 text-orange-500" />
+                                    Salvamentos:
+                                  </span>
+                                  <span className="font-semibold">
+                                    {contentStats.image.avgSaves > 0 ? contentStats.image.avgSaves.toLocaleString() : 'N/A'}
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -1480,49 +1481,50 @@ export default function InstagramAnalyticsPage() {
                             <p className="text-sm text-gray-500">{contentStats.video.posts} postagens</p>
                           </div>
                           <div className="space-y-3">
-                          <div>
-                            <p className="text-xs text-gray-500 mb-1">Média por postagem</p>
-                            <div className="space-y-2 text-sm">
-                              <div className="flex justify-between">
-                                <span className="flex items-center gap-1">
-                                  <Heart className="h-3 w-3 text-red-500" />
-                                  Curtidas:
-                                </span>
-                                <span className="font-semibold">{contentStats.video.avgLikes.toLocaleString()}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="flex items-center gap-1">
-                                  <MessageCircle className="h-3 w-3 text-blue-500" />
-                                  Comentários:
-                                </span>
-                                <span className="font-semibold">{contentStats.video.avgComments.toLocaleString()}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="flex items-center gap-1">
-                                  <Eye className="h-3 w-3 text-purple-500" />
-                                  Visualizações:
-                                </span>
-                                <span className="font-semibold">
-                                  {contentStats.video.avgViews > 0 ? contentStats.video.avgViews.toLocaleString() : 'N/A'}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="flex items-center gap-1">
-                                  <Share2 className="h-3 w-3 text-green-500" />
-                                  Compartilhamentos:
-                                </span>
-                                <span className="font-semibold">
-                                  {contentStats.video.avgShares > 0 ? contentStats.video.avgShares.toLocaleString() : 'N/A'}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="flex items-center gap-1">
-                                  <Download className="h-3 w-3 text-orange-500" />
-                                  Salvamentos:
-                                </span>
-                                <span className="font-semibold">
-                                  {contentStats.video.avgSaves > 0 ? contentStats.video.avgSaves.toLocaleString() : 'N/A'}
-                                </span>
+                            <div>
+                              <p className="text-xs text-gray-500 mb-1">Média por postagem</p>
+                              <div className="space-y-2 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="flex items-center gap-1">
+                                    <Heart className="h-3 w-3 text-red-500" />
+                                    Curtidas:
+                                  </span>
+                                  <span className="font-semibold">{contentStats.video.avgLikes.toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="flex items-center gap-1">
+                                    <MessageCircle className="h-3 w-3 text-blue-500" />
+                                    Comentários:
+                                  </span>
+                                  <span className="font-semibold">{contentStats.video.avgComments.toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="flex items-center gap-1">
+                                    <Eye className="h-3 w-3 text-purple-500" />
+                                    Visualizações:
+                                  </span>
+                                  <span className="font-semibold">
+                                    {contentStats.video.avgViews > 0 ? contentStats.video.avgViews.toLocaleString() : 'N/A'}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="flex items-center gap-1">
+                                    <Share2 className="h-3 w-3 text-green-500" />
+                                    Compartilhamentos:
+                                  </span>
+                                  <span className="font-semibold">
+                                    {contentStats.video.avgShares > 0 ? contentStats.video.avgShares.toLocaleString() : 'N/A'}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="flex items-center gap-1">
+                                    <Download className="h-3 w-3 text-orange-500" />
+                                    Salvamentos:
+                                  </span>
+                                  <span className="font-semibold">
+                                    {contentStats.video.avgSaves > 0 ? contentStats.video.avgSaves.toLocaleString() : 'N/A'}
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -1538,49 +1540,50 @@ export default function InstagramAnalyticsPage() {
                             <p className="text-sm text-gray-500">{contentStats.carousel.posts} postagens</p>
                           </div>
                           <div className="space-y-3">
-                          <div>
-                            <p className="text-xs text-gray-500 mb-1">Média por postagem</p>
-                            <div className="space-y-2 text-sm">
-                              <div className="flex justify-between">
-                                <span className="flex items-center gap-1">
-                                  <Heart className="h-3 w-3 text-red-500" />
-                                  Curtidas:
-                                </span>
-                                <span className="font-semibold">{contentStats.carousel.avgLikes.toLocaleString()}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="flex items-center gap-1">
-                                  <MessageCircle className="h-3 w-3 text-blue-500" />
-                                  Comentários:
-                                </span>
-                                <span className="font-semibold">{contentStats.carousel.avgComments.toLocaleString()}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="flex items-center gap-1">
-                                  <Eye className="h-3 w-3 text-purple-500" />
-                                  Visualizações:
-                                </span>
-                                <span className="font-semibold">
-                                  {contentStats.carousel.avgViews > 0 ? contentStats.carousel.avgViews.toLocaleString() : 'N/A'}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="flex items-center gap-1">
-                                  <Share2 className="h-3 w-3 text-green-500" />
-                                  Compartilhamentos:
-                                </span>
-                                <span className="font-semibold">
-                                  {contentStats.carousel.avgShares > 0 ? contentStats.carousel.avgShares.toLocaleString() : 'N/A'}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="flex items-center gap-1">
-                                  <Download className="h-3 w-3 text-orange-500" />
-                                  Salvamentos:
-                                </span>
-                                <span className="font-semibold">
-                                  {contentStats.carousel.avgSaves > 0 ? contentStats.carousel.avgSaves.toLocaleString() : 'N/A'}
-                                </span>
+                            <div>
+                              <p className="text-xs text-gray-500 mb-1">Média por postagem</p>
+                              <div className="space-y-2 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="flex items-center gap-1">
+                                    <Heart className="h-3 w-3 text-red-500" />
+                                    Curtidas:
+                                  </span>
+                                  <span className="font-semibold">{contentStats.carousel.avgLikes.toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="flex items-center gap-1">
+                                    <MessageCircle className="h-3 w-3 text-blue-500" />
+                                    Comentários:
+                                  </span>
+                                  <span className="font-semibold">{contentStats.carousel.avgComments.toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="flex items-center gap-1">
+                                    <Eye className="h-3 w-3 text-purple-500" />
+                                    Visualizações:
+                                  </span>
+                                  <span className="font-semibold">
+                                    {contentStats.carousel.avgViews > 0 ? contentStats.carousel.avgViews.toLocaleString() : 'N/A'}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="flex items-center gap-1">
+                                    <Share2 className="h-3 w-3 text-green-500" />
+                                    Compartilhamentos:
+                                  </span>
+                                  <span className="font-semibold">
+                                    {contentStats.carousel.avgShares > 0 ? contentStats.carousel.avgShares.toLocaleString() : 'N/A'}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="flex items-center gap-1">
+                                    <Download className="h-3 w-3 text-orange-500" />
+                                    Salvamentos:
+                                  </span>
+                                  <span className="font-semibold">
+                                    {contentStats.carousel.avgSaves > 0 ? contentStats.carousel.avgSaves.toLocaleString() : 'N/A'}
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           </div>
