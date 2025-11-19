@@ -24,6 +24,7 @@ export interface InstagramMetrics {
       shares: number;
       saves: number;
       engagement: number;
+      views?: number;
     },
     commentSentiment?: {
       positive: number;
@@ -486,6 +487,23 @@ export async function fetchInstagramData(
       const commentSentiment = await fetchAndAnalyzeComments(post.id, token, forceRefresh);
       const engagementValue = post.like_count + post.comments_count;
       
+      // Buscar visualizações do post
+      let views = 0;
+      try {
+        const insightsResponse = await fetch(
+          `https://graph.facebook.com/v18.0/${post.id}/insights?metric=impressions,reach&access_token=${token}`
+        );
+        if (insightsResponse.ok) {
+          const insightsData = await insightsResponse.json();
+          // Usar impressions se disponível, senão usar reach
+          const impressions = insightsData.data?.find((m: any) => m.name === 'impressions');
+          const reach = insightsData.data?.find((m: any) => m.name === 'reach');
+          views = impressions?.values?.[0]?.value || reach?.values?.[0]?.value || 0;
+        }
+      } catch (error) {
+        console.warn(`Erro ao buscar visualizações do post ${post.id}:`, error);
+      }
+      
       return {
         id: post.id,
         type,
@@ -498,7 +516,8 @@ export async function fetchInstagramData(
           comments: post.comments_count || 0,
           shares: 0,
           saves: 0,
-          engagement: engagementValue
+          engagement: engagementValue,
+          views: views
         },
         commentSentiment
       };

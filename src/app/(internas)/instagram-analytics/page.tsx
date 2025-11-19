@@ -738,14 +738,14 @@ export default function InstagramAnalyticsPage() {
                                   </div>
                                   <div>
                                     <div className="flex items-center justify-center">
-                                      <Share2 className="h-4 w-4 text-green-500 mr-1" />
-                                      <span className="text-sm font-medium">{post.metrics.shares.toLocaleString()}</span>
+                                      <Eye className="h-4 w-4 text-purple-500 mr-1" />
+                                      <span className="text-sm font-medium">{(post.metrics.views || 0).toLocaleString()}</span>
                                     </div>
-                                    <span className="text-[10px] text-gray-400 italic block">API não fornece esta informação</span>
+                                    <span className="text-xs text-gray-500">Visualizações</span>
                                   </div>
                                   <div>
                                     <div className="flex items-center justify-center">
-                                      <Eye className="h-4 w-4 text-purple-500 mr-1" />
+                                      <BarChart4 className="h-4 w-4 text-green-500 mr-1" />
                                       <span className="text-sm font-medium">{post.metrics.engagement.toLocaleString()}</span>
                                     </div>
                                     <span className="text-xs text-gray-500">Engajamento</span>
