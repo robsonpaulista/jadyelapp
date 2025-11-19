@@ -1581,7 +1581,7 @@ export default function InstagramAnalyticsPage() {
                                       </div>
                                       <div className="flex items-center justify-center gap-1 mt-1">
                                         <span className="text-xs text-gray-500">Curtidas</span>
-                                        {index > 0 && <ComparisonBadge comparison={likesComparison} label="Curtidas" />}
+                                        {previousPost && <ComparisonBadge comparison={likesComparison} label="Curtidas" />}
                                       </div>
                                     </div>
                                     <div>
@@ -1591,7 +1591,7 @@ export default function InstagramAnalyticsPage() {
                                       </div>
                                       <div className="flex items-center justify-center gap-1 mt-1">
                                         <span className="text-xs text-gray-500">Comentários</span>
-                                        {index > 0 && <ComparisonBadge comparison={commentsComparison} label="Comentários" />}
+                                        {previousPost && <ComparisonBadge comparison={commentsComparison} label="Comentários" />}
                                       </div>
                                     </div>
                                     <div>
@@ -1605,7 +1605,7 @@ export default function InstagramAnalyticsPage() {
                                       </div>
                                       <div className="flex items-center justify-center gap-1 mt-1">
                                         <span className="text-xs text-gray-500">Visualizações</span>
-                                        {index > 0 && viewsComparison && <ComparisonBadge comparison={viewsComparison} label="Visualizações" />}
+                                        {previousPost && viewsComparison && <ComparisonBadge comparison={viewsComparison} label="Visualizações" />}
                                       </div>
                                     </div>
                                     <div>
@@ -1619,7 +1619,7 @@ export default function InstagramAnalyticsPage() {
                                       </div>
                                       <div className="flex items-center justify-center gap-1 mt-1">
                                         <span className="text-xs text-gray-500">Compartilhamentos</span>
-                                        {index > 0 && sharesComparison && <ComparisonBadge comparison={sharesComparison} label="Compartilhamentos" />}
+                                        {previousPost && sharesComparison && <ComparisonBadge comparison={sharesComparison} label="Compartilhamentos" />}
                                       </div>
                                     </div>
                                     <div>
@@ -1633,13 +1633,13 @@ export default function InstagramAnalyticsPage() {
                                       </div>
                                       <div className="flex items-center justify-center gap-1 mt-1">
                                         <span className="text-xs text-gray-500">Salvamentos</span>
-                                        {index > 0 && savesComparison && <ComparisonBadge comparison={savesComparison} label="Salvamentos" />}
+                                        {previousPost && savesComparison && <ComparisonBadge comparison={savesComparison} label="Salvamentos" />}
                                       </div>
                                     </div>
                                   </div>
                                   
                                   {/* Badge de engajamento geral */}
-                                  {index > 0 && engagementComparison && (
+                                  {previousPost && engagementComparison && (
                                     <div className="mt-3 pt-3 border-t border-gray-200">
                                       <div className="flex items-center justify-center gap-2">
                                         <BarChart4 className="h-4 w-4 text-indigo-500" />
