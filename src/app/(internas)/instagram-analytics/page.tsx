@@ -719,7 +719,7 @@ export default function InstagramAnalyticsPage() {
     return (
       <div className="space-y-6">
         {/* Filtros e controles */}
-        {/* Botões de exportação removidos conforme solicitado */}
+        {/* Botoes de exportacao removidos conforme solicitado */}
         
         <Tabs defaultValue="posts">
           <TabsList className="grid grid-cols-2 mb-4">
