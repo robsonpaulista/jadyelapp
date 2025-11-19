@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -73,6 +73,81 @@ export default function InstagramAnalyticsPage() {
   const [isValidating, setIsValidating] = useState(false);
   const [configError, setConfigError] = useState('');
   const [debugModal, setDebugModal] = useState<{open: boolean; data: any}>({open: false, data: null});
+  
+  // Calcular estatísticas por tipo de conteúdo
+  const contentStats = useMemo(() => {
+    if (!metrics?.posts) return null;
+    
+    const stats = {
+      image: { posts: 0, likes: 0, comments: 0, views: 0, shares: 0, saves: 0, engagement: 0 },
+      video: { posts: 0, likes: 0, comments: 0, views: 0, shares: 0, saves: 0, engagement: 0 },
+      carousel: { posts: 0, likes: 0, comments: 0, views: 0, shares: 0, saves: 0, engagement: 0 }
+    };
+    
+    metrics.posts.forEach(post => {
+      const type = post.type;
+      if (stats[type]) {
+        stats[type].posts++;
+        stats[type].likes += post.metrics.likes || 0;
+        stats[type].comments += post.metrics.comments || 0;
+        stats[type].views += post.metrics.views || 0;
+        stats[type].shares += post.metrics.shares || 0;
+        stats[type].saves += post.metrics.saves || 0;
+        stats[type].engagement += post.metrics.engagement || 0;
+      }
+    });
+    
+    // Calcular médias
+    const averages = {
+      image: {
+        posts: stats.image.posts,
+        avgLikes: stats.image.posts > 0 ? Math.round(stats.image.likes / stats.image.posts) : 0,
+        avgComments: stats.image.posts > 0 ? Math.round(stats.image.comments / stats.image.posts) : 0,
+        avgViews: stats.image.posts > 0 ? Math.round(stats.image.views / stats.image.posts) : 0,
+        avgShares: stats.image.posts > 0 ? Math.round(stats.image.shares / stats.image.posts) : 0,
+        avgSaves: stats.image.posts > 0 ? Math.round(stats.image.saves / stats.image.posts) : 0,
+        avgEngagement: stats.image.posts > 0 ? Math.round(stats.image.engagement / stats.image.posts) : 0,
+        totalLikes: stats.image.likes,
+        totalComments: stats.image.comments,
+        totalViews: stats.image.views,
+        totalShares: stats.image.shares,
+        totalSaves: stats.image.saves,
+        totalEngagement: stats.image.engagement
+      },
+      video: {
+        posts: stats.video.posts,
+        avgLikes: stats.video.posts > 0 ? Math.round(stats.video.likes / stats.video.posts) : 0,
+        avgComments: stats.video.posts > 0 ? Math.round(stats.video.comments / stats.video.posts) : 0,
+        avgViews: stats.video.posts > 0 ? Math.round(stats.video.views / stats.video.posts) : 0,
+        avgShares: stats.video.posts > 0 ? Math.round(stats.video.shares / stats.video.posts) : 0,
+        avgSaves: stats.video.posts > 0 ? Math.round(stats.video.saves / stats.video.posts) : 0,
+        avgEngagement: stats.video.posts > 0 ? Math.round(stats.video.engagement / stats.video.posts) : 0,
+        totalLikes: stats.video.likes,
+        totalComments: stats.video.comments,
+        totalViews: stats.video.views,
+        totalShares: stats.video.shares,
+        totalSaves: stats.video.saves,
+        totalEngagement: stats.video.engagement
+      },
+      carousel: {
+        posts: stats.carousel.posts,
+        avgLikes: stats.carousel.posts > 0 ? Math.round(stats.carousel.likes / stats.carousel.posts) : 0,
+        avgComments: stats.carousel.posts > 0 ? Math.round(stats.carousel.comments / stats.carousel.posts) : 0,
+        avgViews: stats.carousel.posts > 0 ? Math.round(stats.carousel.views / stats.carousel.posts) : 0,
+        avgShares: stats.carousel.posts > 0 ? Math.round(stats.carousel.shares / stats.carousel.posts) : 0,
+        avgSaves: stats.carousel.posts > 0 ? Math.round(stats.carousel.saves / stats.carousel.posts) : 0,
+        avgEngagement: stats.carousel.posts > 0 ? Math.round(stats.carousel.engagement / stats.carousel.posts) : 0,
+        totalLikes: stats.carousel.likes,
+        totalComments: stats.carousel.comments,
+        totalViews: stats.carousel.views,
+        totalShares: stats.carousel.shares,
+        totalSaves: stats.carousel.saves,
+        totalEngagement: stats.carousel.engagement
+      }
+    };
+    
+    return averages;
+  }, [metrics?.posts]);
   
   // Carregar configurações e verificar se estamos logados
   useEffect(() => {
@@ -1084,401 +1159,557 @@ export default function InstagramAnalyticsPage() {
 
           {/* Aba de Audiência Expandida */}
           <TabsContent value="audience">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {/* Visualizações Detalhadas */}
-            <Card>
-              <CardHeader>
-                  <CardTitle className="text-xl font-bold flex items-center gap-2">
-                    <Eye className="h-5 w-5" />
-                    Visualizações
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-sm font-medium">Total de Visualizações</p>
-                      <p className="text-2xl font-bold">
-                        {metrics?.audienceMetrics?.views?.total?.toLocaleString() || '0'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Stories</p>
-                      <p className="text-2xl font-bold">
-                        {metrics?.audienceMetrics?.views?.stories?.toLocaleString() || '0'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Reels</p>
-                      <p className="text-2xl font-bold">
-                        {metrics?.audienceMetrics?.views?.reels?.toLocaleString() || '0'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Posts</p>
-                      <p className="text-2xl font-bold">
-                        {metrics?.audienceMetrics?.views?.posts?.toLocaleString() || '0'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Vídeos</p>
-                      <p className="text-2xl font-bold">
-                        {metrics?.audienceMetrics?.views?.videos?.toLocaleString() || '0'}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            {!contentStats ? (
+              <div className="text-center py-8 text-gray-500">
+                <p>Carregando estatísticas de conteúdo...</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Resumo Geral */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-xl font-bold flex items-center gap-2">
+                      <BarChart4 className="h-5 w-5" />
+                      Comparativo de Aceitação por Tipo de Conteúdo
+                    </CardTitle>
+                    <CardDescription>
+                      Análise comparativa de desempenho entre Imagens, Vídeos e Carrosséis
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid md:grid-cols-3 gap-4">
+                      {/* Imagens */}
+                      <Card className="border-2">
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-lg flex items-center gap-2">
+                            <Camera className="h-5 w-5 text-blue-500" />
+                            Imagens
+                          </CardTitle>
+                          <p className="text-sm text-gray-500">{contentStats.image.posts} postagens</p>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">Média por postagem</p>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span className="flex items-center gap-1">
+                                  <Heart className="h-3 w-3 text-red-500" />
+                                  Curtidas:
+                                </span>
+                                <span className="font-semibold">{contentStats.image.avgLikes.toLocaleString()}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="flex items-center gap-1">
+                                  <MessageCircle className="h-3 w-3 text-blue-500" />
+                                  Comentários:
+                                </span>
+                                <span className="font-semibold">{contentStats.image.avgComments.toLocaleString()}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="flex items-center gap-1">
+                                  <Eye className="h-3 w-3 text-purple-500" />
+                                  Visualizações:
+                                </span>
+                                <span className="font-semibold">
+                                  {contentStats.image.avgViews > 0 ? contentStats.image.avgViews.toLocaleString() : 'N/A'}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="flex items-center gap-1">
+                                  <Share2 className="h-3 w-3 text-green-500" />
+                                  Compartilhamentos:
+                                </span>
+                                <span className="font-semibold">
+                                  {contentStats.image.avgShares > 0 ? contentStats.image.avgShares.toLocaleString() : 'N/A'}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="flex items-center gap-1">
+                                  <Download className="h-3 w-3 text-orange-500" />
+                                  Salvamentos:
+                                </span>
+                                <span className="font-semibold">
+                                  {contentStats.image.avgSaves > 0 ? contentStats.image.avgSaves.toLocaleString() : 'N/A'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
 
-              {/* Alcance Detalhado */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-xl font-bold flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5" />
-                    Alcance
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-sm font-medium">Alcance Total</p>
-                      <p className="text-2xl font-bold">
-                        {metrics?.audienceMetrics?.reach?.total?.toLocaleString() || '0'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Alcance Orgânico</p>
-                      <p className="text-2xl font-bold">
-                        {metrics?.audienceMetrics?.reach?.organic?.toLocaleString() || '0'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Alcance Pago</p>
-                      <p className="text-2xl font-bold">
-                        {metrics?.audienceMetrics?.reach?.paid?.toLocaleString() || '0'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Por Tipo de Conteúdo</p>
-                      <div className="text-sm space-y-1">
-                        <div className="flex justify-between">
-                          <span>Stories:</span>
-                          <span>{metrics?.audienceMetrics?.reach?.byContentType?.stories?.toLocaleString() || '0'}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Reels:</span>
-                          <span>{metrics?.audienceMetrics?.reach?.byContentType?.reels?.toLocaleString() || '0'}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Posts:</span>
-                          <span>{metrics?.audienceMetrics?.reach?.byContentType?.posts?.toLocaleString() || '0'}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                      {/* Vídeos */}
+                      <Card className="border-2">
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-lg flex items-center gap-2">
+                            <Camera className="h-5 w-5 text-red-500" />
+                            Vídeos
+                          </CardTitle>
+                          <p className="text-sm text-gray-500">{contentStats.video.posts} postagens</p>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">Média por postagem</p>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span className="flex items-center gap-1">
+                                  <Heart className="h-3 w-3 text-red-500" />
+                                  Curtidas:
+                                </span>
+                                <span className="font-semibold">{contentStats.video.avgLikes.toLocaleString()}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="flex items-center gap-1">
+                                  <MessageCircle className="h-3 w-3 text-blue-500" />
+                                  Comentários:
+                                </span>
+                                <span className="font-semibold">{contentStats.video.avgComments.toLocaleString()}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="flex items-center gap-1">
+                                  <Eye className="h-3 w-3 text-purple-500" />
+                                  Visualizações:
+                                </span>
+                                <span className="font-semibold">
+                                  {contentStats.video.avgViews > 0 ? contentStats.video.avgViews.toLocaleString() : 'N/A'}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="flex items-center gap-1">
+                                  <Share2 className="h-3 w-3 text-green-500" />
+                                  Compartilhamentos:
+                                </span>
+                                <span className="font-semibold">
+                                  {contentStats.video.avgShares > 0 ? contentStats.video.avgShares.toLocaleString() : 'N/A'}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="flex items-center gap-1">
+                                  <Download className="h-3 w-3 text-orange-500" />
+                                  Salvamentos:
+                                </span>
+                                <span className="font-semibold">
+                                  {contentStats.video.avgSaves > 0 ? contentStats.video.avgSaves.toLocaleString() : 'N/A'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
 
-              {/* Interações com o Conteúdo */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-xl font-bold flex items-center gap-2">
-                    <Heart className="h-5 w-5" />
-                    Interações com o Conteúdo
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-sm font-medium">Total de Interações</p>
-                      <p className="text-2xl font-bold">
-                        {metrics?.audienceMetrics?.interactions?.total?.toLocaleString() || '0'}
-                      </p>
+                      {/* Carrosséis */}
+                      <Card className="border-2">
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-lg flex items-center gap-2">
+                            <Camera className="h-5 w-5 text-purple-500" />
+                            Carrosséis
+                          </CardTitle>
+                          <p className="text-sm text-gray-500">{contentStats.carousel.posts} postagens</p>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">Média por postagem</p>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span className="flex items-center gap-1">
+                                  <Heart className="h-3 w-3 text-red-500" />
+                                  Curtidas:
+                                </span>
+                                <span className="font-semibold">{contentStats.carousel.avgLikes.toLocaleString()}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="flex items-center gap-1">
+                                  <MessageCircle className="h-3 w-3 text-blue-500" />
+                                  Comentários:
+                                </span>
+                                <span className="font-semibold">{contentStats.carousel.avgComments.toLocaleString()}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="flex items-center gap-1">
+                                  <Eye className="h-3 w-3 text-purple-500" />
+                                  Visualizações:
+                                </span>
+                                <span className="font-semibold">
+                                  {contentStats.carousel.avgViews > 0 ? contentStats.carousel.avgViews.toLocaleString() : 'N/A'}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="flex items-center gap-1">
+                                  <Share2 className="h-3 w-3 text-green-500" />
+                                  Compartilhamentos:
+                                </span>
+                                <span className="font-semibold">
+                                  {contentStats.carousel.avgShares > 0 ? contentStats.carousel.avgShares.toLocaleString() : 'N/A'}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="flex items-center gap-1">
+                                  <Download className="h-3 w-3 text-orange-500" />
+                                  Salvamentos:
+                                </span>
+                                <span className="font-semibold">
+                                  {contentStats.carousel.avgSaves > 0 ? contentStats.carousel.avgSaves.toLocaleString() : 'N/A'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium">Curtidas</p>
-                      <p className="text-2xl font-bold">
-                        {metrics?.audienceMetrics?.interactions?.likes?.toLocaleString() || '0'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Comentários</p>
-                      <p className="text-2xl font-bold">
-                        {metrics?.audienceMetrics?.interactions?.comments?.toLocaleString() || '0'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Compartilhamentos</p>
-                      <p className="text-2xl font-bold">
-                        {metrics?.audienceMetrics?.interactions?.shares?.toLocaleString() || '0'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Salvamentos</p>
-                      <p className="text-2xl font-bold">
-                        {metrics?.audienceMetrics?.interactions?.saves?.toLocaleString() || '0'}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
 
-              {/* Cliques no Link */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-xl font-bold flex items-center gap-2">
-                    <ExternalLink className="h-5 w-5" />
-                    Cliques no Link
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-sm font-medium">Total de Cliques</p>
-                      <p className="text-2xl font-bold">
-                        {metrics?.audienceMetrics?.clicks?.total?.toLocaleString() || '0'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Cliques no Website</p>
-                      <p className="text-2xl font-bold">
-                        {metrics?.audienceMetrics?.clicks?.website?.toLocaleString() || '0'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Cliques na Bio</p>
-                      <p className="text-2xl font-bold">
-                        {metrics?.audienceMetrics?.clicks?.bio?.toLocaleString() || '0'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Call-to-Action</p>
-                      <p className="text-2xl font-bold">
-                        {metrics?.audienceMetrics?.clicks?.callToAction?.toLocaleString() || '0'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Shopping</p>
-                      <p className="text-2xl font-bold">
-                        {metrics?.audienceMetrics?.clicks?.shopping?.toLocaleString() || '0'}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                {/* Gráficos Comparativos */}
+                <div className="grid md:grid-cols-2 gap-6">
+                  {/* Gráfico de Curtidas */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Curtidas Médias</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {['image', 'video', 'carousel'].map((type) => {
+                          const stats = contentStats[type as keyof typeof contentStats];
+                          const max = Math.max(contentStats.image.avgLikes, contentStats.video.avgLikes, contentStats.carousel.avgLikes);
+                          const percentage = max > 0 ? (stats.avgLikes / max) * 100 : 0;
+                          const typeNames = { image: 'Imagens', video: 'Vídeos', carousel: 'Carrosséis' };
+                          const colors = { image: 'bg-blue-500', video: 'bg-red-500', carousel: 'bg-purple-500' };
+                          
+                          return (
+                            <div key={type}>
+                              <div className="flex justify-between mb-1">
+                                <span className="text-sm font-medium">{typeNames[type as keyof typeof typeNames]}</span>
+                                <span className="text-sm font-semibold">{stats.avgLikes.toLocaleString()}</span>
+                              </div>
+                              <div className="h-6 bg-gray-200 rounded-full overflow-hidden">
+                                <div 
+                                  className={`h-full ${colors[type as keyof typeof colors]} rounded-full transition-all`}
+                                  style={{ width: `${percentage}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </CardContent>
+                  </Card>
 
-              {/* Visitas */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-xl font-bold flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5" />
-                    Visitas
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-sm font-medium">Visitas ao Perfil</p>
-                      <p className="text-2xl font-bold">
-                        {metrics?.audienceMetrics?.visits?.profile?.toLocaleString() || '0'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Visitas ao Website</p>
-                      <p className="text-2xl font-bold">
-                        {metrics?.audienceMetrics?.visits?.website?.toLocaleString() || '0'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Visitas à Loja</p>
-                      <p className="text-2xl font-bold">
-                        {metrics?.audienceMetrics?.visits?.store?.toLocaleString() || '0'}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  {/* Gráfico de Visualizações */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Visualizações Médias</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {['image', 'video', 'carousel'].map((type) => {
+                          const stats = contentStats[type as keyof typeof contentStats];
+                          const max = Math.max(
+                            contentStats.image.avgViews || 0, 
+                            contentStats.video.avgViews || 0, 
+                            contentStats.carousel.avgViews || 0
+                          );
+                          const percentage = max > 0 ? ((stats.avgViews || 0) / max) * 100 : 0;
+                          const typeNames = { image: 'Imagens', video: 'Vídeos', carousel: 'Carrosséis' };
+                          const colors = { image: 'bg-blue-500', video: 'bg-red-500', carousel: 'bg-purple-500' };
+                          
+                          return (
+                            <div key={type}>
+                              <div className="flex justify-between mb-1">
+                                <span className="text-sm font-medium">{typeNames[type as keyof typeof typeNames]}</span>
+                                <span className="text-sm font-semibold">
+                                  {stats.avgViews > 0 ? stats.avgViews.toLocaleString() : 'N/A'}
+                                </span>
+                              </div>
+                              <div className="h-6 bg-gray-200 rounded-full overflow-hidden">
+                                {stats.avgViews > 0 ? (
+                                  <div 
+                                    className={`h-full ${colors[type as keyof typeof colors]} rounded-full transition-all`}
+                                    style={{ width: `${percentage}%` }}
+                                  ></div>
+                                ) : (
+                                  <div className="h-full bg-gray-300 rounded-full flex items-center justify-center">
+                                    <span className="text-xs text-gray-500">Sem dados</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </CardContent>
+                  </Card>
 
-              {/* Seguidores por Período */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-xl font-bold flex items-center gap-2">
-                    <Users className="h-5 w-5" />
-                    Seguidores por Período
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-sm font-medium">Seguidores Atuais</p>
-                      <p className="text-2xl font-bold">
-                        {metrics?.audienceMetrics?.followers?.current?.toLocaleString() || '0'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Novos Seguidores</p>
-                      <p className="text-2xl font-bold text-green-600">
-                        +{metrics?.audienceMetrics?.followers?.gained?.toLocaleString() || '0'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Seguidores Perdidos</p>
-                      <p className="text-2xl font-bold text-red-600">
-                        -{metrics?.audienceMetrics?.followers?.lost?.toLocaleString() || '0'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Crescimento Líquido</p>
-                      <p className="text-2xl font-bold">
-                        {metrics?.audienceMetrics?.followers?.netGrowth?.toLocaleString() || '0'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Taxa de Crescimento</p>
-                      <p className="text-2xl font-bold">
-                        {metrics?.audienceMetrics?.followers?.growthRate?.toFixed(2) || '0'}%
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  {/* Gráfico de Comentários */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Comentários Médias</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {['image', 'video', 'carousel'].map((type) => {
+                          const stats = contentStats[type as keyof typeof contentStats];
+                          const max = Math.max(contentStats.image.avgComments, contentStats.video.avgComments, contentStats.carousel.avgComments);
+                          const percentage = max > 0 ? (stats.avgComments / max) * 100 : 0;
+                          const typeNames = { image: 'Imagens', video: 'Vídeos', carousel: 'Carrosséis' };
+                          const colors = { image: 'bg-blue-500', video: 'bg-red-500', carousel: 'bg-purple-500' };
+                          
+                          return (
+                            <div key={type}>
+                              <div className="flex justify-between mb-1">
+                                <span className="text-sm font-medium">{typeNames[type as keyof typeof typeNames]}</span>
+                                <span className="text-sm font-semibold">{stats.avgComments.toLocaleString()}</span>
+                              </div>
+                              <div className="h-6 bg-gray-200 rounded-full overflow-hidden">
+                                <div 
+                                  className={`h-full ${colors[type as keyof typeof colors]} rounded-full transition-all`}
+                                  style={{ width: `${percentage}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </CardContent>
+                  </Card>
 
-              {/* Taxa de Engajamento */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-xl font-bold flex items-center gap-2">
-                    <BarChart4 className="h-5 w-5" />
-                    Taxa de Engajamento
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-sm font-medium">Taxa Geral</p>
-                      <p className="text-2xl font-bold">
-                        {metrics?.audienceMetrics?.engagement?.rate?.toFixed(2) || '0'}%
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Por Tipo de Conteúdo</p>
-                      <div className="text-sm space-y-1">
-                        <div className="flex justify-between">
-                          <span>Stories:</span>
-                          <span>{metrics?.audienceMetrics?.engagement?.byContentType?.stories?.toLocaleString() || '0'}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Reels:</span>
-                          <span>{metrics?.audienceMetrics?.engagement?.byContentType?.reels?.toLocaleString() || '0'}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Posts:</span>
-                          <span>{metrics?.audienceMetrics?.engagement?.byContentType?.posts?.toLocaleString() || '0'}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Vídeos:</span>
-                          <span>{metrics?.audienceMetrics?.engagement?.byContentType?.videos?.toLocaleString() || '0'}</span>
-                        </div>
+                  {/* Gráfico de Engajamento Total */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Engajamento Médio</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {['image', 'video', 'carousel'].map((type) => {
+                          const stats = contentStats[type as keyof typeof contentStats];
+                          const max = Math.max(contentStats.image.avgEngagement, contentStats.video.avgEngagement, contentStats.carousel.avgEngagement);
+                          const percentage = max > 0 ? (stats.avgEngagement / max) * 100 : 0;
+                          const typeNames = { image: 'Imagens', video: 'Vídeos', carousel: 'Carrosséis' };
+                          const colors = { image: 'bg-blue-500', video: 'bg-red-500', carousel: 'bg-purple-500' };
+                          
+                          return (
+                            <div key={type}>
+                              <div className="flex justify-between mb-1">
+                                <span className="text-sm font-medium">{typeNames[type as keyof typeof typeNames]}</span>
+                                <span className="text-sm font-semibold">{stats.avgEngagement.toLocaleString()}</span>
+                              </div>
+                              <div className="h-6 bg-gray-200 rounded-full overflow-hidden">
+                                <div 
+                                  className={`h-full ${colors[type as keyof typeof colors]} rounded-full transition-all`}
+                                  style={{ width: `${percentage}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Perfil da Audiência */}
-              <Card className="md:col-span-2 lg:col-span-3">
-                <CardHeader>
-                  <CardTitle className="text-xl font-bold">Perfil da Audiência</CardTitle>
-                <CardDescription>Informações demográficas sobre seus seguidores</CardDescription>
-              </CardHeader>
-              <CardContent>
-                  <div className="grid md:grid-cols-3 gap-8">
-                  {/* Gênero */}
-                  <div>
-                    <h3 className="text-base font-medium mb-3">Distribuição por Gênero</h3>
-                      <div className="space-y-3">
-                    <div className="flex items-center gap-4">
-                      <div className="h-4 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full" style={{width: '62%'}}></div>
-                      <span className="font-medium">62% Masculino</span>
-                    </div>
-                        <div className="flex items-center gap-4">
-                      <div className="h-4 bg-gradient-to-r from-pink-500 to-pink-600 rounded-full" style={{width: '38%'}}></div>
-                      <span className="font-medium">38% Feminino</span>
-                        </div>
-                    </div>
-                  </div>
-                  
-                  {/* Faixa Etária */}
-                  <div>
-                    <h3 className="text-base font-medium mb-3">Faixa Etária</h3>
-                      <div className="space-y-3">
-                      <div>
-                        <div className="flex justify-between mb-1">
-                          <span className="text-sm">18-24 anos</span>
-                          <span className="text-sm font-medium">18%</span>
-                        </div>
-                        <div className="h-2 bg-gray-200 rounded-full">
-                          <div className="h-2 bg-blue-600 rounded-full" style={{width: '18%'}}></div>
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex justify-between mb-1">
-                          <span className="text-sm">25-34 anos</span>
-                          <span className="text-sm font-medium">42%</span>
-                        </div>
-                        <div className="h-2 bg-gray-200 rounded-full">
-                          <div className="h-2 bg-blue-600 rounded-full" style={{width: '42%'}}></div>
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex justify-between mb-1">
-                          <span className="text-sm">35-44 anos</span>
-                          <span className="text-sm font-medium">25%</span>
-                        </div>
-                        <div className="h-2 bg-gray-200 rounded-full">
-                          <div className="h-2 bg-blue-600 rounded-full" style={{width: '25%'}}></div>
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex justify-between mb-1">
-                          <span className="text-sm">45+ anos</span>
-                          <span className="text-sm font-medium">15%</span>
-                        </div>
-                        <div className="h-2 bg-gray-200 rounded-full">
-                          <div className="h-2 bg-blue-600 rounded-full" style={{width: '15%'}}></div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Localização */}
-                  <div>
-                    <h3 className="text-base font-medium mb-3">Principais Localizações</h3>
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span>São Paulo, Brasil</span>
-                        <span className="font-medium">45%</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Rio de Janeiro, Brasil</span>
-                        <span className="font-medium">18%</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Belo Horizonte, Brasil</span>
-                        <span className="font-medium">12%</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Brasília, Brasil</span>
-                        <span className="font-medium">8%</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Outras localizações</span>
-                        <span className="font-medium">17%</span>
-                      </div>
-                    </div>
-                  </div>
+                    </CardContent>
+                  </Card>
                 </div>
-              </CardContent>
-            </Card>
-            </div>
+
+                {/* Tabela Comparativa Detalhada */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Tabela Comparativa Detalhada</CardTitle>
+                    <CardDescription>Totais e médias por tipo de conteúdo</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left p-2">Métrica</th>
+                            <th className="text-right p-2">Imagens</th>
+                            <th className="text-right p-2">Vídeos</th>
+                            <th className="text-right p-2">Carrosséis</th>
+                            <th className="text-right p-2">Melhor</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {[
+                            { label: 'Curtidas (média)', key: 'avgLikes', icon: Heart, color: 'text-red-500' },
+                            { label: 'Comentários (média)', key: 'avgComments', icon: MessageCircle, color: 'text-blue-500' },
+                            { label: 'Visualizações (média)', key: 'avgViews', icon: Eye, color: 'text-purple-500' },
+                            { label: 'Compartilhamentos (média)', key: 'avgShares', icon: Share2, color: 'text-green-500' },
+                            { label: 'Salvamentos (média)', key: 'avgSaves', icon: Download, color: 'text-orange-500' },
+                            { label: 'Engajamento (média)', key: 'avgEngagement', icon: BarChart4, color: 'text-indigo-500' }
+                          ].map(({ label, key, icon: Icon, color }) => {
+                            const values = {
+                              image: contentStats.image[key as keyof typeof contentStats.image] as number,
+                              video: contentStats.video[key as keyof typeof contentStats.video] as number,
+                              carousel: contentStats.carousel[key as keyof typeof contentStats.carousel] as number
+                            };
+                            const max = Math.max(values.image, values.video, values.carousel);
+                            const best = max === values.image ? 'Imagens' : max === values.video ? 'Vídeos' : 'Carrosséis';
+                            
+                            return (
+                              <tr key={key} className="border-b hover:bg-gray-50">
+                                <td className="p-2">
+                                  <div className="flex items-center gap-2">
+                                    <Icon className={`h-4 w-4 ${color}`} />
+                                    <span>{label}</span>
+                                  </div>
+                                </td>
+                                <td className="text-right p-2 font-medium">
+                                  {key === 'avgViews' || key === 'avgShares' || key === 'avgSaves' 
+                                    ? (values.image > 0 ? values.image.toLocaleString() : 'N/A')
+                                    : values.image.toLocaleString()}
+                                </td>
+                                <td className="text-right p-2 font-medium">
+                                  {key === 'avgViews' || key === 'avgShares' || key === 'avgSaves' 
+                                    ? (values.video > 0 ? values.video.toLocaleString() : 'N/A')
+                                    : values.video.toLocaleString()}
+                                </td>
+                                <td className="text-right p-2 font-medium">
+                                  {key === 'avgViews' || key === 'avgShares' || key === 'avgSaves' 
+                                    ? (values.carousel > 0 ? values.carousel.toLocaleString() : 'N/A')
+                                    : values.carousel.toLocaleString()}
+                                </td>
+                                <td className="text-right p-2">
+                                  <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-semibold">
+                                    {best}
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Publicações - Para identificar o conteúdo específico */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base md:text-lg font-semibold">Publicações por Tipo de Conteúdo</CardTitle>
+                    <CardDescription>
+                      Visualize todas as postagens para identificar qual conteúdo tem melhor aceitação
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {metrics?.posts
+                        .sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime())
+                        .map((post) => {
+                          // Determinar cor da borda baseado no tipo
+                          const typeColors = {
+                            image: 'border-blue-300',
+                            video: 'border-red-300',
+                            carousel: 'border-purple-300'
+                          };
+                          const typeLabels = {
+                            image: 'Imagem',
+                            video: 'Vídeo',
+                            carousel: 'Carrossel'
+                          };
+                          
+                          return (
+                            <div 
+                              key={post.id} 
+                              className={`border-2 ${typeColors[post.type]} rounded-lg overflow-hidden`}
+                            >
+                              <div className="flex flex-col sm:flex-row">
+                                <div className="w-full sm:w-48 h-48 bg-gray-200 relative">
+                                  {post.thumbnail && (
+                                    <div 
+                                      className="w-full h-full bg-center bg-cover" 
+                                      style={{ backgroundImage: `url(${post.thumbnail})` }}
+                                    />
+                                  )}
+                                  <div className={`absolute top-2 right-2 text-white text-xs px-2 py-1 rounded ${
+                                    post.type === 'video' ? 'bg-red-500' : 
+                                    post.type === 'carousel' ? 'bg-purple-500' : 
+                                    'bg-blue-500'
+                                  }`}>
+                                    {typeLabels[post.type]}
+                                  </div>
+                                </div>
+                                
+                                <div className="p-4 flex-1">
+                                  <div className="flex justify-between items-start mb-2">
+                                    <div>
+                                      <span className="text-xs text-gray-500">
+                                        {new Date(post.postedAt).toLocaleDateString('pt-BR', {
+                                          day: '2-digit',
+                                          month: '2-digit',
+                                          year: 'numeric',
+                                          hour: '2-digit',
+                                          minute: '2-digit'
+                                        })}
+                                      </span>
+                                    </div>
+                                    <a 
+                                      href={post.url} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="text-blue-600 hover:underline text-xs flex items-center"
+                                    >
+                                      <ExternalLink className="h-3 w-3 mr-1" /> Ver no Instagram
+                                    </a>
+                                  </div>
+                                  
+                                  <p className="text-sm mt-2 line-clamp-3 mb-4">
+                                    {post.caption || 'Sem legenda'}
+                                  </p>
+                                  
+                                  <div className="grid grid-cols-5 gap-2 text-center">
+                                    <div>
+                                      <div className="flex items-center justify-center">
+                                        <Heart className="h-4 w-4 text-red-500 mr-1" />
+                                        <span className="text-sm font-medium">{post.metrics.likes.toLocaleString()}</span>
+                                      </div>
+                                      <span className="text-xs text-gray-500">Curtidas</span>
+                                    </div>
+                                    <div>
+                                      <div className="flex items-center justify-center">
+                                        <MessageCircle className="h-4 w-4 text-blue-500 mr-1" />
+                                        <span className="text-sm font-medium">{post.metrics.comments.toLocaleString()}</span>
+                                      </div>
+                                      <span className="text-xs text-gray-500">Comentários</span>
+                                    </div>
+                                    <div>
+                                      <div className="flex items-center justify-center">
+                                        <Eye className="h-4 w-4 text-purple-500 mr-1" />
+                                        <span className="text-sm font-medium">
+                                          {post.metrics.views !== undefined && post.metrics.views !== null
+                                            ? post.metrics.views.toLocaleString()
+                                            : 'N/A'}
+                                        </span>
+                                      </div>
+                                      <span className="text-xs text-gray-500">Visualizações</span>
+                                    </div>
+                                    <div>
+                                      <div className="flex items-center justify-center">
+                                        <Share2 className="h-4 w-4 text-green-500 mr-1" />
+                                        <span className="text-sm font-medium">
+                                          {post.metrics.shares > 0 
+                                            ? post.metrics.shares.toLocaleString()
+                                            : 'N/A'}
+                                        </span>
+                                      </div>
+                                      <span className="text-xs text-gray-500">Compartilhamentos</span>
+                                    </div>
+                                    <div>
+                                      <div className="flex items-center justify-center">
+                                        <Download className="h-4 w-4 text-orange-500 mr-1" />
+                                        <span className="text-sm font-medium">
+                                          {post.metrics.saves > 0 
+                                            ? post.metrics.saves.toLocaleString()
+                                            : 'N/A'}
+                                        </span>
+                                      </div>
+                                      <span className="text-xs text-gray-500">Salvamentos</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>
