@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { isUserLoggedIn, getCurrentUser } from '@/lib/storage';
@@ -71,6 +72,7 @@ export default function InstagramAnalyticsPage() {
   const [businessId, setBusinessId] = useState('');
   const [isValidating, setIsValidating] = useState(false);
   const [configError, setConfigError] = useState('');
+  const [debugModal, setDebugModal] = useState<{open: boolean; data: any}>({open: false, data: null});
   
   // Carregar configurações e verificar se estamos logados
   useEffect(() => {
@@ -747,12 +749,20 @@ export default function InstagramAnalyticsPage() {
                                     </div>
                                     <span className="text-xs text-gray-500">Visualizações</span>
                                     {(post.metrics.views === undefined || post.metrics.views === null) && (
-                                      <span 
-                                        className="text-[8px] text-orange-500 cursor-help" 
-                                        title="Abra o console do navegador (F12) para ver detalhes do debug"
+                                      <button
+                                        onClick={() => {
+                                          const debugInfo = (post as any)._viewsDebug;
+                                          if (debugInfo) {
+                                            setDebugModal({open: true, data: {postId: post.id, postType: post.type, debugInfo}});
+                                          } else {
+                                            toast.error('Nenhuma informação de debug disponível para este post.');
+                                          }
+                                        }}
+                                        className="text-[8px] text-orange-500 hover:text-orange-700 underline cursor-pointer mt-1"
+                                        title="Clique para ver informações de debug"
                                       >
-                                        (ver console)
-                                      </span>
+                                        (ver debug)
+                                      </button>
                                     )}
                                   </div>
                                   <div>
@@ -1771,6 +1781,102 @@ export default function InstagramAnalyticsPage() {
           )}
         </div>
       </div>
+
+      {/* Modal de Debug */}
+      <Dialog open={debugModal.open} onOpenChange={(open) => setDebugModal({open, data: debugModal.data})}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Debug: Visualizações do Post</DialogTitle>
+            <DialogDescription>
+              Informações detalhadas sobre por que as visualizações não foram encontradas
+            </DialogDescription>
+          </DialogHeader>
+          {debugModal.data && (
+            <div className="space-y-4">
+              <div>
+                <p className="font-semibold">Post ID:</p>
+                <p className="text-sm text-gray-600">{debugModal.data.postId}</p>
+              </div>
+              <div>
+                <p className="font-semibold">Tipo:</p>
+                <p className="text-sm text-gray-600">{debugModal.data.postType}</p>
+              </div>
+              <div>
+                <p className="font-semibold mb-2">Tentativas de Busca:</p>
+                {debugModal.data.debugInfo?.attempts?.map((attempt: any, idx: number) => (
+                  <div key={idx} className="mb-4 p-3 border rounded-lg bg-gray-50">
+                    <p className="font-medium text-sm">Métrica: {attempt.metric}</p>
+                    <p className="text-xs text-gray-600">Status HTTP: {attempt.status} {attempt.statusText}</p>
+                    {attempt.error && (
+                      <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded">
+                        <p className="text-xs font-semibold text-red-700">Erro:</p>
+                        <pre className="text-xs text-red-600 overflow-x-auto">
+                          {JSON.stringify(attempt.error, null, 2)}
+                        </pre>
+                      </div>
+                    )}
+                    {attempt.metricFound === false && (
+                      <div className="mt-2">
+                        <p className="text-xs text-gray-600">Métrica não encontrada</p>
+                        {attempt.availableMetrics && (
+                          <p className="text-xs text-gray-500">
+                            Métricas disponíveis: {attempt.availableMetrics.join(', ')}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    {attempt.metricStructure && (
+                      <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded">
+                        <p className="text-xs font-semibold text-blue-700">Estrutura da Métrica:</p>
+                        <pre className="text-xs text-blue-600 overflow-x-auto">
+                          {JSON.stringify(attempt.metricStructure, null, 2)}
+                        </pre>
+                      </div>
+                    )}
+                    {attempt.extractedValue !== undefined && (
+                      <div className="mt-2">
+                        <p className="text-xs text-gray-600">
+                          Valor extraído: {String(attempt.extractedValue)} 
+                          {attempt.isValid ? ' ✅ Válido' : ' ❌ Inválido'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4">
+                <Button
+                  onClick={() => {
+                    const debugText = JSON.stringify(debugModal.data.debugInfo, null, 2);
+                    navigator.clipboard.writeText(debugText);
+                    toast.success('Debug info copiado para clipboard!');
+                  }}
+                  variant="outline"
+                  size="sm"
+                >
+                  Copiar Debug Info
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (typeof window !== 'undefined' && (window as any).instagramDebug) {
+                      const allDebug = JSON.stringify((window as any).instagramDebug, null, 2);
+                      navigator.clipboard.writeText(allDebug);
+                      toast.success('Todos os debug info copiados!');
+                    } else {
+                      toast.error('Nenhum debug info global encontrado');
+                    }
+                  }}
+                  variant="outline"
+                  size="sm"
+                  className="ml-2"
+                >
+                  Copiar Todos os Debugs
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 } 

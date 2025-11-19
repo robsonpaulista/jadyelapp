@@ -602,6 +602,20 @@ export async function fetchInstagramData(
       // Armazenar info de debug no post para análise posterior
       (post as any)._viewsDebug = debugInfo;
       
+      // Tentar usar window para armazenar debug globalmente (bypass do disableConsoleLogging)
+      if (typeof window !== 'undefined') {
+        if (!(window as any).instagramDebug) {
+          (window as any).instagramDebug = [];
+        }
+        (window as any).instagramDebug.push({
+          postId: post.id,
+          postType: type,
+          views: views,
+          debugInfo: debugInfo,
+          timestamp: new Date().toISOString()
+        });
+      }
+      
       return {
         id: post.id,
         type,
