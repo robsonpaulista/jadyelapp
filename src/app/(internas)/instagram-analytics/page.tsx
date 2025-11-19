@@ -1435,14 +1435,83 @@ export default function InstagramAnalyticsPage() {
                   <CardHeader>
                     <CardTitle className="text-base md:text-lg font-semibold">Publicações por Tipo de Conteúdo</CardTitle>
                     <CardDescription>
-                      Visualize todas as postagens para identificar qual conteúdo tem melhor aceitação
+                      Visualize todas as postagens para identificar qual conteúdo tem melhor aceitação. Comparação com o post anterior.
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {metrics?.posts
-                        .sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime())
-                        .map((post) => {
+                      {(() => {
+                        const sortedPosts = [...(metrics?.posts || [])].sort(
+                          (a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime()
+                        );
+                        
+                        return sortedPosts.map((post, index) => {
+                          // Comparar com o post anterior (mais recente)
+                          const previousPost = index < sortedPosts.length - 1 ? sortedPosts[index + 1] : null;
+                          
+                          // Função para calcular diferença percentual
+                          const getComparison = (current: number, previous: number | null) => {
+                            if (!previous || previous === 0) return null;
+                            const diff = ((current - previous) / previous) * 100;
+                            return {
+                              value: diff,
+                              isBetter: diff > 0,
+                              isWorse: diff < 0,
+                              isEqual: diff === 0
+                            };
+                          };
+                          
+                          // Comparações para cada métrica
+                          const likesComparison = getComparison(
+                            post.metrics.likes,
+                            previousPost?.metrics.likes || null
+                          );
+                          const commentsComparison = getComparison(
+                            post.metrics.comments,
+                            previousPost?.metrics.comments || null
+                          );
+                          const viewsComparison = getComparison(
+                            post.metrics.views || 0,
+                            previousPost?.metrics.views || null
+                          );
+                          const sharesComparison = getComparison(
+                            post.metrics.shares || 0,
+                            previousPost?.metrics.shares || null
+                          );
+                          const savesComparison = getComparison(
+                            post.metrics.saves || 0,
+                            previousPost?.metrics.saves || null
+                          );
+                          const engagementComparison = getComparison(
+                            post.metrics.engagement,
+                            previousPost?.metrics.engagement || null
+                          );
+                          
+                          // Componente para mostrar comparação
+                          const ComparisonBadge = ({ comparison, label }: { comparison: any, label: string }) => {
+                            if (!comparison) return null;
+                            
+                            if (comparison.isEqual) {
+                              return (
+                                <span className="text-xs text-gray-500" title={`Igual ao post anterior`}>
+                                  =
+                                </span>
+                              );
+                            }
+                            
+                            const color = comparison.isBetter ? 'text-green-600' : 'text-red-600';
+                            const icon = comparison.isBetter ? '↑' : '↓';
+                            const sign = comparison.isBetter ? '+' : '';
+                            
+                            return (
+                              <span 
+                                className={`text-xs font-semibold ${color}`}
+                                title={`${label}: ${sign}${comparison.value.toFixed(1)}% em relação ao post anterior`}
+                              >
+                                {icon} {sign}{Math.abs(comparison.value).toFixed(1)}%
+                              </span>
+                            );
+                          };
                           // Determinar cor da borda baseado no tipo
                           const typeColors = {
                             image: 'border-blue-300',
@@ -1510,14 +1579,20 @@ export default function InstagramAnalyticsPage() {
                                         <Heart className="h-4 w-4 text-red-500 mr-1" />
                                         <span className="text-sm font-medium">{post.metrics.likes.toLocaleString()}</span>
                                       </div>
-                                      <span className="text-xs text-gray-500">Curtidas</span>
+                                      <div className="flex items-center justify-center gap-1 mt-1">
+                                        <span className="text-xs text-gray-500">Curtidas</span>
+                                        {index > 0 && <ComparisonBadge comparison={likesComparison} label="Curtidas" />}
+                                      </div>
                                     </div>
                                     <div>
                                       <div className="flex items-center justify-center">
                                         <MessageCircle className="h-4 w-4 text-blue-500 mr-1" />
                                         <span className="text-sm font-medium">{post.metrics.comments.toLocaleString()}</span>
                                       </div>
-                                      <span className="text-xs text-gray-500">Comentários</span>
+                                      <div className="flex items-center justify-center gap-1 mt-1">
+                                        <span className="text-xs text-gray-500">Comentários</span>
+                                        {index > 0 && <ComparisonBadge comparison={commentsComparison} label="Comentários" />}
+                                      </div>
                                     </div>
                                     <div>
                                       <div className="flex items-center justify-center">
@@ -1528,7 +1603,10 @@ export default function InstagramAnalyticsPage() {
                                             : 'N/A'}
                                         </span>
                                       </div>
-                                      <span className="text-xs text-gray-500">Visualizações</span>
+                                      <div className="flex items-center justify-center gap-1 mt-1">
+                                        <span className="text-xs text-gray-500">Visualizações</span>
+                                        {index > 0 && viewsComparison && <ComparisonBadge comparison={viewsComparison} label="Visualizações" />}
+                                      </div>
                                     </div>
                                     <div>
                                       <div className="flex items-center justify-center">
@@ -1539,7 +1617,10 @@ export default function InstagramAnalyticsPage() {
                                             : 'N/A'}
                                         </span>
                                       </div>
-                                      <span className="text-xs text-gray-500">Compartilhamentos</span>
+                                      <div className="flex items-center justify-center gap-1 mt-1">
+                                        <span className="text-xs text-gray-500">Compartilhamentos</span>
+                                        {index > 0 && sharesComparison && <ComparisonBadge comparison={sharesComparison} label="Compartilhamentos" />}
+                                      </div>
                                     </div>
                                     <div>
                                       <div className="flex items-center justify-center">
@@ -1550,14 +1631,30 @@ export default function InstagramAnalyticsPage() {
                                             : 'N/A'}
                                         </span>
                                       </div>
-                                      <span className="text-xs text-gray-500">Salvamentos</span>
+                                      <div className="flex items-center justify-center gap-1 mt-1">
+                                        <span className="text-xs text-gray-500">Salvamentos</span>
+                                        {index > 0 && savesComparison && <ComparisonBadge comparison={savesComparison} label="Salvamentos" />}
+                                      </div>
                                     </div>
                                   </div>
+                                  
+                                  {/* Badge de engajamento geral */}
+                                  {index > 0 && engagementComparison && (
+                                    <div className="mt-3 pt-3 border-t border-gray-200">
+                                      <div className="flex items-center justify-center gap-2">
+                                        <BarChart4 className="h-4 w-4 text-indigo-500" />
+                                        <span className="text-xs text-gray-600">Engajamento Total:</span>
+                                        <span className="text-sm font-semibold">{post.metrics.engagement.toLocaleString()}</span>
+                                        <ComparisonBadge comparison={engagementComparison} label="Engajamento" />
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             </div>
                           );
-                        })}
+                        });
+                      })()}
                     </div>
                   </CardContent>
                 </Card>
