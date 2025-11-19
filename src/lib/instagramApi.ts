@@ -489,74 +489,115 @@ export async function fetchInstagramData(
       
       // Buscar visualizações do post - APENAS dados reais da API
       let views: number | undefined = undefined;
+      let debugInfo: any = {
+        postId: post.id,
+        postType: type,
+        attempts: []
+      };
+      
       try {
-        // Para vídeos, usar video_views; para outros, usar impressions
-        const metrics = type === 'video' 
-          ? 'video_views' 
-          : 'impressions';
+        // Tentar diferentes métricas dependendo do tipo
+        const metricsToTry = type === 'video' 
+          ? ['video_views', 'impressions', 'reach']
+          : ['impressions', 'reach'];
         
-        const insightsResponse = await fetch(
-          `https://graph.facebook.com/v18.0/${post.id}/insights?metric=${metrics}&access_token=${token}`
-        );
-        
-        if (insightsResponse.ok) {
-          const insightsData = await insightsResponse.json();
-          console.log(`Insights do post ${post.id} (${type}):`, JSON.stringify(insightsData, null, 2));
-          
-          // Verificar se há dados reais
-          if (insightsData.data && Array.isArray(insightsData.data) && insightsData.data.length > 0) {
-            // Para vídeos, buscar video_views
-            if (type === 'video') {
-              const videoViews = insightsData.data.find((m: any) => m.name === 'video_views');
-              if (videoViews) {
-                // Verificar diferentes formatos de valores
-                const value = videoViews.values?.[0]?.value || 
-                             videoViews.value || 
-                             videoViews.values?.value;
-                if (value !== undefined && value !== null && value !== '') {
-                  const numValue = Number(value);
-                  if (!isNaN(numValue) && numValue > 0) {
-                    views = numValue;
-                    console.log(`Video views REAL encontrado: ${views}`);
+        for (const metric of metricsToTry) {
+          try {
+            const insightsResponse = await fetch(
+              `https://graph.facebook.com/v18.0/${post.id}/insights?metric=${metric}&access_token=${token}`
+            );
+            
+            const attemptInfo: any = {
+              metric,
+              status: insightsResponse.status,
+              statusText: insightsResponse.statusText
+            };
+            
+            if (insightsResponse.ok) {
+              const insightsData = await insightsResponse.json();
+              attemptInfo.responseData = insightsData;
+              
+              console.log(`[DEBUG] Insights do post ${post.id} (${type}) - Métrica ${metric}:`, JSON.stringify(insightsData, null, 2));
+              
+              // Verificar se há dados reais
+              if (insightsData.data && Array.isArray(insightsData.data) && insightsData.data.length > 0) {
+                const metricData = insightsData.data.find((m: any) => m.name === metric);
+                
+                if (metricData) {
+                  attemptInfo.metricFound = true;
+                  attemptInfo.metricStructure = {
+                    name: metricData.name,
+                    period: metricData.period,
+                    title: metricData.title,
+                    description: metricData.description,
+                    valuesType: Array.isArray(metricData.values) ? 'array' : typeof metricData.values,
+                    valuesLength: Array.isArray(metricData.values) ? metricData.values.length : 'N/A',
+                    firstValue: metricData.values?.[0],
+                    directValue: metricData.value
+                  };
+                  
+                  // Verificar diferentes formatos de valores
+                  const value = metricData.values?.[0]?.value || 
+                               metricData.value || 
+                               metricData.values?.value ||
+                               (Array.isArray(metricData.values) && metricData.values.length > 0 ? metricData.values[0] : null);
+                  
+                  attemptInfo.extractedValue = value;
+                  
+                  if (value !== undefined && value !== null && value !== '') {
+                    const numValue = Number(value);
+                    attemptInfo.numericValue = numValue;
+                    attemptInfo.isValid = !isNaN(numValue) && numValue > 0;
+                    
+                    if (!isNaN(numValue) && numValue > 0) {
+                      views = numValue;
+                      console.log(`[SUCCESS] ${metric} REAL encontrado para post ${post.id}: ${views}`);
+                      attemptInfo.success = true;
+                      break; // Parar na primeira métrica que funcionar
+                    }
                   }
+                } else {
+                  attemptInfo.metricFound = false;
+                  attemptInfo.availableMetrics = insightsData.data.map((m: any) => m.name);
                 }
+              } else {
+                attemptInfo.noData = true;
+                attemptInfo.dataStructure = insightsData;
               }
             } else {
-              // Para outros tipos, buscar impressions
-              const impressions = insightsData.data.find((m: any) => m.name === 'impressions');
-              if (impressions) {
-                const value = impressions.values?.[0]?.value || 
-                             impressions.value || 
-                             impressions.values?.value;
-                if (value !== undefined && value !== null && value !== '') {
-                  const numValue = Number(value);
-                  if (!isNaN(numValue) && numValue > 0) {
-                    views = numValue;
-                    console.log(`Impressions REAL encontrado: ${views}`);
-                  }
-                }
+              const errorText = await insightsResponse.text();
+              let errorData;
+              try {
+                errorData = JSON.parse(errorText);
+              } catch {
+                errorData = { message: errorText };
               }
+              attemptInfo.error = errorData;
+              console.warn(`[ERROR] Erro ao buscar ${metric} do post ${post.id}:`, errorData);
             }
+            
+            debugInfo.attempts.push(attemptInfo);
+          } catch (metricError) {
+            debugInfo.attempts.push({
+              metric,
+              error: metricError instanceof Error ? metricError.message : String(metricError)
+            });
+            console.warn(`[ERROR] Exceção ao buscar ${metric} do post ${post.id}:`, metricError);
           }
-          
-          if (views === undefined) {
-            console.warn(`Nenhum dado REAL de visualizações encontrado para post ${post.id}`);
-          }
-        } else {
-          const errorText = await insightsResponse.text();
-          let errorData;
-          try {
-            errorData = JSON.parse(errorText);
-          } catch {
-            errorData = { message: errorText };
-          }
-          console.warn(`Erro ao buscar insights do post ${post.id}:`, errorData);
-          // Não definir views como 0 - deixar undefined para indicar que não há dados
+        }
+        
+        if (views === undefined) {
+          console.warn(`[WARNING] Nenhum dado REAL de visualizações encontrado para post ${post.id}`);
+          console.log(`[DEBUG INFO] Detalhes completos:`, JSON.stringify(debugInfo, null, 2));
         }
       } catch (error) {
-        console.warn(`Erro ao buscar visualizações do post ${post.id}:`, error);
-        // Não definir views como 0 - deixar undefined para indicar que não há dados
+        console.error(`[ERROR] Erro geral ao buscar visualizações do post ${post.id}:`, error);
+        debugInfo.generalError = error instanceof Error ? error.message : String(error);
+        console.log(`[DEBUG INFO] Detalhes do erro:`, JSON.stringify(debugInfo, null, 2));
       }
+      
+      // Armazenar info de debug no post para análise posterior
+      (post as any)._viewsDebug = debugInfo;
       
       return {
         id: post.id,

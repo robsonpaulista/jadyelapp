@@ -746,6 +746,14 @@ export default function InstagramAnalyticsPage() {
                                       </span>
                                     </div>
                                     <span className="text-xs text-gray-500">Visualizações</span>
+                                    {(post.metrics.views === undefined || post.metrics.views === null) && (
+                                      <span 
+                                        className="text-[8px] text-orange-500 cursor-help" 
+                                        title="Abra o console do navegador (F12) para ver detalhes do debug"
+                                      >
+                                        (ver console)
+                                      </span>
+                                    )}
                                   </div>
                                   <div>
                                     <div className="flex items-center justify-center">
