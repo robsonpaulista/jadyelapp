@@ -487,21 +487,75 @@ export async function fetchInstagramData(
       const commentSentiment = await fetchAndAnalyzeComments(post.id, token, forceRefresh);
       const engagementValue = post.like_count + post.comments_count;
       
-      // Buscar visualizações do post
-      let views = 0;
+      // Buscar visualizações do post - APENAS dados reais da API
+      let views: number | undefined = undefined;
       try {
+        // Para vídeos, usar video_views; para outros, usar impressions
+        const metrics = type === 'video' 
+          ? 'video_views' 
+          : 'impressions';
+        
         const insightsResponse = await fetch(
-          `https://graph.facebook.com/v18.0/${post.id}/insights?metric=impressions,reach&access_token=${token}`
+          `https://graph.facebook.com/v18.0/${post.id}/insights?metric=${metrics}&access_token=${token}`
         );
+        
         if (insightsResponse.ok) {
           const insightsData = await insightsResponse.json();
-          // Usar impressions se disponível, senão usar reach
-          const impressions = insightsData.data?.find((m: any) => m.name === 'impressions');
-          const reach = insightsData.data?.find((m: any) => m.name === 'reach');
-          views = impressions?.values?.[0]?.value || reach?.values?.[0]?.value || 0;
+          console.log(`Insights do post ${post.id} (${type}):`, JSON.stringify(insightsData, null, 2));
+          
+          // Verificar se há dados reais
+          if (insightsData.data && Array.isArray(insightsData.data) && insightsData.data.length > 0) {
+            // Para vídeos, buscar video_views
+            if (type === 'video') {
+              const videoViews = insightsData.data.find((m: any) => m.name === 'video_views');
+              if (videoViews) {
+                // Verificar diferentes formatos de valores
+                const value = videoViews.values?.[0]?.value || 
+                             videoViews.value || 
+                             videoViews.values?.value;
+                if (value !== undefined && value !== null && value !== '') {
+                  const numValue = Number(value);
+                  if (!isNaN(numValue) && numValue > 0) {
+                    views = numValue;
+                    console.log(`Video views REAL encontrado: ${views}`);
+                  }
+                }
+              }
+            } else {
+              // Para outros tipos, buscar impressions
+              const impressions = insightsData.data.find((m: any) => m.name === 'impressions');
+              if (impressions) {
+                const value = impressions.values?.[0]?.value || 
+                             impressions.value || 
+                             impressions.values?.value;
+                if (value !== undefined && value !== null && value !== '') {
+                  const numValue = Number(value);
+                  if (!isNaN(numValue) && numValue > 0) {
+                    views = numValue;
+                    console.log(`Impressions REAL encontrado: ${views}`);
+                  }
+                }
+              }
+            }
+          }
+          
+          if (views === undefined) {
+            console.warn(`Nenhum dado REAL de visualizações encontrado para post ${post.id}`);
+          }
+        } else {
+          const errorText = await insightsResponse.text();
+          let errorData;
+          try {
+            errorData = JSON.parse(errorText);
+          } catch {
+            errorData = { message: errorText };
+          }
+          console.warn(`Erro ao buscar insights do post ${post.id}:`, errorData);
+          // Não definir views como 0 - deixar undefined para indicar que não há dados
         }
       } catch (error) {
         console.warn(`Erro ao buscar visualizações do post ${post.id}:`, error);
+        // Não definir views como 0 - deixar undefined para indicar que não há dados
       }
       
       return {

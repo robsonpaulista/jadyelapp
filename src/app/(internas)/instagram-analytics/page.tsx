@@ -739,7 +739,11 @@ export default function InstagramAnalyticsPage() {
                                   <div>
                                     <div className="flex items-center justify-center">
                                       <Eye className="h-4 w-4 text-purple-500 mr-1" />
-                                      <span className="text-sm font-medium">{(post.metrics.views || 0).toLocaleString()}</span>
+                                      <span className="text-sm font-medium">
+                                        {post.metrics.views !== undefined && post.metrics.views !== null
+                                          ? post.metrics.views.toLocaleString()
+                                          : 'N/A'}
+                                      </span>
                                     </div>
                                     <span className="text-xs text-gray-500">Visualizações</span>
                                   </div>
