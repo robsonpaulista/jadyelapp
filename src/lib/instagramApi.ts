@@ -517,7 +517,8 @@ export async function fetchInstagramData(
               const insightsData = await insightsResponse.json();
               attemptInfo.responseData = insightsData;
               
-              console.log(`[DEBUG] Insights do post ${post.id} (${type}) - Métrica ${metric}:`, JSON.stringify(insightsData, null, 2));
+              // Usar console.error para logs de debug (não é bloqueado pelo disableConsoleLogging)
+              console.error(`[DEBUG] Insights do post ${post.id} (${type}) - Métrica ${metric}:`, JSON.stringify(insightsData, null, 2));
               
               // Verificar se há dados reais
               if (insightsData.data && Array.isArray(insightsData.data) && insightsData.data.length > 0) {
@@ -551,7 +552,8 @@ export async function fetchInstagramData(
                     
                     if (!isNaN(numValue) && numValue > 0) {
                       views = numValue;
-                      console.log(`[SUCCESS] ${metric} REAL encontrado para post ${post.id}: ${views}`);
+                      // Usar console.error para logs de debug (não é bloqueado pelo disableConsoleLogging)
+                      console.error(`[SUCCESS] ${metric} REAL encontrado para post ${post.id}: ${views}`);
                       attemptInfo.success = true;
                       break; // Parar na primeira métrica que funcionar
                     }
@@ -587,8 +589,9 @@ export async function fetchInstagramData(
         }
         
         if (views === undefined) {
-          console.warn(`[WARNING] Nenhum dado REAL de visualizações encontrado para post ${post.id}`);
-          console.log(`[DEBUG INFO] Detalhes completos:`, JSON.stringify(debugInfo, null, 2));
+          // Usar console.error para logs de debug (não é bloqueado pelo disableConsoleLogging)
+          console.error(`[WARNING] Nenhum dado REAL de visualizações encontrado para post ${post.id}`);
+          console.error(`[DEBUG INFO] Detalhes completos:`, JSON.stringify(debugInfo, null, 2));
         }
       } catch (error) {
         console.error(`[ERROR] Erro geral ao buscar visualizações do post ${post.id}:`, error);
