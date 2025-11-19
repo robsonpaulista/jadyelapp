@@ -714,10 +714,13 @@ export default function InstagramAnalyticsPage() {
       </div>
     );
   };
-
-  const renderDashboard = function() {
+  
+  const renderDashboard = () => {
     return (
       <div className="space-y-6">
+        {/* Filtros e controles */}
+        {/* Botões de exportação removidos conforme solicitado */}
+        
         <Tabs defaultValue="posts">
           <TabsList className="grid grid-cols-2 mb-4">
             <TabsTrigger value="posts">
@@ -1161,22 +1164,256 @@ export default function InstagramAnalyticsPage() {
                 <p>Carregando estatísticas de conteúdo...</p>
               </div>
             ) : (
-              <div className="space-y-6">
-                {/* Resumo Geral */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-xl font-bold flex items-center gap-2">
-                      <BarChart4 className="h-5 w-5" />
-                      Comparativo de Aceitação por Tipo de Conteúdo
-                    </CardTitle>
-                    <CardDescription>
-                      Análise comparativa de desempenho entre Imagens, Vídeos e Carrosséis
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid md:grid-cols-3 gap-4">
-                      {/* Imagens */}
-                      <Card className="border-2">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                {/* Coluna da esquerda - Posts */}
+                <div className="lg:col-span-2 space-y-4">
+                  {/* Publicações - Para identificar o conteúdo específico */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base md:text-lg font-semibold">Publicações por Tipo de Conteúdo</CardTitle>
+                      <CardDescription>
+                        Visualize todas as postagens para identificar qual conteúdo tem melhor aceitação. Comparação com o post anterior.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {(() => {
+                          const sortedPosts = [...(metrics?.posts || [])].sort(
+                            (a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime()
+                          );
+                          
+                          return sortedPosts.map((post, index) => {
+                            // Comparar com o post anterior (mais recente)
+                            const previousPost = index < sortedPosts.length - 1 ? sortedPosts[index + 1] : null;
+                            
+                            // Função para calcular diferença percentual
+                            const getComparison = (current: number, previous: number | null) => {
+                              if (!previous || previous === 0) return null;
+                              const diff = ((current - previous) / previous) * 100;
+                              return {
+                                value: diff,
+                                isBetter: diff > 0,
+                                isWorse: diff < 0,
+                                isEqual: diff === 0
+                              };
+                            };
+                            
+                            // Comparações para cada métrica
+                            const likesComparison = getComparison(
+                              post.metrics.likes,
+                              previousPost?.metrics.likes || null
+                            );
+                            const commentsComparison = getComparison(
+                              post.metrics.comments,
+                              previousPost?.metrics.comments || null
+                            );
+                            const viewsComparison = getComparison(
+                              post.metrics.views || 0,
+                              previousPost?.metrics.views || null
+                            );
+                            const sharesComparison = getComparison(
+                              post.metrics.shares || 0,
+                              previousPost?.metrics.shares || null
+                            );
+                            const savesComparison = getComparison(
+                              post.metrics.saves || 0,
+                              previousPost?.metrics.saves || null
+                            );
+                            const engagementComparison = getComparison(
+                              post.metrics.engagement,
+                              previousPost?.metrics.engagement || null
+                            );
+                            
+                            // Componente para mostrar comparação
+                            const ComparisonBadge = ({ comparison, label }: { comparison: any, label: string }) => {
+                              if (!comparison) return null;
+                              
+                              if (comparison.isEqual) {
+                                return (
+                                  <span className="text-xs text-gray-500" title={`Igual ao post anterior`}>
+                                    =
+                                  </span>
+                                );
+                              }
+                              
+                              const color = comparison.isBetter ? 'text-green-600' : 'text-red-600';
+                              const icon = comparison.isBetter ? '↑' : '↓';
+                              const sign = comparison.isBetter ? '+' : '';
+                              
+                              return (
+                                <span 
+                                  className={`text-xs font-semibold ${color}`}
+                                  title={`${label}: ${sign}${comparison.value.toFixed(1)}% em relação ao post anterior`}
+                                >
+                                  {icon} {sign}{Math.abs(comparison.value).toFixed(1)}%
+                                </span>
+                              );
+                            };
+                            // Determinar cor da borda baseado no tipo
+                            const typeColors = {
+                              image: 'border-blue-300',
+                              video: 'border-red-300',
+                              carousel: 'border-purple-300'
+                            };
+                            const typeLabels = {
+                              image: 'Imagem',
+                              video: 'Vídeo',
+                              carousel: 'Carrossel'
+                            };
+                            
+                            return (
+                              <div 
+                                key={post.id} 
+                                className={`border-2 ${typeColors[post.type]} rounded-lg overflow-hidden`}
+                              >
+                                <div className="flex flex-col sm:flex-row">
+                                  <div className="w-full sm:w-48 h-48 bg-gray-200 relative">
+                                    {post.thumbnail && (
+                                      <div 
+                                        className="w-full h-full bg-center bg-cover" 
+                                        style={{ backgroundImage: `url(${post.thumbnail})` }}
+                                      />
+                                    )}
+                                    <div className={`absolute top-2 right-2 text-white text-xs px-2 py-1 rounded ${
+                                      post.type === 'video' ? 'bg-red-500' : 
+                                      post.type === 'carousel' ? 'bg-purple-500' : 
+                                      'bg-blue-500'
+                                    }`}>
+                                      {typeLabels[post.type]}
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="p-4 flex-1">
+                                    <div className="flex justify-between items-start mb-2">
+                                      <div>
+                                        <span className="text-xs text-gray-500">
+                                          {new Date(post.postedAt).toLocaleDateString('pt-BR', {
+                                            day: '2-digit',
+                                            month: '2-digit',
+                                            year: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                          })}
+                                        </span>
+                                      </div>
+                                      <a 
+                                        href={post.url} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="text-blue-600 hover:underline text-xs flex items-center"
+                                      >
+                                        <ExternalLink className="h-3 w-3 mr-1" /> Ver no Instagram
+                                      </a>
+                                    </div>
+                                    
+                                    <p className="text-sm mt-2 line-clamp-3 mb-4">
+                                      {post.caption || 'Sem legenda'}
+                                    </p>
+                                    
+                                    <div className="grid grid-cols-5 gap-2 text-center">
+                                      <div>
+                                        <div className="flex items-center justify-center">
+                                          <Heart className="h-4 w-4 text-red-500 mr-1" />
+                                          <span className="text-sm font-medium">{post.metrics.likes.toLocaleString()}</span>
+                                        </div>
+                                        <div className="flex items-center justify-center gap-1 mt-1">
+                                          <span className="text-xs text-gray-500">Curtidas</span>
+                                          {previousPost && <ComparisonBadge comparison={likesComparison} label="Curtidas" />}
+                                        </div>
+                                      </div>
+                                      <div>
+                                        <div className="flex items-center justify-center">
+                                          <MessageCircle className="h-4 w-4 text-blue-500 mr-1" />
+                                          <span className="text-sm font-medium">{post.metrics.comments.toLocaleString()}</span>
+                                        </div>
+                                        <div className="flex items-center justify-center gap-1 mt-1">
+                                          <span className="text-xs text-gray-500">Comentários</span>
+                                          {previousPost && <ComparisonBadge comparison={commentsComparison} label="Comentários" />}
+                                        </div>
+                                      </div>
+                                      <div>
+                                        <div className="flex items-center justify-center">
+                                          <Eye className="h-4 w-4 text-purple-500 mr-1" />
+                                          <span className="text-sm font-medium">
+                                            {post.metrics.views !== undefined && post.metrics.views !== null
+                                              ? post.metrics.views.toLocaleString()
+                                              : 'N/A'}
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center justify-center gap-1 mt-1">
+                                          <span className="text-xs text-gray-500">Visualizações</span>
+                                          {previousPost && viewsComparison && <ComparisonBadge comparison={viewsComparison} label="Visualizações" />}
+                                        </div>
+                                      </div>
+                                      <div>
+                                        <div className="flex items-center justify-center">
+                                          <Share2 className="h-4 w-4 text-green-500 mr-1" />
+                                          <span className="text-sm font-medium">
+                                            {post.metrics.shares > 0 
+                                              ? post.metrics.shares.toLocaleString()
+                                              : 'N/A'}
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center justify-center gap-1 mt-1">
+                                          <span className="text-xs text-gray-500">Compartilhamentos</span>
+                                          {previousPost && sharesComparison && <ComparisonBadge comparison={sharesComparison} label="Compartilhamentos" />}
+                                        </div>
+                                      </div>
+                                      <div>
+                                        <div className="flex items-center justify-center">
+                                          <Download className="h-4 w-4 text-orange-500 mr-1" />
+                                          <span className="text-sm font-medium">
+                                            {post.metrics.saves > 0 
+                                              ? post.metrics.saves.toLocaleString()
+                                              : 'N/A'}
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center justify-center gap-1 mt-1">
+                                          <span className="text-xs text-gray-500">Salvamentos</span>
+                                          {previousPost && savesComparison && <ComparisonBadge comparison={savesComparison} label="Salvamentos" />}
+                                        </div>
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Badge de engajamento geral */}
+                                    {previousPost && engagementComparison && (
+                                      <div className="mt-3 pt-3 border-t border-gray-200">
+                                        <div className="flex items-center justify-center gap-2">
+                                          <BarChart4 className="h-4 w-4 text-indigo-500" />
+                                          <span className="text-xs text-gray-600">Engajamento Total:</span>
+                                          <span className="text-sm font-semibold">{post.metrics.engagement.toLocaleString()}</span>
+                                          <ComparisonBadge comparison={engagementComparison} label="Engajamento" />
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          });
+                        })()}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Coluna da direita - Comparativos */}
+                <div className="space-y-4">
+                  {/* Resumo Geral */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-xl font-bold flex items-center gap-2">
+                        <BarChart4 className="h-5 w-5" />
+                        Comparativo de Aceitação por Tipo de Conteúdo
+                      </CardTitle>
+                      <CardDescription>
+                        Análise comparativa de desempenho entre Imagens, Vídeos e Carrosséis
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {/* Imagens */}
+                        <div className="border-2 border-blue-300 rounded-lg p-4">
                         <CardHeader className="pb-3">
                           <CardTitle className="text-lg flex items-center gap-2">
                             <Camera className="h-5 w-5 text-blue-500" />
@@ -1231,19 +1468,18 @@ export default function InstagramAnalyticsPage() {
                               </div>
                             </div>
                           </div>
-                        </CardContent>
-                      </Card>
+                        </div>
 
-                      {/* Vídeos */}
-                      <Card className="border-2">
-                        <CardHeader className="pb-3">
-                          <CardTitle className="text-lg flex items-center gap-2">
-                            <Camera className="h-5 w-5 text-red-500" />
-                            Vídeos
-                          </CardTitle>
-                          <p className="text-sm text-gray-500">{contentStats.video.posts} postagens</p>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
+                        {/* Vídeos */}
+                        <div className="border-2 border-red-300 rounded-lg p-4">
+                          <div className="mb-3">
+                            <h3 className="text-lg font-semibold flex items-center gap-2">
+                              <Camera className="h-5 w-5 text-red-500" />
+                              Vídeos
+                            </h3>
+                            <p className="text-sm text-gray-500">{contentStats.video.posts} postagens</p>
+                          </div>
+                          <div className="space-y-3">
                           <div>
                             <p className="text-xs text-gray-500 mb-1">Média por postagem</p>
                             <div className="space-y-2 text-sm">
@@ -1290,19 +1526,18 @@ export default function InstagramAnalyticsPage() {
                               </div>
                             </div>
                           </div>
-                        </CardContent>
-                      </Card>
+                        </div>
 
-                      {/* Carrosséis */}
-                      <Card className="border-2">
-                        <CardHeader className="pb-3">
-                          <CardTitle className="text-lg flex items-center gap-2">
-                            <Camera className="h-5 w-5 text-purple-500" />
-                            Carrosséis
-                          </CardTitle>
-                          <p className="text-sm text-gray-500">{contentStats.carousel.posts} postagens</p>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
+                        {/* Carrosséis */}
+                        <div className="border-2 border-purple-300 rounded-lg p-4">
+                          <div className="mb-3">
+                            <h3 className="text-lg font-semibold flex items-center gap-2">
+                              <Camera className="h-5 w-5 text-purple-500" />
+                              Carrosséis
+                            </h3>
+                            <p className="text-sm text-gray-500">{contentStats.carousel.posts} postagens</p>
+                          </div>
+                          <div className="space-y-3">
                           <div>
                             <p className="text-xs text-gray-500 mb-1">Média por postagem</p>
                             <div className="space-y-2 text-sm">
@@ -1349,505 +1584,7 @@ export default function InstagramAnalyticsPage() {
                               </div>
                             </div>
                           </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Tabela Comparativa Detalhada */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Tabela Comparativa Detalhada</CardTitle>
-                    <CardDescription>Totais e médias por tipo de conteúdo</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b">
-                            <th className="text-left p-2">Métrica</th>
-                            <th className="text-right p-2">Imagens</th>
-                            <th className="text-right p-2">Vídeos</th>
-                            <th className="text-right p-2">Carrosséis</th>
-                            <th className="text-right p-2">Melhor</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {[
-                            { label: 'Curtidas (média)', key: 'avgLikes', icon: Heart, color: 'text-red-500' },
-                            { label: 'Comentários (média)', key: 'avgComments', icon: MessageCircle, color: 'text-blue-500' },
-                            { label: 'Visualizações (média)', key: 'avgViews', icon: Eye, color: 'text-purple-500' },
-                            { label: 'Compartilhamentos (média)', key: 'avgShares', icon: Share2, color: 'text-green-500' },
-                            { label: 'Salvamentos (média)', key: 'avgSaves', icon: Download, color: 'text-orange-500' },
-                            { label: 'Engajamento (média)', key: 'avgEngagement', icon: BarChart4, color: 'text-indigo-500' }
-                          ].map(({ label, key, icon: Icon, color }) => {
-                            const values = {
-                              image: contentStats.image[key as keyof typeof contentStats.image] as number,
-                              video: contentStats.video[key as keyof typeof contentStats.video] as number,
-                              carousel: contentStats.carousel[key as keyof typeof contentStats.carousel] as number
-                            };
-                            const max = Math.max(values.image, values.video, values.carousel);
-                            const best = max === values.image ? 'Imagens' : max === values.video ? 'Vídeos' : 'Carrosséis';
-                            
-                            return (
-                              <tr key={key} className="border-b hover:bg-gray-50">
-                                <td className="p-2">
-                                  <div className="flex items-center gap-2">
-                                    <Icon className={`h-4 w-4 ${color}`} />
-                                    <span>{label}</span>
-                                  </div>
-                                </td>
-                                <td className="text-right p-2 font-medium">
-                                  {key === 'avgViews' || key === 'avgShares' || key === 'avgSaves' 
-                                    ? (values.image > 0 ? values.image.toLocaleString() : 'N/A')
-                                    : values.image.toLocaleString()}
-                                </td>
-                                <td className="text-right p-2 font-medium">
-                                  {key === 'avgViews' || key === 'avgShares' || key === 'avgSaves' 
-                                    ? (values.video > 0 ? values.video.toLocaleString() : 'N/A')
-                                    : values.video.toLocaleString()}
-                                </td>
-                                <td className="text-right p-2 font-medium">
-                                  {key === 'avgViews' || key === 'avgShares' || key === 'avgSaves' 
-                                    ? (values.carousel > 0 ? values.carousel.toLocaleString() : 'N/A')
-                                    : values.carousel.toLocaleString()}
-                                </td>
-                                <td className="text-right p-2">
-                                  <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-semibold">
-                                    {best}
-                                  </span>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Publicações - Para identificar o conteúdo específico */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base md:text-lg font-semibold">Publicações por Tipo de Conteúdo</CardTitle>
-                    <CardDescription>
-                      Visualize todas as postagens para identificar qual conteúdo tem melhor aceitação. Comparação com o post anterior.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {(() => {
-                        const sortedPosts = [...(metrics?.posts || [])].sort(
-                          (a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime()
-                        );
-                        
-                        return sortedPosts.map((post, index) => {
-                          // Comparar com o post anterior (mais recente)
-                          const previousPost = index < sortedPosts.length - 1 ? sortedPosts[index + 1] : null;
-                          
-                          // Função para calcular diferença percentual
-                          const getComparison = (current: number, previous: number | null) => {
-                            if (!previous || previous === 0) return null;
-                            const diff = ((current - previous) / previous) * 100;
-                            return {
-                              value: diff,
-                              isBetter: diff > 0,
-                              isWorse: diff < 0,
-                              isEqual: diff === 0
-                            };
-                          };
-                          
-                          // Comparações para cada métrica
-                          const likesComparison = getComparison(
-                            post.metrics.likes,
-                            previousPost?.metrics.likes || null
-                          );
-                          const commentsComparison = getComparison(
-                            post.metrics.comments,
-                            previousPost?.metrics.comments || null
-                          );
-                          const viewsComparison = getComparison(
-                            post.metrics.views || 0,
-                            previousPost?.metrics.views || null
-                          );
-                          const sharesComparison = getComparison(
-                            post.metrics.shares || 0,
-                            previousPost?.metrics.shares || null
-                          );
-                          const savesComparison = getComparison(
-                            post.metrics.saves || 0,
-                            previousPost?.metrics.saves || null
-                          );
-                          const engagementComparison = getComparison(
-                            post.metrics.engagement,
-                            previousPost?.metrics.engagement || null
-                          );
-                          
-                          // Componente para mostrar comparação
-                          const ComparisonBadge = ({ comparison, label }: { comparison: any, label: string }) => {
-                            if (!comparison) return null;
-                            
-                            if (comparison.isEqual) {
-                              return (
-                                <span className="text-xs text-gray-500" title={`Igual ao post anterior`}>
-                                  =
-                                </span>
-                              );
-                            }
-                            
-                            const color = comparison.isBetter ? 'text-green-600' : 'text-red-600';
-                            const icon = comparison.isBetter ? '↑' : '↓';
-                            const sign = comparison.isBetter ? '+' : '';
-                            
-                            return (
-                              <span 
-                                className={`text-xs font-semibold ${color}`}
-                                title={`${label}: ${sign}${comparison.value.toFixed(1)}% em relação ao post anterior`}
-                              >
-                                {icon} {sign}{Math.abs(comparison.value).toFixed(1)}%
-                              </span>
-                            );
-                          };
-                          // Determinar cor da borda baseado no tipo
-                          const typeColors = {
-                            image: 'border-blue-300',
-                            video: 'border-red-300',
-                            carousel: 'border-purple-300'
-                          };
-                          const typeLabels = {
-                            image: 'Imagem',
-                            video: 'Vídeo',
-                            carousel: 'Carrossel'
-                          };
-                          
-                          return (
-                            <div 
-                              key={post.id} 
-                              className={`border-2 ${typeColors[post.type]} rounded-lg overflow-hidden`}
-                            >
-                              <div className="flex flex-col sm:flex-row">
-                                <div className="w-full sm:w-48 h-48 bg-gray-200 relative">
-                                  {post.thumbnail && (
-                                    <div 
-                                      className="w-full h-full bg-center bg-cover" 
-                                      style={{ backgroundImage: `url(${post.thumbnail})` }}
-                                    />
-                                  )}
-                                  <div className={`absolute top-2 right-2 text-white text-xs px-2 py-1 rounded ${
-                                    post.type === 'video' ? 'bg-red-500' : 
-                                    post.type === 'carousel' ? 'bg-purple-500' : 
-                                    'bg-blue-500'
-                                  }`}>
-                                    {typeLabels[post.type]}
-                                  </div>
-                                </div>
-                                
-                                <div className="p-4 flex-1">
-                                  <div className="flex justify-between items-start mb-2">
-                                    <div>
-                                      <span className="text-xs text-gray-500">
-                                        {new Date(post.postedAt).toLocaleDateString('pt-BR', {
-                                          day: '2-digit',
-                                          month: '2-digit',
-                                          year: 'numeric',
-                                          hour: '2-digit',
-                                          minute: '2-digit'
-                                        })}
-                                      </span>
-                                    </div>
-                                    <a 
-                                      href={post.url} 
-                                      target="_blank" 
-                                      rel="noopener noreferrer"
-                                      className="text-blue-600 hover:underline text-xs flex items-center"
-                                    >
-                                      <ExternalLink className="h-3 w-3 mr-1" /> Ver no Instagram
-                                    </a>
-                                  </div>
-                                  
-                                  <p className="text-sm mt-2 line-clamp-3 mb-4">
-                                    {post.caption || 'Sem legenda'}
-                                  </p>
-                                  
-                                  <div className="grid grid-cols-5 gap-2 text-center">
-                                    <div>
-                                      <div className="flex items-center justify-center">
-                                        <Heart className="h-4 w-4 text-red-500 mr-1" />
-                                        <span className="text-sm font-medium">{post.metrics.likes.toLocaleString()}</span>
-                                      </div>
-                                      <div className="flex items-center justify-center gap-1 mt-1">
-                                        <span className="text-xs text-gray-500">Curtidas</span>
-                                        {previousPost && <ComparisonBadge comparison={likesComparison} label="Curtidas" />}
-                                      </div>
-                                    </div>
-                                    <div>
-                                      <div className="flex items-center justify-center">
-                                        <MessageCircle className="h-4 w-4 text-blue-500 mr-1" />
-                                        <span className="text-sm font-medium">{post.metrics.comments.toLocaleString()}</span>
-                                      </div>
-                                      <div className="flex items-center justify-center gap-1 mt-1">
-                                        <span className="text-xs text-gray-500">Comentários</span>
-                                        {previousPost && <ComparisonBadge comparison={commentsComparison} label="Comentários" />}
-                                      </div>
-                                    </div>
-                                    <div>
-                                      <div className="flex items-center justify-center">
-                                        <Eye className="h-4 w-4 text-purple-500 mr-1" />
-                                        <span className="text-sm font-medium">
-                                          {post.metrics.views !== undefined && post.metrics.views !== null
-                                            ? post.metrics.views.toLocaleString()
-                                            : 'N/A'}
-                                        </span>
-                                      </div>
-                                      <div className="flex items-center justify-center gap-1 mt-1">
-                                        <span className="text-xs text-gray-500">Visualizações</span>
-                                        {previousPost && viewsComparison && <ComparisonBadge comparison={viewsComparison} label="Visualizações" />}
-                                      </div>
-                                    </div>
-                                    <div>
-                                      <div className="flex items-center justify-center">
-                                        <Share2 className="h-4 w-4 text-green-500 mr-1" />
-                                        <span className="text-sm font-medium">
-                                          {post.metrics.shares > 0 
-                                            ? post.metrics.shares.toLocaleString()
-                                            : 'N/A'}
-                                        </span>
-                                      </div>
-                                      <div className="flex items-center justify-center gap-1 mt-1">
-                                        <span className="text-xs text-gray-500">Compartilhamentos</span>
-                                        {previousPost && sharesComparison && <ComparisonBadge comparison={sharesComparison} label="Compartilhamentos" />}
-                                      </div>
-                                    </div>
-                                    <div>
-                                      <div className="flex items-center justify-center">
-                                        <Download className="h-4 w-4 text-orange-500 mr-1" />
-                                        <span className="text-sm font-medium">
-                                          {post.metrics.saves > 0 
-                                            ? post.metrics.saves.toLocaleString()
-                                            : 'N/A'}
-                                        </span>
-                                      </div>
-                                      <div className="flex items-center justify-center gap-1 mt-1">
-                                        <span className="text-xs text-gray-500">Salvamentos</span>
-                                        {previousPost && savesComparison && <ComparisonBadge comparison={savesComparison} label="Salvamentos" />}
-                                      </div>
-                                    </div>
-                                  </div>
-                                  
-                                  {/* Badge de engajamento geral */}
-                                  {previousPost && engagementComparison && (
-                                    <div className="mt-3 pt-3 border-t border-gray-200">
-                                      <div className="flex items-center justify-center gap-2">
-                                        <BarChart4 className="h-4 w-4 text-indigo-500" />
-                                        <span className="text-xs text-gray-600">Engajamento Total:</span>
-                                        <span className="text-sm font-semibold">{post.metrics.engagement.toLocaleString()}</span>
-                                        <ComparisonBadge comparison={engagementComparison} label="Engajamento" />
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        });
-                      })()}
-                    </div>
-                  </CardContent>
-                </Card>
-                </div>
-
-                {/* Coluna da direita - Comparativos */}
-                <div className="space-y-4">
-                  {/* Comparativo de Aceitação por Tipo de Conteúdo */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-xl font-bold flex items-center gap-2">
-                        <BarChart4 className="h-5 w-5" />
-                        Comparativo de Aceitação
-                      </CardTitle>
-                      <CardDescription>
-                        Análise comparativa de desempenho entre Imagens, Vídeos e Carrosséis
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid md:grid-cols-1 gap-4">
-                        {/* Imagens */}
-                        <Card className="border-2">
-                          <CardHeader className="pb-3">
-                            <CardTitle className="text-lg flex items-center gap-2">
-                              <Camera className="h-5 w-5 text-blue-500" />
-                              Imagens
-                            </CardTitle>
-                            <p className="text-sm text-gray-500">{contentStats.image.posts} postagens</p>
-                          </CardHeader>
-                          <CardContent className="space-y-3">
-                            <div>
-                              <p className="text-xs text-gray-500 mb-1">Média por postagem</p>
-                              <div className="space-y-2 text-sm">
-                                <div className="flex justify-between">
-                                  <span className="flex items-center gap-1">
-                                    <Heart className="h-3 w-3 text-red-500" />
-                                    Curtidas:
-                                  </span>
-                                  <span className="font-semibold">{contentStats.image.avgLikes.toLocaleString()}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="flex items-center gap-1">
-                                    <MessageCircle className="h-3 w-3 text-blue-500" />
-                                    Comentários:
-                                  </span>
-                                  <span className="font-semibold">{contentStats.image.avgComments.toLocaleString()}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="flex items-center gap-1">
-                                    <Eye className="h-3 w-3 text-purple-500" />
-                                    Visualizações:
-                                  </span>
-                                  <span className="font-semibold">
-                                    {contentStats.image.avgViews > 0 ? contentStats.image.avgViews.toLocaleString() : 'N/A'}
-                                  </span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="flex items-center gap-1">
-                                    <Share2 className="h-3 w-3 text-green-500" />
-                                    Compartilhamentos:
-                                  </span>
-                                  <span className="font-semibold">
-                                    {contentStats.image.avgShares > 0 ? contentStats.image.avgShares.toLocaleString() : 'N/A'}
-                                  </span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="flex items-center gap-1">
-                                    <Download className="h-3 w-3 text-orange-500" />
-                                    Salvamentos:
-                                  </span>
-                                  <span className="font-semibold">
-                                    {contentStats.image.avgSaves > 0 ? contentStats.image.avgSaves.toLocaleString() : 'N/A'}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-
-                        {/* Vídeos */}
-                        <Card className="border-2">
-                          <CardHeader className="pb-3">
-                            <CardTitle className="text-lg flex items-center gap-2">
-                              <Camera className="h-5 w-5 text-red-500" />
-                              Vídeos
-                            </CardTitle>
-                            <p className="text-sm text-gray-500">{contentStats.video.posts} postagens</p>
-                          </CardHeader>
-                          <CardContent className="space-y-3">
-                            <div>
-                              <p className="text-xs text-gray-500 mb-1">Média por postagem</p>
-                              <div className="space-y-2 text-sm">
-                                <div className="flex justify-between">
-                                  <span className="flex items-center gap-1">
-                                    <Heart className="h-3 w-3 text-red-500" />
-                                    Curtidas:
-                                  </span>
-                                  <span className="font-semibold">{contentStats.video.avgLikes.toLocaleString()}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="flex items-center gap-1">
-                                    <MessageCircle className="h-3 w-3 text-blue-500" />
-                                    Comentários:
-                                  </span>
-                                  <span className="font-semibold">{contentStats.video.avgComments.toLocaleString()}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="flex items-center gap-1">
-                                    <Eye className="h-3 w-3 text-purple-500" />
-                                    Visualizações:
-                                  </span>
-                                  <span className="font-semibold">
-                                    {contentStats.video.avgViews > 0 ? contentStats.video.avgViews.toLocaleString() : 'N/A'}
-                                  </span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="flex items-center gap-1">
-                                    <Share2 className="h-3 w-3 text-green-500" />
-                                    Compartilhamentos:
-                                  </span>
-                                  <span className="font-semibold">
-                                    {contentStats.video.avgShares > 0 ? contentStats.video.avgShares.toLocaleString() : 'N/A'}
-                                  </span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="flex items-center gap-1">
-                                    <Download className="h-3 w-3 text-orange-500" />
-                                    Salvamentos:
-                                  </span>
-                                  <span className="font-semibold">
-                                    {contentStats.video.avgSaves > 0 ? contentStats.video.avgSaves.toLocaleString() : 'N/A'}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-
-                        {/* Carrosséis */}
-                        <Card className="border-2">
-                          <CardHeader className="pb-3">
-                            <CardTitle className="text-lg flex items-center gap-2">
-                              <Camera className="h-5 w-5 text-purple-500" />
-                              Carrosséis
-                            </CardTitle>
-                            <p className="text-sm text-gray-500">{contentStats.carousel.posts} postagens</p>
-                          </CardHeader>
-                          <CardContent className="space-y-3">
-                            <div>
-                              <p className="text-xs text-gray-500 mb-1">Média por postagem</p>
-                              <div className="space-y-2 text-sm">
-                                <div className="flex justify-between">
-                                  <span className="flex items-center gap-1">
-                                    <Heart className="h-3 w-3 text-red-500" />
-                                    Curtidas:
-                                  </span>
-                                  <span className="font-semibold">{contentStats.carousel.avgLikes.toLocaleString()}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="flex items-center gap-1">
-                                    <MessageCircle className="h-3 w-3 text-blue-500" />
-                                    Comentários:
-                                  </span>
-                                  <span className="font-semibold">{contentStats.carousel.avgComments.toLocaleString()}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="flex items-center gap-1">
-                                    <Eye className="h-3 w-3 text-purple-500" />
-                                    Visualizações:
-                                  </span>
-                                  <span className="font-semibold">
-                                    {contentStats.carousel.avgViews > 0 ? contentStats.carousel.avgViews.toLocaleString() : 'N/A'}
-                                  </span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="flex items-center gap-1">
-                                    <Share2 className="h-3 w-3 text-green-500" />
-                                    Compartilhamentos:
-                                  </span>
-                                  <span className="font-semibold">
-                                    {contentStats.carousel.avgShares > 0 ? contentStats.carousel.avgShares.toLocaleString() : 'N/A'}
-                                  </span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="flex items-center gap-1">
-                                    <Download className="h-3 w-3 text-orange-500" />
-                                    Salvamentos:
-                                  </span>
-                                  <span className="font-semibold">
-                                    {contentStats.carousel.avgSaves > 0 ? contentStats.carousel.avgSaves.toLocaleString() : 'N/A'}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
