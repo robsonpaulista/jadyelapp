@@ -715,11 +715,10 @@ export default function InstagramAnalyticsPage() {
     );
   };
 
-  const renderDashboard = () => {
+  const renderDashboard = function() {
     return (
-      <>
-        <div className="space-y-6">
-          <Tabs defaultValue="posts">
+      <div className="space-y-6">
+        <Tabs defaultValue="posts">
           <TabsList className="grid grid-cols-2 mb-4">
             <TabsTrigger value="posts">
               <Calendar className="mr-2 h-4 w-4" /> Posts & Insights
@@ -1929,8 +1928,7 @@ export default function InstagramAnalyticsPage() {
             )}
           </TabsContent>
         </Tabs>
-        </div>
-      </>
+      </div>
     );
   };
 
