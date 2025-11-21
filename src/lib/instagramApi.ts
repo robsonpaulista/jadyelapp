@@ -496,6 +496,193 @@ export async function fetchInstagramData(
       console.error('Erro ao buscar métricas de audiência:', error);
     }
 
+    // Buscar dados demográficos da audiência (gênero, idade, localização)
+    let demographics: InstagramMetrics['demographics'] = undefined;
+    try {
+      console.log('Iniciando busca de dados demográficos para:', instagramBusinessId);
+      
+      // Tentar diferentes formatos de endpoint - alguns podem usar period=day ou não precisar de period
+      const demographicMetrics = [
+        { name: 'audience_gender_age', period: 'lifetime' },
+        { name: 'audience_gender_age', period: 'day' },
+        { name: 'audience_country', period: 'lifetime' },
+        { name: 'audience_country', period: 'day' },
+        { name: 'audience_city', period: 'lifetime' },
+        { name: 'audience_city', period: 'day' }
+      ];
+
+      let genderAgeData: any = null;
+      let countryData: any = null;
+      let cityData: any = null;
+
+      // Buscar dados de gênero e idade
+      for (const metric of demographicMetrics.filter(m => m.name === 'audience_gender_age')) {
+        try {
+          const url = `https://graph.facebook.com/v18.0/${instagramBusinessId}/insights?metric=${metric.name}&period=${metric.period}&access_token=${token}`;
+          console.log(`Tentando buscar ${metric.name} com period=${metric.period}:`, url);
+          
+          const response = await fetch(url);
+          const responseText = await response.text();
+          
+          if (response.ok) {
+            try {
+              genderAgeData = JSON.parse(responseText);
+              console.log(`[SUCCESS] Dados de gênero e idade (${metric.period}):`, JSON.stringify(genderAgeData, null, 2));
+              break; // Se funcionou, não precisa tentar outros períodos
+            } catch (parseError) {
+              console.error('Erro ao fazer parse dos dados de gênero e idade:', parseError);
+            }
+          } else {
+            let errorData: any;
+            try {
+              errorData = JSON.parse(responseText);
+            } catch {
+              errorData = { raw: responseText };
+            }
+            console.warn(`[ERROR] Erro ao buscar ${metric.name} (${metric.period}):`, errorData);
+            // Continuar tentando outros períodos
+          }
+        } catch (fetchError) {
+          console.error(`[ERROR] Exceção ao buscar ${metric.name} (${metric.period}):`, fetchError);
+        }
+      }
+
+      // Buscar dados de localização (países)
+      for (const metric of demographicMetrics.filter(m => m.name === 'audience_country')) {
+        try {
+          const url = `https://graph.facebook.com/v18.0/${instagramBusinessId}/insights?metric=${metric.name}&period=${metric.period}&access_token=${token}`;
+          console.log(`Tentando buscar ${metric.name} com period=${metric.period}:`, url);
+          
+          const response = await fetch(url);
+          const responseText = await response.text();
+          
+          if (response.ok) {
+            try {
+              countryData = JSON.parse(responseText);
+              console.log(`[SUCCESS] Dados de países (${metric.period}):`, JSON.stringify(countryData, null, 2));
+              break; // Se funcionou, não precisa tentar outros períodos
+            } catch (parseError) {
+              console.error('Erro ao fazer parse dos dados de países:', parseError);
+            }
+          } else {
+            let errorData: any;
+            try {
+              errorData = JSON.parse(responseText);
+            } catch {
+              errorData = { raw: responseText };
+            }
+            console.warn(`[ERROR] Erro ao buscar ${metric.name} (${metric.period}):`, errorData);
+            // Continuar tentando outros períodos
+          }
+        } catch (fetchError) {
+          console.error(`[ERROR] Exceção ao buscar ${metric.name} (${metric.period}):`, fetchError);
+        }
+      }
+
+      // Processar dados de gênero e idade
+      if (genderAgeData?.data && Array.isArray(genderAgeData.data) && genderAgeData.data.length > 0) {
+        console.log('Processando dados de gênero e idade. Estrutura:', JSON.stringify(genderAgeData.data[0], null, 2));
+        
+        const genderAgeMetric = genderAgeData.data[0];
+        // Tentar diferentes formatos de valores
+        let values: any = null;
+        
+        if (genderAgeMetric.values && Array.isArray(genderAgeMetric.values) && genderAgeMetric.values.length > 0) {
+          // Formato com array de values
+          values = genderAgeMetric.values[0]?.value || genderAgeMetric.values[0];
+        } else if (genderAgeMetric.value) {
+          // Formato direto
+          values = genderAgeMetric.value;
+        } else if (genderAgeMetric.values && typeof genderAgeMetric.values === 'object') {
+          // Formato como objeto direto
+          values = genderAgeMetric.values;
+        }
+
+        console.log('Valores extraídos de gênero/idade:', values, 'Tipo:', typeof values);
+
+        // Processar gênero
+        let maleCount = 0;
+        let femaleCount = 0;
+        const ageGroups: Record<string, number> = {};
+
+        // Os dados vêm no formato "M.18-24", "F.25-34", etc. ou podem vir como objeto aninhado
+        if (values && typeof values === 'object' && values !== null) {
+          Object.keys(values).forEach((key) => {
+            const value = Number(values[key]) || 0;
+            if (value > 0) {
+              // Formato pode ser "M.18-24", "F.25-34", "M.18-24.0", etc.
+              if (key.startsWith('M.') || key.match(/^M\.\d+/)) {
+                maleCount += value;
+                // Extrair faixa etária (ex: "M.18-24" -> "18-24", "M.18-24.0" -> "18-24")
+                const ageRange = key.replace(/^M\./, '').replace(/\.\d+$/, '');
+                ageGroups[ageRange] = (ageGroups[ageRange] || 0) + value;
+              } else if (key.startsWith('F.') || key.match(/^F\.\d+/)) {
+                femaleCount += value;
+                // Extrair faixa etária (ex: "F.18-24" -> "18-24", "F.18-24.0" -> "18-24")
+                const ageRange = key.replace(/^F\./, '').replace(/\.\d+$/, '');
+                ageGroups[ageRange] = (ageGroups[ageRange] || 0) + value;
+              }
+            }
+          });
+        }
+
+        console.log('Gênero processado - Masculino:', maleCount, 'Feminino:', femaleCount);
+        console.log('Faixas etárias processadas:', ageGroups);
+
+        // Processar localização
+        const topLocations: Record<string, number> = {};
+        if (countryData?.data && Array.isArray(countryData.data) && countryData.data.length > 0) {
+          console.log('Processando dados de países. Estrutura:', JSON.stringify(countryData.data[0], null, 2));
+          
+          const countryMetric = countryData.data[0];
+          let countryValues: any = null;
+          
+          if (countryMetric.values && Array.isArray(countryMetric.values) && countryMetric.values.length > 0) {
+            countryValues = countryMetric.values[0]?.value || countryMetric.values[0];
+          } else if (countryMetric.value) {
+            countryValues = countryMetric.value;
+          } else if (countryMetric.values && typeof countryMetric.values === 'object') {
+            countryValues = countryMetric.values;
+          }
+
+          console.log('Valores extraídos de países:', countryValues);
+
+          if (countryValues && typeof countryValues === 'object' && countryValues !== null) {
+            Object.keys(countryValues).forEach((country) => {
+              const value = Number(countryValues[country]) || 0;
+              if (value > 0) {
+                topLocations[country] = value;
+              }
+            });
+          }
+        }
+
+        // Só criar demographics se tiver dados válidos
+        if (maleCount > 0 || femaleCount > 0 || Object.keys(ageGroups).length > 0 || Object.keys(topLocations).length > 0) {
+          demographics = {
+            gender: (maleCount > 0 || femaleCount > 0) ? {
+              male: maleCount,
+              female: femaleCount
+            } : undefined,
+            age: Object.keys(ageGroups).length > 0 ? ageGroups : undefined,
+            topLocations: Object.keys(topLocations).length > 0 ? topLocations : undefined
+          };
+
+          console.log('[SUCCESS] Dados demográficos processados com sucesso:', demographics);
+        } else {
+          console.warn('[WARNING] Dados demográficos retornados mas sem valores válidos');
+        }
+      } else {
+        console.warn('[WARNING] Nenhum dado demográfico retornado pela API. Estrutura completa:', JSON.stringify({ genderAgeData, countryData }, null, 2));
+      }
+    } catch (error) {
+      console.error('[ERROR] Erro ao buscar dados demográficos:', error);
+      if (error instanceof Error) {
+        console.error('Mensagem de erro:', error.message);
+        console.error('Stack trace:', error.stack);
+      }
+    }
+
     // Processar posts com novo campo de sentimento
     const posts = await Promise.all(mediaData.data?.map(async (post: any) => {
       let type: 'image' | 'video' | 'carousel';
@@ -747,7 +934,8 @@ export async function fetchInstagramData(
         totalReach: getInsightValue('reach'),
         periodMetrics: insightsData.periodMetrics
       },
-      audienceMetrics
+      audienceMetrics,
+      demographics
     };
 
     console.log('Métricas finais do Instagram com análise de sentimento incluída');
