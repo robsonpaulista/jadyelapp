@@ -3117,11 +3117,11 @@ export default function InstagramAnalyticsPage() {
                             </CardTitle>
                           </CardHeader>
                           <CardContent>
-                            {bestCombo !== null ? (
+                            {maxEngagement > 0 && bestTheme && bestType ? (
                               <>
-                                <div className="text-2xl font-bold text-green-700">{bestCombo.engagement.toLocaleString()}</div>
+                                <div className="text-2xl font-bold text-green-700">{maxEngagement.toLocaleString()}</div>
                                 <p className="text-xs text-green-600 mt-1">
-                                  {bestCombo.theme} • {typeLabels[bestCombo.type] || bestCombo.type}
+                                  {bestTheme} • {typeLabels[bestType] || bestType}
                                 </p>
                               </>
                             ) : (
