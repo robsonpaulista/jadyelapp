@@ -106,6 +106,8 @@ export default function InstagramAnalyticsPage() {
   
   // Estado para filtro de tema na Visão Geral
   const [overviewThemeFilter, setOverviewThemeFilter] = useState<string>('all');
+  // Estado para filtro de impulsionamento
+  const [overviewBoostedFilter, setOverviewBoostedFilter] = useState<string>('all');
   
   // Temas disponíveis para classificação (em ordem alfabética)
   const availableThemes = [
@@ -1605,44 +1607,69 @@ export default function InstagramAnalyticsPage() {
                         Ver Comparativo
                       </Button>
                     </div>
-                    {/* Filtro por Tema */}
+                    {/* Filtros */}
                     <div className="mt-4 pt-4 border-t">
                       <div className="flex items-center gap-4 flex-wrap">
                         <div className="flex items-center gap-2">
                           <Filter className="h-5 w-5 text-gray-600" />
-                          <span className="text-sm font-medium text-gray-700">Filtrar por Tema:</span>
+                          <span className="text-sm font-medium text-gray-700">Filtros:</span>
                         </div>
-                        <Select value={overviewThemeFilter} onValueChange={setOverviewThemeFilter}>
-                          <SelectTrigger className="w-[250px]">
-                            <SelectValue placeholder="Todos os temas" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">Todos os temas</SelectItem>
-                            {availableThemes.map((theme) => (
-                              <SelectItem key={theme} value={theme}>
-                                {theme}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {overviewThemeFilter !== 'all' && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-600">Tema:</span>
+                          <Select value={overviewThemeFilter} onValueChange={setOverviewThemeFilter}>
+                            <SelectTrigger className="w-[200px]">
+                              <SelectValue placeholder="Todos os temas" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">Todos os temas</SelectItem>
+                              {availableThemes.map((theme) => (
+                                <SelectItem key={theme} value={theme}>
+                                  {theme}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-600">Impulsionamento:</span>
+                          <Select value={overviewBoostedFilter} onValueChange={setOverviewBoostedFilter}>
+                            <SelectTrigger className="w-[180px]">
+                              <SelectValue placeholder="Todas" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">Todas</SelectItem>
+                              <SelectItem value="boosted">Impulsionadas</SelectItem>
+                              <SelectItem value="organic">Orgânicas</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        {(overviewThemeFilter !== 'all' || overviewBoostedFilter !== 'all') && (
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => setOverviewThemeFilter('all')}
+                            onClick={() => {
+                              setOverviewThemeFilter('all');
+                              setOverviewBoostedFilter('all');
+                            }}
                             className="text-xs"
                           >
                             <X className="h-4 w-4 mr-1" />
-                            Limpar filtro
+                            Limpar filtros
                           </Button>
                         )}
-                        {overviewThemeFilter !== 'all' && (
+                        {(overviewThemeFilter !== 'all' || overviewBoostedFilter !== 'all') && (
                           <span className="text-sm text-gray-600">
                             {(() => {
                               const filtered = (metrics?.posts || []).filter(post => {
                                 const postIdentifier = getPostIdentifier(post);
                                 const classification = postClassifications[postIdentifier];
-                                return classification?.theme === overviewThemeFilter;
+                                
+                                const themeMatch = overviewThemeFilter === 'all' || classification?.theme === overviewThemeFilter;
+                                const boostedMatch = overviewBoostedFilter === 'all' || 
+                                  (overviewBoostedFilter === 'boosted' && classification?.isBoosted) ||
+                                  (overviewBoostedFilter === 'organic' && !classification?.isBoosted);
+                                
+                                return themeMatch && boostedMatch;
                               });
                               return `${filtered.length} ${filtered.length === 1 ? 'postagem encontrada' : 'postagens encontradas'}`;
                             })()}
@@ -1654,23 +1681,35 @@ export default function InstagramAnalyticsPage() {
                   <CardContent>
                     <div className="space-y-4">
                       {(() => {
-                        // Filtrar posts por tema se um filtro estiver selecionado
+                        // Filtrar posts por tema e impulsionamento
                         let postsToShow = metrics?.posts || [];
-                        if (overviewThemeFilter !== 'all') {
-                          postsToShow = postsToShow.filter(post => {
-                            const postIdentifier = getPostIdentifier(post);
-                            const classification = postClassifications[postIdentifier];
-                            return classification?.theme === overviewThemeFilter;
-                          });
-                        }
+                        postsToShow = postsToShow.filter(post => {
+                          const postIdentifier = getPostIdentifier(post);
+                          const classification = postClassifications[postIdentifier];
+                          
+                          const themeMatch = overviewThemeFilter === 'all' || classification?.theme === overviewThemeFilter;
+                          const boostedMatch = overviewBoostedFilter === 'all' || 
+                            (overviewBoostedFilter === 'boosted' && classification?.isBoosted) ||
+                            (overviewBoostedFilter === 'organic' && !classification?.isBoosted);
+                          
+                          return themeMatch && boostedMatch;
+                        });
                         
                         if (postsToShow.length === 0) {
+                          const filterMessages = [];
+                          if (overviewThemeFilter !== 'all') {
+                            filterMessages.push(`tema "${overviewThemeFilter}"`);
+                          }
+                          if (overviewBoostedFilter !== 'all') {
+                            filterMessages.push(overviewBoostedFilter === 'boosted' ? 'impulsionadas' : 'orgânicas');
+                          }
+                          
                           return (
                             <div className="text-center py-8">
                               <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                               <p className="text-gray-600">
-                                {overviewThemeFilter !== 'all' 
-                                  ? `Nenhuma postagem encontrada para o tema "${overviewThemeFilter}"`
+                                {filterMessages.length > 0
+                                  ? `Nenhuma postagem encontrada para ${filterMessages.join(' e ')}`
                                   : 'Nenhuma postagem disponível'}
                               </p>
                             </div>
@@ -3716,10 +3755,19 @@ export default function InstagramAnalyticsPage() {
                 </DialogTitle>
                 <DialogDescription>
                   Análise detalhada do desempenho por tipo de conteúdo
-                  {overviewThemeFilter !== 'all' && (
-                    <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
-                      Filtrado: {overviewThemeFilter}
-                    </span>
+                  {(overviewThemeFilter !== 'all' || overviewBoostedFilter !== 'all') && (
+                    <div className="flex items-center gap-2 mt-2">
+                      {overviewThemeFilter !== 'all' && (
+                        <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                          Tema: {overviewThemeFilter}
+                        </span>
+                      )}
+                      {overviewBoostedFilter !== 'all' && (
+                        <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs font-medium">
+                          {overviewBoostedFilter === 'boosted' ? 'Impulsionadas' : 'Orgânicas'}
+                        </span>
+                      )}
+                    </div>
                   )}
                 </DialogDescription>
               </div>
@@ -3731,14 +3779,18 @@ export default function InstagramAnalyticsPage() {
               <>
                 {/* Comparação Rápida com Thumbnails */}
                 {(() => {
-                  // Filtrar posts por tema se um filtro estiver selecionado
-                  const filteredPosts = overviewThemeFilter !== 'all' && metrics?.posts
-                    ? metrics.posts.filter(post => {
-                        const postIdentifier = getPostIdentifier(post);
-                        const classification = postClassifications[postIdentifier];
-                        return classification?.theme === overviewThemeFilter;
-                      })
-                    : metrics?.posts || [];
+                  // Filtrar posts por tema e impulsionamento
+                  const filteredPosts = (metrics?.posts || []).filter(post => {
+                    const postIdentifier = getPostIdentifier(post);
+                    const classification = postClassifications[postIdentifier];
+                    
+                    const themeMatch = overviewThemeFilter === 'all' || classification?.theme === overviewThemeFilter;
+                    const boostedMatch = overviewBoostedFilter === 'all' || 
+                      (overviewBoostedFilter === 'boosted' && classification?.isBoosted) ||
+                      (overviewBoostedFilter === 'organic' && !classification?.isBoosted);
+                    
+                    return themeMatch && boostedMatch;
+                  });
 
                   if (filteredPosts.length === 0) return null;
 
@@ -4251,11 +4303,17 @@ export default function InstagramAnalyticsPage() {
                 {(() => {
                   // Usar as mesmas estatísticas filtradas
                   let filteredStats = contentStats;
-                  if (overviewThemeFilter !== 'all' && metrics?.posts) {
+                  if ((overviewThemeFilter !== 'all' || overviewBoostedFilter !== 'all') && metrics?.posts) {
                     const filteredPosts = metrics.posts.filter(post => {
                       const postIdentifier = getPostIdentifier(post);
                       const classification = postClassifications[postIdentifier];
-                      return classification?.theme === overviewThemeFilter;
+                      
+                      const themeMatch = overviewThemeFilter === 'all' || classification?.theme === overviewThemeFilter;
+                      const boostedMatch = overviewBoostedFilter === 'all' || 
+                        (overviewBoostedFilter === 'boosted' && classification?.isBoosted) ||
+                        (overviewBoostedFilter === 'organic' && !classification?.isBoosted);
+                      
+                      return themeMatch && boostedMatch;
                     });
 
                     const stats = {
