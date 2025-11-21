@@ -103,6 +103,9 @@ export default function InstagramAnalyticsPage() {
   // Estados para classificação de postagens
   const [postClassifications, setPostClassifications] = useState<Record<string, { theme: string; isBoosted: boolean }>>({});
   
+  // Estado para filtro de tema na Visão Geral
+  const [overviewThemeFilter, setOverviewThemeFilter] = useState<string>('all');
+  
   // Temas disponíveis para classificação (em ordem alfabética)
   const availableThemes = [
     'Atendimentos',
@@ -114,6 +117,7 @@ export default function InstagramAnalyticsPage() {
     'Eca Digital',
     'Educação',
     'Evento',
+    'Família',
     'Hospital do Amor',
     'Informativo',
     "PL'S",
@@ -1110,6 +1114,15 @@ export default function InstagramAnalyticsPage() {
   };
   
   const renderDashboard = () => {
+    // Filtrar posts por tema se um filtro estiver selecionado
+    const filteredPosts = overviewThemeFilter !== 'all' && metrics?.posts
+      ? metrics.posts.filter(post => {
+          const postIdentifier = getPostIdentifier(post);
+          const classification = postClassifications[postIdentifier];
+          return classification?.theme === overviewThemeFilter;
+        })
+      : metrics?.posts || [];
+    
     return (
       <div className="space-y-6">
         {/* Filtros e controles */}
@@ -1840,15 +1853,87 @@ export default function InstagramAnalyticsPage() {
                 {/* Publicações - Para identificar o conteúdo específico */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base md:text-lg font-semibold">Publicações por Tipo de Conteúdo</CardTitle>
-                    <CardDescription>
-                      Visualize todas as postagens para identificar qual conteúdo tem melhor aceitação. Comparação com o post anterior.
-                    </CardDescription>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="text-base md:text-lg font-semibold">Publicações por Tipo de Conteúdo</CardTitle>
+                        <CardDescription>
+                          Visualize todas as postagens para identificar qual conteúdo tem melhor aceitação. Comparação com o post anterior.
+                        </CardDescription>
+                      </div>
+                    </div>
+                    {/* Filtro por Tema */}
+                    <div className="mt-4 pt-4 border-t">
+                      <div className="flex items-center gap-4 flex-wrap">
+                        <div className="flex items-center gap-2">
+                          <Filter className="h-5 w-5 text-gray-600" />
+                          <span className="text-sm font-medium text-gray-700">Filtrar por Tema:</span>
+                        </div>
+                        <Select value={overviewThemeFilter} onValueChange={setOverviewThemeFilter}>
+                          <SelectTrigger className="w-[250px]">
+                            <SelectValue placeholder="Todos os temas" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Todos os temas</SelectItem>
+                            {availableThemes.map((theme) => (
+                              <SelectItem key={theme} value={theme}>
+                                {theme}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {overviewThemeFilter !== 'all' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setOverviewThemeFilter('all')}
+                            className="text-xs"
+                          >
+                            <X className="h-4 w-4 mr-1" />
+                            Limpar filtro
+                          </Button>
+                        )}
+                        {overviewThemeFilter !== 'all' && (
+                          <span className="text-sm text-gray-600">
+                            {(() => {
+                              const filtered = (metrics?.posts || []).filter(post => {
+                                const postIdentifier = getPostIdentifier(post);
+                                const classification = postClassifications[postIdentifier];
+                                return classification?.theme === overviewThemeFilter;
+                              });
+                              return `${filtered.length} ${filtered.length === 1 ? 'postagem encontrada' : 'postagens encontradas'}`;
+                            })()}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
                       {(() => {
-                        const sortedPosts = [...(metrics?.posts || [])].sort(
+                        // Filtrar posts por tema se um filtro estiver selecionado
+                        let postsToShow = metrics?.posts || [];
+                        if (overviewThemeFilter !== 'all') {
+                          postsToShow = postsToShow.filter(post => {
+                            const postIdentifier = getPostIdentifier(post);
+                            const classification = postClassifications[postIdentifier];
+                            return classification?.theme === overviewThemeFilter;
+                          });
+                        }
+                        
+                        if (postsToShow.length === 0) {
+                          return (
+                            <div className="text-center py-8">
+                              <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                              <p className="text-gray-600">
+                                {overviewThemeFilter !== 'all' 
+                                  ? `Nenhuma postagem encontrada para o tema "${overviewThemeFilter}"`
+                                  : 'Nenhuma postagem disponível'}
+                              </p>
+                            </div>
+                          );
+                        }
+                        
+                        const sortedPosts = [...postsToShow].sort(
                           (a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime()
                         );
                         
@@ -2598,9 +2683,66 @@ export default function InstagramAnalyticsPage() {
 
                 {/* Tab: Visão Geral */}
                 <TabsContent value="overview" className="space-y-6">
+                  {/* Filtro por Tema */}
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                          <Filter className="h-5 w-5 text-gray-600" />
+                          <span className="text-sm font-medium text-gray-700">Filtrar por Tema:</span>
+                        </div>
+                        <Select value={overviewThemeFilter} onValueChange={setOverviewThemeFilter}>
+                          <SelectTrigger className="w-[250px]">
+                            <SelectValue placeholder="Todos os temas" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Todos os temas</SelectItem>
+                            {availableThemes.map((theme) => (
+                              <SelectItem key={theme} value={theme}>
+                                {theme}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {overviewThemeFilter !== 'all' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setOverviewThemeFilter('all')}
+                            className="text-xs"
+                          >
+                            <X className="h-4 w-4 mr-1" />
+                            Limpar filtro
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+
                   {/* KPIs Principais */}
                   {(() => {
-                    const allThemes = Object.entries(themeStats);
+                    let allThemes = Object.entries(themeStats);
+                    
+                    // Aplicar filtro se um tema específico foi selecionado
+                    if (overviewThemeFilter !== 'all') {
+                      allThemes = allThemes.filter(([theme]) => theme === overviewThemeFilter);
+                    }
+                    
+                    if (allThemes.length === 0) {
+                      return (
+                        <Card>
+                          <CardContent className="p-8 text-center">
+                            <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                            <p className="text-gray-600">
+                              {overviewThemeFilter !== 'all' 
+                                ? `Nenhum dado encontrado para o tema "${overviewThemeFilter}"`
+                                : 'Nenhum dado disponível'}
+                            </p>
+                          </CardContent>
+                        </Card>
+                      );
+                    }
+                    
                     const bestTheme = allThemes.sort((a, b) => b[1].avgEngagement - a[1].avgEngagement)[0];
                     const totalPosts = allThemes.reduce((sum, [, stats]) => sum + stats.posts, 0);
                     const avgEngagement = allThemes.reduce((sum, [, stats]) => sum + stats.avgEngagement, 0) / allThemes.length;
@@ -2674,13 +2816,25 @@ export default function InstagramAnalyticsPage() {
                   {/* Gráfico: Engajamento por Tema */}
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-lg font-bold">Engajamento Médio por Tema</CardTitle>
+                      <CardTitle className="text-lg font-bold">
+                        Engajamento Médio por Tema
+                        {overviewThemeFilter !== 'all' && (
+                          <span className="text-sm font-normal text-gray-500 ml-2">
+                            (Filtrado: {overviewThemeFilter})
+                          </span>
+                        )}
+                      </CardTitle>
                       <CardDescription>Comparação visual do desempenho de cada tema</CardDescription>
                     </CardHeader>
                     <CardContent>
                       {(() => {
-                        const sortedThemes = Object.entries(themeStats)
+                        let sortedThemes = Object.entries(themeStats)
                           .sort((a, b) => b[1].avgEngagement - a[1].avgEngagement);
+                        
+                        // Aplicar filtro se um tema específico foi selecionado
+                        if (overviewThemeFilter !== 'all') {
+                          sortedThemes = sortedThemes.filter(([theme]) => theme === overviewThemeFilter);
+                        }
                         
                         const chartData = {
                           labels: sortedThemes.map(([theme]) => theme),
@@ -2736,8 +2890,14 @@ export default function InstagramAnalyticsPage() {
                       <div className="space-y-3">
                         {(() => {
                           const insights = [];
-                          const sortedThemes = Object.entries(themeStats)
+                          let sortedThemes = Object.entries(themeStats)
                             .sort((a, b) => b[1].avgEngagement - a[1].avgEngagement);
+                          
+                          // Aplicar filtro se um tema específico foi selecionado
+                          if (overviewThemeFilter !== 'all') {
+                            sortedThemes = sortedThemes.filter(([theme]) => theme === overviewThemeFilter);
+                          }
+                          
                           const best = sortedThemes[0];
                           const worst = sortedThemes[sortedThemes.length - 1];
                           
@@ -2786,6 +2946,150 @@ export default function InstagramAnalyticsPage() {
                       </div>
                     </CardContent>
                   </Card>
+
+                  {/* Postagens Filtradas por Tema */}
+                  {overviewThemeFilter !== 'all' && metrics?.posts && (() => {
+                    const filteredPosts = metrics.posts.filter(post => {
+                      const postIdentifier = getPostIdentifier(post);
+                      const classification = postClassifications[postIdentifier];
+                      return classification?.theme === overviewThemeFilter;
+                    });
+
+                    if (filteredPosts.length === 0) {
+                      return (
+                        <Card>
+                          <CardContent className="p-8 text-center">
+                            <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                            <p className="text-gray-600">Nenhuma postagem encontrada para o tema "{overviewThemeFilter}"</p>
+                          </CardContent>
+                        </Card>
+                      );
+                    }
+
+                    return (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-lg font-bold">
+                            Postagens do Tema: {overviewThemeFilter}
+                          </CardTitle>
+                          <CardDescription>
+                            {filteredPosts.length} {filteredPosts.length === 1 ? 'postagem encontrada' : 'postagens encontradas'}
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-4">
+                            {filteredPosts
+                              .sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime())
+                              .map((post) => {
+                                const postIdentifier = getPostIdentifier(post);
+                                const classification = postClassifications[postIdentifier];
+                                
+                                return (
+                                  <div key={post.id} className="border rounded-lg overflow-hidden">
+                                    <div className="flex flex-col sm:flex-row">
+                                      <div className="w-full sm:w-48 h-48 bg-gray-200 relative">
+                                        {post.thumbnail && (
+                                          <div 
+                                            className="w-full h-full bg-center bg-cover" 
+                                            style={{ backgroundImage: `url(${post.thumbnail})` }}
+                                          />
+                                        )}
+                                        <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                                          {post.type === 'video' ? 'Vídeo' : post.type === 'carousel' ? 'Carrossel' : 'Foto'}
+                                        </div>
+                                      </div>
+                                      
+                                      <div className="p-4 flex-1">
+                                        <div className="flex justify-between items-start mb-2">
+                                          <span className="text-xs text-gray-500">
+                                            {new Date(post.postedAt).toLocaleDateString('pt-BR', {
+                                              day: '2-digit',
+                                              month: '2-digit',
+                                              year: 'numeric',
+                                              hour: '2-digit',
+                                              minute: '2-digit'
+                                            })}
+                                          </span>
+                                          <a 
+                                            href={post.url} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="text-blue-600 hover:underline text-xs flex items-center"
+                                          >
+                                            <ExternalLink className="h-3 w-3 mr-1" /> Ver no Instagram
+                                          </a>
+                                        </div>
+                                        
+                                        <p className="text-sm mt-2 line-clamp-2 mb-3">
+                                          {post.caption}
+                                        </p>
+                                        
+                                        <div className="grid grid-cols-5 gap-2 text-center">
+                                          <div>
+                                            <div className="flex items-center justify-center">
+                                              <Heart className="h-4 w-4 text-red-500 mr-1" />
+                                              <span className="text-sm font-medium">{post.metrics.likes.toLocaleString()}</span>
+                                            </div>
+                                            <span className="text-xs text-gray-500">Curtidas</span>
+                                          </div>
+                                          <div>
+                                            <div className="flex items-center justify-center">
+                                              <MessageCircle className="h-4 w-4 text-blue-500 mr-1" />
+                                              <span className="text-sm font-medium">{post.metrics.comments.toLocaleString()}</span>
+                                            </div>
+                                            <span className="text-xs text-gray-500">Comentários</span>
+                                          </div>
+                                          <div>
+                                            <div className="flex items-center justify-center">
+                                              <Eye className="h-4 w-4 text-blue-500 mr-1" />
+                                              <span className="text-sm font-medium">
+                                                {post.metrics.views !== undefined && post.metrics.views !== null
+                                                  ? post.metrics.views.toLocaleString()
+                                                  : 'N/A'}
+                                              </span>
+                                            </div>
+                                            <span className="text-xs text-gray-500">Visualizações</span>
+                                          </div>
+                                          <div>
+                                            <div className="flex items-center justify-center">
+                                              <Share2 className="h-4 w-4 text-green-500 mr-1" />
+                                              <span className="text-sm font-medium">
+                                                {post.metrics.shares > 0 
+                                                  ? post.metrics.shares.toLocaleString()
+                                                  : 'N/A'}
+                                              </span>
+                                            </div>
+                                            <span className="text-xs text-gray-500">Compartilhamentos</span>
+                                          </div>
+                                          <div>
+                                            <div className="flex items-center justify-center">
+                                              <Download className="h-4 w-4 text-orange-500 mr-1" />
+                                              <span className="text-sm font-medium">
+                                                {post.metrics.saves > 0 
+                                                  ? post.metrics.saves.toLocaleString()
+                                                  : 'N/A'}
+                                              </span>
+                                            </div>
+                                            <span className="text-xs text-gray-500">Salvamentos</span>
+                                          </div>
+                                        </div>
+                                        
+                                        {classification?.isBoosted && (
+                                          <div className="mt-3 flex items-center gap-1 text-xs">
+                                            <Sparkles className="h-3 w-3 text-yellow-600" />
+                                            <span className="text-yellow-700 font-medium">Postagem Impulsionada</span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })()}
                 </TabsContent>
 
                 {/* Tab: Por Tema */}
