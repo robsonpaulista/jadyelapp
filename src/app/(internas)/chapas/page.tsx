@@ -85,6 +85,11 @@ export default function ChapasPage() {
   const [dialogAberto, setDialogAberto] = useState<number | null>(null);
   const [novoCandidato, setNovoCandidato] = useState({ nome: '', votos: 0, genero: 'homem' as 'homem' | 'mulher' });
   const [salvandoCandidato, setSalvandoCandidato] = useState(false);
+  
+  // Estados para adicionar novo partido
+  const [dialogNovoPartidoAberto, setDialogNovoPartidoAberto] = useState(false);
+  const [novoPartido, setNovoPartido] = useState({ nome: '', cor: 'bg-gray-500', corTexto: 'text-white' });
+  const [salvandoPartido, setSalvandoPartido] = useState(false);
 
   // Adicionar estado para edição temporária dos votos de legenda
   const [votosLegendaTemp, setVotosLegendaTemp] = useState<{ [partido: string]: string }>({});
@@ -769,6 +774,71 @@ export default function ChapasPage() {
     }
   };
 
+  // Função para adicionar novo partido
+  const handleAdicionarPartido = async () => {
+    if (!novoPartido.nome.trim()) {
+      alert('Por favor, digite o nome do partido');
+      return;
+    }
+
+    // Verificar se o partido já existe
+    const partidoExistente = partidos.find(p => p.nome === novoPartido.nome);
+    if (partidoExistente) {
+      alert('Este partido já existe!');
+      return;
+    }
+
+    setSalvandoPartido(true);
+    
+    try {
+      if (!cenarioAtivo) {
+        throw new Error('Cenário base não encontrado');
+      }
+      
+      // Criar novo partido
+      const novoPartidoObj: PartidoLocal = {
+        nome: novoPartido.nome,
+        cor: novoPartido.cor,
+        corTexto: novoPartido.corTexto,
+        candidatos: []
+      };
+      
+      // Preparar conversão ANTES de atualizar o estado local
+      const partidosAtualizados = [...partidos, novoPartidoObj];
+      
+      // Converter partidos atualizados
+      const partidosOrdenados = ordenarPartidos(partidosAtualizados);
+      const partidosConvertidos = partidosOrdenados.map(partido => ({
+        nome: partido.nome,
+        cor: partido.cor,
+        corTexto: partido.corTexto,
+        candidatos: partido.candidatos.map(c => ({
+          nome: c.nome,
+          votos: c.votos,
+          genero: (c as any).genero
+        })),
+        votosLegenda: votosLegenda[partido.nome] || 0
+      }));
+      
+      // Atualizar estado local
+      setPartidos(partidosAtualizados);
+      
+      await atualizarCenario(cenarioAtivo.id, partidosConvertidos, cenarioAtivo.quocienteEleitoral);
+      
+      // Limpar formulário
+      setNovoPartido({ nome: '', cor: 'bg-gray-500', corTexto: 'text-white' });
+      setDialogNovoPartidoAberto(false);
+      
+      mostrarNotificacaoAutoSave(`Partido ${novoPartido.nome} adicionado com sucesso`);
+    } catch (error) {
+      console.error('Erro ao adicionar partido:', error);
+      await carregarDadosFirestore();
+      alert('Erro ao adicionar partido. Dados foram recarregados automaticamente.');
+    } finally {
+      setSalvandoPartido(false);
+    }
+  };
+
   // Função para adicionar novo candidato
   const handleAdicionarCandidato = async (partidoIdx: number) => {
     if (!novoCandidato.nome.trim()) {
@@ -919,9 +989,16 @@ export default function ChapasPage() {
   // Função para ordenar partidos na ordem fixa
   const ordenarPartidos = <T extends { nome: string }>(partidosParaOrdenar: T[]): T[] => {
     const ordemPartidos = ["PT", "PSD/MDB", "PP", "REPUBLICANOS", "PODEMOS"];
-    return ordemPartidos
+    const partidosOrdenados = ordemPartidos
       .map(nomePartido => partidosParaOrdenar.find(p => p.nome === nomePartido))
       .filter(Boolean) as T[];
+    
+    // Adicionar partidos que não estão na lista ordenada no final
+    const partidosRestantes = partidosParaOrdenar.filter(
+      p => !ordemPartidos.includes(p.nome)
+    );
+    
+    return [...partidosOrdenados, ...partidosRestantes];
   };
 
   // Função para converter partidos para o formato do cenário
@@ -1067,11 +1144,13 @@ export default function ChapasPage() {
     }
   };
 
-  // Função para calcular o total de votos válidos
+  // Função para calcular o total de votos válidos (apenas partidos não ocultos)
   const getTotalVotosValidos = () => {
-    return partidos.reduce((total, partido) => {
-      return total + getVotosProjetados(partido.candidatos, partido.nome);
-    }, 0);
+    return partidos
+      .filter(partido => !partidosOcultos[partido.nome])
+      .reduce((total, partido) => {
+        return total + getVotosProjetados(partido.candidatos, partido.nome);
+      }, 0);
   };
 
   // Análise específica do REPUBLICANOS
@@ -1835,6 +1914,150 @@ export default function ChapasPage() {
                 {getPartidosElegiveisSobras().length}/{partidos.filter(p => !partidosOcultos[p.nome]).length}
               </span>
             </div>
+
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-gray-700">Total de Votos:</span>
+              <span className="text-sm font-bold text-gray-700">
+                {getTotalVotosValidos().toLocaleString('pt-BR')}
+              </span>
+            </div>
+          </div>
+          
+          {/* Botão para adicionar novo partido */}
+          <div className="flex justify-end">
+            <Dialog open={dialogNovoPartidoAberto} onOpenChange={setDialogNovoPartidoAberto}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Adicionar Partido
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Adicionar Novo Partido</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="nomePartido">Nome do Partido</Label>
+                    <Input
+                      id="nomePartido"
+                      value={novoPartido.nome}
+                      onChange={(e) => setNovoPartido(prev => ({ ...prev, nome: e.target.value }))}
+                      placeholder="Ex: PV, PSOL, etc."
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="corPartido">Cor de Fundo</Label>
+                    <Select
+                      value={novoPartido.cor}
+                      onValueChange={(value) => {
+                        const corTextoMap: Record<string, string> = {
+                          'bg-gray-500': 'text-white',
+                          'bg-blue-500': 'text-white',
+                          'bg-green-500': 'text-white',
+                          'bg-red-500': 'text-white',
+                          'bg-yellow-400': 'text-gray-900',
+                          'bg-purple-500': 'text-white',
+                          'bg-orange-500': 'text-white',
+                          'bg-pink-500': 'text-white',
+                          'bg-indigo-500': 'text-white',
+                          'bg-teal-500': 'text-white'
+                        };
+                        setNovoPartido(prev => ({ 
+                          ...prev, 
+                          cor: value,
+                          corTexto: corTextoMap[value] || 'text-white'
+                        }));
+                      }}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="bg-gray-500">
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 bg-gray-500 rounded"></div>
+                            <span>Cinza</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="bg-blue-500">
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 bg-blue-500 rounded"></div>
+                            <span>Azul</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="bg-green-500">
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 bg-green-500 rounded"></div>
+                            <span>Verde</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="bg-red-500">
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 bg-red-500 rounded"></div>
+                            <span>Vermelho</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="bg-yellow-400">
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 bg-yellow-400 rounded"></div>
+                            <span>Amarelo</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="bg-purple-500">
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 bg-purple-500 rounded"></div>
+                            <span>Roxo</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="bg-orange-500">
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 bg-orange-500 rounded"></div>
+                            <span>Laranja</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="bg-pink-500">
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 bg-pink-500 rounded"></div>
+                            <span>Rosa</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="bg-indigo-500">
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 bg-indigo-500 rounded"></div>
+                            <span>Índigo</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="bg-teal-500">
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 bg-teal-500 rounded"></div>
+                            <span>Verde-água</span>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setDialogNovoPartidoAberto(false);
+                      setNovoPartido({ nome: '', cor: 'bg-gray-500', corTexto: 'text-white' });
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={handleAdicionarPartido}
+                    disabled={salvandoPartido || !novoPartido.nome.trim()}
+                  >
+                    {salvandoPartido ? 'Salvando...' : 'Adicionar Partido'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
 
@@ -2219,135 +2442,271 @@ export default function ChapasPage() {
                     </table>
                   </div>
                 ) : (
-                  // Renderização normal para outros partidos
-                  <table className="w-full text-xs mb-2">
-                    <tbody>
-                      {partido.candidatos
-                        .filter(c => c.nome !== "VOTOS LEGENDA")
-                        .sort((a, b) => b.votos - a.votos)
-                        .map((c, idx) => (
-                        <tr 
-                          key={`${c.nome}-${idx}`}
-                          className="group relative hover:bg-gray-50 transition-colors"
-                          onMouseEnter={() => setHoveredRow({ partidoIdx: pIdx, candidatoNome: c.nome })}
-                          onMouseLeave={() => {
-                            if (!(editingName?.partidoIdx === pIdx && editingName?.candidatoNome === c.nome)) {
-                              setHoveredRow(null);
-                            }
-                          }}
-                        >
-                          <td className="pr-2 text-left whitespace-nowrap font-normal align-top w-2/3">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm text-gray-500">{idx + 1}.</span>
-                              {modoImpressao ? (
-                                <span className="text-xs font-medium">{c.nome}</span>
-                              ) : (
-                                <input
-                                  type="text"
-                                  value={editingName?.partidoIdx === pIdx && editingName?.candidatoNome === c.nome 
-                                    ? editingName.tempValue 
-                                    : c.nome}
-                                  onFocus={() => startEditingName(pIdx, c.nome)}
-                                  onChange={e => {
-                                    if (editingName?.partidoIdx === pIdx && editingName?.candidatoNome === c.nome) {
-                                      setEditingName({ ...editingName, tempValue: e.target.value });
-                                    }
-                                  }}
-                                  onBlur={() => saveNameChange(pIdx, c.nome)}
-                                  onKeyDown={e => {
-                                    if (e.key === 'Enter') {
-                                      e.currentTarget.blur();
-                                    } else if (e.key === 'Escape') {
-                                      setEditingName(null);
-                                      e.currentTarget.blur();
-                                    }
-                                  }}
-                                  className="bg-transparent border-b border-gray-200 focus:border-blue-400 outline-none w-full text-xs py-0.5 px-1"
-                                />
-                              )}
-                            </div>
-                          </td>
-                          <td className="text-right whitespace-nowrap font-normal align-top">
-                            {modoImpressao ? (
-                              <span className="text-xs font-medium">
-                                {Number(c.votos).toLocaleString('pt-BR')}
-                              </span>
-                            ) : (
-                              editVoto && editVoto.partidoIdx === pIdx && editVoto.candidatoNome === c.nome ? (
-                                <input
-                                  type="number"
-                                  min={0}
-                                  value={c.votos}
-                                  autoFocus
-                                  onChange={e => {
-                                    const value = e.target.value;
-                                    updateLocalState(pIdx, c.nome, 'votos', value);
-                                  }}
-                                  onBlur={() => {
-                                    saveVotosChange(pIdx, c.nome, c.votos);
-                                    setEditVoto(null);
-                                  }}
-                                  onKeyDown={e => {
-                                    if (e.key === 'Enter') {
-                                      saveVotosChange(pIdx, c.nome, c.votos);
-                                      setEditVoto(null);
-                                    }
-                                  }}
-                                  className="bg-transparent border-b border-gray-200 focus:border-blue-400 outline-none w-full text-xs py-0.5 px-1 text-right"
-                                  style={{ textAlign: 'right' }}
-                                />
-                              ) : (
-                                <span
-                                  className="cursor-pointer select-text"
-                                  onClick={() => setEditVoto({ partidoIdx: pIdx, candidatoNome: c.nome })}
-                                >
-                                  {Number(c.votos).toLocaleString('pt-BR')}
-                                </span>
-                              )
-                            )}
-                          </td>
-                          <td className="pl-2 text-right whitespace-nowrap font-normal align-top w-8">
-                            {(hoveredRow?.partidoIdx === pIdx && hoveredRow?.candidatoNome === c.nome) || 
-                             (editingName?.partidoIdx === pIdx && editingName?.candidatoNome === c.nome) ? (
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    style={{
-                                      opacity: (hoveredRow?.partidoIdx === pIdx && hoveredRow?.candidatoNome === c.nome) || 
-                                               (editingName?.partidoIdx === pIdx && editingName?.candidatoNome === c.nome) ? 1 : 0
-                                    }}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Excluir candidato</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Tem certeza que deseja excluir o candidato {c.nome} do partido {partido.nome}?
-                                      Esta ação não pode ser desfeita.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => handleExcluirCandidato(pIdx, c.nome)}
-                                      className="bg-red-500 hover:bg-red-600 text-white"
+                  // Renderização com separação por gênero para partidos criados
+                  <div className="space-y-2">
+                    {/* Bloco dos Homens */}
+                    <table className="w-full text-xs">
+                      <tbody>
+                        {(() => {
+                          const { homens } = separarCandidatosPorGenero(partido.candidatos);
+                          return homens.map((c, idx) => (
+                            <tr 
+                              key={`homem-${c.nome}-${idx}`}
+                              className="group relative hover:bg-gray-50 transition-colors"
+                              onMouseEnter={() => setHoveredRow({ partidoIdx: pIdx, candidatoNome: c.nome })}
+                              onMouseLeave={() => {
+                                if (!(editingName?.partidoIdx === pIdx && editingName?.candidatoNome === c.nome)) {
+                                  setHoveredRow(null);
+                                }
+                              }}
+                            >
+                              <td className="pr-2 text-left whitespace-nowrap font-normal align-top w-2/3">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm text-gray-500">{idx + 1}.</span>
+                                  {modoImpressao ? (
+                                    <span className="text-xs font-medium">{c.nome}</span>
+                                  ) : (
+                                    <input
+                                      type="text"
+                                      value={editingName?.partidoIdx === pIdx && editingName?.candidatoNome === c.nome 
+                                        ? editingName.tempValue 
+                                        : c.nome}
+                                      onFocus={() => startEditingName(pIdx, c.nome)}
+                                      onChange={e => {
+                                        if (editingName?.partidoIdx === pIdx && editingName?.candidatoNome === c.nome) {
+                                          setEditingName({ ...editingName, tempValue: e.target.value });
+                                        }
+                                      }}
+                                      onBlur={() => saveNameChange(pIdx, c.nome)}
+                                      onKeyDown={e => {
+                                        if (e.key === 'Enter') {
+                                          e.currentTarget.blur();
+                                        } else if (e.key === 'Escape') {
+                                          setEditingName(null);
+                                          e.currentTarget.blur();
+                                        }
+                                      }}
+                                      className="bg-transparent border-b border-gray-200 focus:border-blue-400 outline-none w-full text-xs py-0.5 px-1"
+                                    />
+                                  )}
+                                </div>
+                              </td>
+                              <td className="text-right whitespace-nowrap font-normal align-top">
+                                {modoImpressao ? (
+                                  <span className="text-xs font-medium">
+                                    {Number(c.votos).toLocaleString('pt-BR')}
+                                  </span>
+                                ) : (
+                                  editVoto && editVoto.partidoIdx === pIdx && editVoto.candidatoNome === c.nome ? (
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      value={c.votos}
+                                      autoFocus
+                                      onChange={e => {
+                                        const value = e.target.value;
+                                        updateLocalState(pIdx, c.nome, 'votos', value);
+                                      }}
+                                      onBlur={() => {
+                                        saveVotosChange(pIdx, c.nome, c.votos);
+                                        setEditVoto(null);
+                                      }}
+                                      onKeyDown={e => {
+                                        if (e.key === 'Enter') {
+                                          saveVotosChange(pIdx, c.nome, c.votos);
+                                          setEditVoto(null);
+                                        }
+                                      }}
+                                      className="bg-transparent border-b border-gray-200 focus:border-blue-400 outline-none w-full text-xs py-0.5 px-1 text-right"
+                                      style={{ textAlign: 'right' }}
+                                    />
+                                  ) : (
+                                    <span
+                                      className="cursor-pointer select-text"
+                                      onClick={() => setEditVoto({ partidoIdx: pIdx, candidatoNome: c.nome })}
                                     >
-                                      Excluir
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            ) : null}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                                      {Number(c.votos).toLocaleString('pt-BR')}
+                                    </span>
+                                  )
+                                )}
+                              </td>
+                              <td className="pl-2 text-right whitespace-nowrap font-normal align-top w-8">
+                                {(hoveredRow?.partidoIdx === pIdx && hoveredRow?.candidatoNome === c.nome) || 
+                                 (editingName?.partidoIdx === pIdx && editingName?.candidatoNome === c.nome) ? (
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        style={{
+                                          opacity: (hoveredRow?.partidoIdx === pIdx && hoveredRow?.candidatoNome === c.nome) || 
+                                                   (editingName?.partidoIdx === pIdx && editingName?.candidatoNome === c.nome) ? 1 : 0
+                                        }}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Excluir candidato</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Tem certeza que deseja excluir o candidato {c.nome} do partido {partido.nome}?
+                                          Esta ação não pode ser desfeita.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction
+                                          onClick={() => handleExcluirCandidato(pIdx, c.nome)}
+                                          className="bg-red-500 hover:bg-red-600 text-white"
+                                        >
+                                          Excluir
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                ) : null}
+                              </td>
+                            </tr>
+                          ));
+                        })()}
+                      </tbody>
+                    </table>
+
+                    {/* Divisão visual */}
+                    <div className="border-t-2 border-gray-300 my-2"></div>
+
+                    {/* Bloco das Mulheres */}
+                    <table className="w-full text-xs">
+                      <tbody>
+                        {(() => {
+                          const { mulheres } = separarCandidatosPorGenero(partido.candidatos);
+                          return mulheres.map((c, idx) => (
+                            <tr 
+                              key={`mulher-${c.nome}-${idx}`}
+                              className="group relative hover:bg-gray-50 transition-colors"
+                              onMouseEnter={() => setHoveredRow({ partidoIdx: pIdx, candidatoNome: c.nome })}
+                              onMouseLeave={() => {
+                                if (!(editingName?.partidoIdx === pIdx && editingName?.candidatoNome === c.nome)) {
+                                  setHoveredRow(null);
+                                }
+                              }}
+                            >
+                              <td className="pr-2 text-left whitespace-nowrap font-normal align-top w-2/3">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm text-gray-500">{idx + 1}.</span>
+                                  {modoImpressao ? (
+                                    <span className="text-xs font-medium">{c.nome}</span>
+                                  ) : (
+                                    <input
+                                      type="text"
+                                      value={editingName?.partidoIdx === pIdx && editingName?.candidatoNome === c.nome 
+                                        ? editingName.tempValue 
+                                        : c.nome}
+                                      onFocus={() => startEditingName(pIdx, c.nome)}
+                                      onChange={e => {
+                                        if (editingName?.partidoIdx === pIdx && editingName?.candidatoNome === c.nome) {
+                                          setEditingName({ ...editingName, tempValue: e.target.value });
+                                        }
+                                      }}
+                                      onBlur={() => saveNameChange(pIdx, c.nome)}
+                                      onKeyDown={e => {
+                                        if (e.key === 'Enter') {
+                                          e.currentTarget.blur();
+                                        } else if (e.key === 'Escape') {
+                                          setEditingName(null);
+                                          e.currentTarget.blur();
+                                        }
+                                      }}
+                                      className="bg-transparent border-b border-gray-200 focus:border-blue-400 outline-none w-full text-xs py-0.5 px-1"
+                                    />
+                                  )}
+                                </div>
+                              </td>
+                              <td className="text-right whitespace-nowrap font-normal align-top">
+                                {modoImpressao ? (
+                                  <span className="text-xs font-medium">
+                                    {Number(c.votos).toLocaleString('pt-BR')}
+                                  </span>
+                                ) : (
+                                  editVoto && editVoto.partidoIdx === pIdx && editVoto.candidatoNome === c.nome ? (
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      value={c.votos}
+                                      autoFocus
+                                      onChange={e => {
+                                        const value = e.target.value;
+                                        updateLocalState(pIdx, c.nome, 'votos', value);
+                                      }}
+                                      onBlur={() => {
+                                        saveVotosChange(pIdx, c.nome, c.votos);
+                                        setEditVoto(null);
+                                      }}
+                                      onKeyDown={e => {
+                                        if (e.key === 'Enter') {
+                                          saveVotosChange(pIdx, c.nome, c.votos);
+                                          setEditVoto(null);
+                                        }
+                                      }}
+                                      className="bg-transparent border-b border-gray-200 focus:border-blue-400 outline-none w-full text-xs py-0.5 px-1 text-right"
+                                      style={{ textAlign: 'right' }}
+                                    />
+                                  ) : (
+                                    <span
+                                      className="cursor-pointer select-text"
+                                      onClick={() => setEditVoto({ partidoIdx: pIdx, candidatoNome: c.nome })}
+                                    >
+                                      {Number(c.votos).toLocaleString('pt-BR')}
+                                    </span>
+                                  )
+                                )}
+                              </td>
+                              <td className="pl-2 text-right whitespace-nowrap font-normal align-top w-8">
+                                {(hoveredRow?.partidoIdx === pIdx && hoveredRow?.candidatoNome === c.nome) || 
+                                 (editingName?.partidoIdx === pIdx && editingName?.candidatoNome === c.nome) ? (
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        style={{
+                                          opacity: (hoveredRow?.partidoIdx === pIdx && hoveredRow?.candidatoNome === c.nome) || 
+                                                   (editingName?.partidoIdx === pIdx && editingName?.candidatoNome === c.nome) ? 1 : 0
+                                        }}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Excluir candidato</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Tem certeza que deseja excluir o candidato {c.nome} do partido {partido.nome}?
+                                          Esta ação não pode ser desfeita.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction
+                                          onClick={() => handleExcluirCandidato(pIdx, c.nome)}
+                                          className="bg-red-500 hover:bg-red-600 text-white"
+                                        >
+                                          Excluir
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                ) : null}
+                              </td>
+                            </tr>
+                          ));
+                        })()}
+                      </tbody>
+                    </table>
+                  </div>
                 )}
 
                 {/* Input de Votos Legenda */}
@@ -2446,37 +2805,35 @@ export default function ChapasPage() {
                           disabled={salvandoCandidato}
                         />
                       </div>
-                      {(partido.nome === "PT" || partido.nome === "PSD/MDB" || partido.nome === "PP" || partido.nome === "REPUBLICANOS" || partido.nome === "PODEMOS") && (
-                        <div>
-                          <label className="text-sm font-medium mb-2 block">Gênero</label>
-                          <div className="flex gap-4">
-                            <label className="flex items-center gap-2">
-                              <input
-                                type="radio"
-                                name="genero"
-                                value="homem"
-                                checked={novoCandidato.genero === 'homem'}
-                                onChange={(e) => setNovoCandidato(prev => ({ ...prev, genero: e.target.value as 'homem' | 'mulher' }))}
-                                disabled={salvandoCandidato}
-                                className="w-4 h-4 text-blue-600"
-                              />
-                              <span className="text-sm">Homem</span>
-                            </label>
-                            <label className="flex items-center gap-2">
-                              <input
-                                type="radio"
-                                name="genero"
-                                value="mulher"
-                                checked={novoCandidato.genero === 'mulher'}
-                                onChange={(e) => setNovoCandidato(prev => ({ ...prev, genero: e.target.value as 'homem' | 'mulher' }))}
-                                disabled={salvandoCandidato}
-                                className="w-4 h-4 text-blue-600"
-                              />
-                              <span className="text-sm">Mulher</span>
-                            </label>
-                          </div>
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">Gênero</label>
+                        <div className="flex gap-4">
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="radio"
+                              name="genero"
+                              value="homem"
+                              checked={novoCandidato.genero === 'homem'}
+                              onChange={(e) => setNovoCandidato(prev => ({ ...prev, genero: e.target.value as 'homem' | 'mulher' }))}
+                              disabled={salvandoCandidato}
+                              className="w-4 h-4 text-blue-600"
+                            />
+                            <span className="text-sm">Homem</span>
+                          </label>
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="radio"
+                              name="genero"
+                              value="mulher"
+                              checked={novoCandidato.genero === 'mulher'}
+                              onChange={(e) => setNovoCandidato(prev => ({ ...prev, genero: e.target.value as 'homem' | 'mulher' }))}
+                              disabled={salvandoCandidato}
+                              className="w-4 h-4 text-blue-600"
+                            />
+                            <span className="text-sm">Mulher</span>
+                          </label>
                         </div>
-                      )}
+                      </div>
                       <div className="flex gap-2 justify-end">
                         <Button
                           variant="outline"
