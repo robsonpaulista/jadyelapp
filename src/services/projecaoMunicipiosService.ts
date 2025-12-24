@@ -44,18 +44,66 @@ export async function buscarProjecoesMunicipios() {
     const headers = data[0];
     const rows = data.slice(1);
 
+    // Encontrar índices das colunas pelo nome exato (mapeamento dinâmico)
+    const municipioIndex = headers.findIndex(h => h && h.toString().trim().toLowerCase() === 'município');
+    const liderancaAtualIndex = headers.findIndex(h => h && h.toString().trim().toLowerCase().includes('liderança') && h.toString().trim().toLowerCase().includes('atual'));
+    const votacao2022Index = headers.findIndex(h => {
+      const header = h ? h.toString().trim() : '';
+      return header.toLowerCase().includes('votação') && 
+             (header.toLowerCase().includes('2022') || header.toLowerCase().includes('final 2022'));
+    });
+    // Buscar pelo nome exato: "Expectativa de Votos 2026"
+    const expectativa2026Index = headers.findIndex(h => {
+      const header = h ? h.toString().trim() : '';
+      return header === 'Expectativa de Votos 2026';
+    });
+    const eleitoresIndex = headers.findIndex(h => {
+      const header = h ? h.toString().trim() : '';
+      return (header.toLowerCase().includes('total votos') || header.toLowerCase().includes('eleitores')) && 
+             header.toLowerCase().includes('2020');
+    });
+
+    // Log para debug
+    logger.info('Mapeamento de colunas:', {
+      municipio: municipioIndex,
+      liderancaAtual: liderancaAtualIndex,
+      votacao2022: votacao2022Index,
+      expectativa2026: expectativa2026Index,
+      eleitores: eleitoresIndex,
+      headers: headers
+    });
+
+    // Validar que encontramos as colunas essenciais
+    if (municipioIndex === -1) {
+      throw new Error('Coluna "Município" não encontrada na planilha');
+    }
+    if (expectativa2026Index === -1) {
+      throw new Error('Coluna "Expectativa de Votos 2026" não encontrada na planilha');
+    }
+
     // Criar um mapa para consolidar os dados por município
     const municipiosMap = new Map<string, ProjecaoMunicipio>();
 
     rows.forEach((row, index) => {
       try {
-        const municipio = row[0] || ''; // Município
+        const municipio = row[municipioIndex] || '';
         if (!municipio) return;
 
-        const liderancaAtual = (row[3] || '').toUpperCase() === 'SIM' ? 1 : 0; // Liderança Atual (coluna 3)
-        const votacao2022 = row[14] ? parseInt(String(row[14]).replace(/[^0-9]/g, '')) || 0 : 0; // Votação Final 2022 (coluna 14)
-        const expectativa2026 = row[16] ? parseInt(String(row[16]).replace(/[^0-9]/g, '')) || 0 : 0; // Total Expectativa de Votos 2026 (coluna 16)
-        const eleitores = row[6] ? parseInt(String(row[6]).replace(/[^0-9]/g, '')) || 0 : 0; // Total Votos Eleição 2020 (coluna 6)
+        const liderancaAtual = liderancaAtualIndex !== -1 
+          ? ((row[liderancaAtualIndex] || '').toString().toUpperCase() === 'SIM' ? 1 : 0)
+          : 0;
+        
+        const votacao2022 = votacao2022Index !== -1 && row[votacao2022Index]
+          ? parseInt(String(row[votacao2022Index]).replace(/[^0-9]/g, '')) || 0
+          : 0;
+        
+        const expectativa2026 = expectativa2026Index !== -1 && row[expectativa2026Index]
+          ? parseInt(String(row[expectativa2026Index]).replace(/[^0-9]/g, '')) || 0
+          : 0;
+        
+        const eleitores = eleitoresIndex !== -1 && row[eleitoresIndex]
+          ? parseInt(String(row[eleitoresIndex]).replace(/[^0-9]/g, '')) || 0
+          : 0;
 
         // Se o município já existe no mapa, atualiza os valores
         if (municipiosMap.has(municipio)) {
