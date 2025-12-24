@@ -21,9 +21,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { ArrowUpDown, RotateCw, ChevronLeft, ChevronRight, FileDown } from "lucide-react";
+import { ArrowUpDown, RotateCw, ChevronLeft, ChevronRight, FileDown, Settings } from "lucide-react";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 // Carregamento dinâmico do MapaPiaui apenas no cliente
 // const MapaPiaui = dynamic(() => import('@/components/MapaPiaui'), {
@@ -66,6 +68,17 @@ export default function ProjecaoMunicipios() {
   const [liderancas, setLiderancas] = useState<any[]>([]);
   const [loadingLiderancas, setLoadingLiderancas] = useState(false);
   const [filtroExpectativa, setFiltroExpectativa] = useState<string>('todos');
+  const [showPdfConfigModal, setShowPdfConfigModal] = useState(false);
+  const [colunasPdf, setColunasPdf] = useState<Record<string, boolean>>({
+    municipio: true,
+    liderancasAtuais: true,
+    votacao2022: true,
+    expectativa2026: true,
+    crescimento: true,
+    eleitores: true,
+    alcance: true,
+  });
+  const [incluirResumoEstatisticas, setIncluirResumoEstatisticas] = useState(true);
   // Variáveis relacionadas ao mapa temporariamente desabilitadas
   // const [filtroTerritorio, setFiltroTerritorio] = useState<string[]>([]);
   // const [territorioSelecionado, setTerritorioSelecionado] = useState<string>('');
@@ -261,6 +274,13 @@ export default function ProjecaoMunicipios() {
   const totais = calcularTotais();
 
   const gerarPDF = () => {
+    // Verificar se pelo menos uma coluna está selecionada
+    const colunasSelecionadas = Object.entries(colunasPdf).filter(([_, selected]) => selected);
+    if (colunasSelecionadas.length === 0) {
+      alert('Selecione pelo menos uma coluna para gerar o PDF.');
+      return;
+    }
+
     const doc = new jsPDF();
     
     // Título
@@ -272,42 +292,80 @@ export default function ProjecaoMunicipios() {
     doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 14, 30);
     
     // Informações do filtro ativo
+    let currentY = 38;
     if (filtroExpectativa !== 'todos') {
       const filtroTexto = filtroExpectativa === 'ate100' ? 'até 100 votos' :
                           filtroExpectativa === 'mais150' ? '150+ votos' : 
                           filtroExpectativa === 'mais300' ? '300+ votos' : 
                           filtroExpectativa === 'mais500' ? '500+ votos' : '1000+ votos';
-      doc.text(`Filtro aplicado: Expectativa 2026 ${filtroTexto}`, 14, 38);
-      doc.text(`Municípios filtrados: ${filteredData.length} de ${projecoes.length}`, 14, 44);
+      doc.text(`Filtro aplicado: Expectativa 2026 ${filtroTexto}`, 14, currentY);
+      doc.text(`Municípios filtrados: ${filteredData.length} de ${projecoes.length}`, 14, currentY + 6);
+      currentY += 12;
     }
     
-    // Dados da tabela
-    const tableData = filteredData.map(item => [
-      item.municipio,
-      formatNumber(item.liderancasAtuais),
-      formatNumber(item.votacao2022),
-      formatNumber(item.expectativa2026),
-      formatPercentage(item.crescimento),
-      formatNumber(item.eleitores),
-      formatPercentage(item.alcance)
-    ]);
+    // Mapeamento de colunas para nomes de exibição e funções de formatação
+    const colunasMap: Record<string, { label: string; getValue: (item: ProjecaoMunicipio) => string; getTotal: () => string }> = {
+      municipio: {
+        label: 'Município',
+        getValue: (item) => item.municipio,
+        getTotal: () => 'TOTAL'
+      },
+      liderancasAtuais: {
+        label: 'Lideranças Atuais',
+        getValue: (item) => formatNumber(item.liderancasAtuais),
+        getTotal: () => formatNumber(totais.liderancasAtuais)
+      },
+      votacao2022: {
+        label: 'Votação 2022',
+        getValue: (item) => formatNumber(item.votacao2022),
+        getTotal: () => formatNumber(totais.votacao2022)
+      },
+      expectativa2026: {
+        label: 'Expectativa 2026',
+        getValue: (item) => formatNumber(item.expectativa2026),
+        getTotal: () => formatNumber(totais.expectativa2026)
+      },
+      crescimento: {
+        label: 'Crescimento',
+        getValue: (item) => formatPercentage(item.crescimento),
+        getTotal: () => formatPercentage(totais.crescimento)
+      },
+      eleitores: {
+        label: 'Eleitores',
+        getValue: (item) => formatNumber(item.eleitores),
+        getTotal: () => formatNumber(totais.eleitores)
+      },
+      alcance: {
+        label: 'Alcance',
+        getValue: (item) => formatPercentage(item.alcance),
+        getTotal: () => formatPercentage(totais.alcance)
+      }
+    };
+
+    // Construir cabeçalhos e dados apenas com colunas selecionadas
+    const headers: string[] = [];
+    const colunasKeys: string[] = [];
+    
+    Object.entries(colunasPdf).forEach(([key, selected]) => {
+      if (selected && colunasMap[key]) {
+        headers.push(colunasMap[key].label);
+        colunasKeys.push(key);
+      }
+    });
+
+    // Dados da tabela apenas com colunas selecionadas
+    const tableData = filteredData.map(item => {
+      return colunasKeys.map(key => colunasMap[key].getValue(item));
+    });
 
     // Adicionar linha de totais
-    tableData.push([
-      'TOTAL',
-      formatNumber(totais.liderancasAtuais),
-      formatNumber(totais.votacao2022),
-      formatNumber(totais.expectativa2026),
-      formatPercentage(totais.crescimento),
-      formatNumber(totais.eleitores),
-      formatPercentage(totais.alcance)
-    ]);
+    tableData.push(colunasKeys.map(key => colunasMap[key].getTotal()));
 
     // Ajustar posição Y da tabela baseado no filtro ativo
-    const startY = filtroExpectativa !== 'todos' ? 50 : 40;
+    const startY = currentY;
     
     autoTable(doc, {
-      head: [['Município', 'Lideranças Atuais', 'Votação 2022', 'Expectativa 2026', 'Crescimento', 'Eleitores', 'Alcance']],
+      head: [headers],
       body: tableData,
       startY: startY,
       styles: {
@@ -340,19 +398,21 @@ export default function ProjecaoMunicipios() {
       }
     });
 
-    // Adicionar resumo das estatísticas no final
-    const estatisticas = calcularEstatisticasFiltro();
-    const finalY = (doc as any).lastAutoTable.finalY || startY + (tableData.length * 10);
-    
-    doc.setFontSize(10);
-    doc.text('Resumo das Estatísticas:', 14, finalY + 10);
-    doc.setFontSize(8);
-    doc.text(`Total de municípios: ${estatisticas.total}`, 14, finalY + 18);
-    doc.text(`Municípios com até 100 votos: ${estatisticas.ate100}`, 14, finalY + 24);
-    doc.text(`Municípios com 150+ votos: ${estatisticas.mais150}`, 14, finalY + 30);
-    doc.text(`Municípios com 300+ votos: ${estatisticas.mais300}`, 14, finalY + 36);
-    doc.text(`Municípios com 500+ votos: ${estatisticas.mais500}`, 14, finalY + 42);
-    doc.text(`Municípios com 1000+ votos: ${estatisticas.mais1000}`, 14, finalY + 48);
+    // Adicionar resumo das estatísticas no final (se selecionado)
+    if (incluirResumoEstatisticas) {
+      const estatisticas = calcularEstatisticasFiltro();
+      const finalY = (doc as any).lastAutoTable.finalY || startY + (tableData.length * 10);
+      
+      doc.setFontSize(10);
+      doc.text('Resumo das Estatísticas:', 14, finalY + 10);
+      doc.setFontSize(8);
+      doc.text(`Total de municípios: ${estatisticas.total}`, 14, finalY + 18);
+      doc.text(`Municípios com até 100 votos: ${estatisticas.ate100}`, 14, finalY + 24);
+      doc.text(`Municípios com 150+ votos: ${estatisticas.mais150}`, 14, finalY + 30);
+      doc.text(`Municípios com 300+ votos: ${estatisticas.mais300}`, 14, finalY + 36);
+      doc.text(`Municípios com 500+ votos: ${estatisticas.mais500}`, 14, finalY + 42);
+      doc.text(`Municípios com 1000+ votos: ${estatisticas.mais1000}`, 14, finalY + 48);
+    }
 
     // Salvar o PDF
     doc.save('projecao-municipios-2026.pdf');
@@ -363,6 +423,141 @@ export default function ProjecaoMunicipios() {
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-semibold">Projeção de Municípios</h2>
         <div className="flex gap-2">
+          <Dialog open={showPdfConfigModal} onOpenChange={setShowPdfConfigModal}>
+            <DialogTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={loading || filteredData.length === 0}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Configurar PDF
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Selecionar Colunas para o PDF</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="col-municipio"
+                      checked={colunasPdf.municipio}
+                      onCheckedChange={(checked) =>
+                        setColunasPdf({ ...colunasPdf, municipio: checked === true })
+                      }
+                    />
+                    <Label htmlFor="col-municipio" className="cursor-pointer">
+                      Município
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="col-liderancas"
+                      checked={colunasPdf.liderancasAtuais}
+                      onCheckedChange={(checked) =>
+                        setColunasPdf({ ...colunasPdf, liderancasAtuais: checked === true })
+                      }
+                    />
+                    <Label htmlFor="col-liderancas" className="cursor-pointer">
+                      Lideranças Atuais
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="col-votacao2022"
+                      checked={colunasPdf.votacao2022}
+                      onCheckedChange={(checked) =>
+                        setColunasPdf({ ...colunasPdf, votacao2022: checked === true })
+                      }
+                    />
+                    <Label htmlFor="col-votacao2022" className="cursor-pointer">
+                      Votação 2022
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="col-expectativa2026"
+                      checked={colunasPdf.expectativa2026}
+                      onCheckedChange={(checked) =>
+                        setColunasPdf({ ...colunasPdf, expectativa2026: checked === true })
+                      }
+                    />
+                    <Label htmlFor="col-expectativa2026" className="cursor-pointer">
+                      Expectativa 2026
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="col-crescimento"
+                      checked={colunasPdf.crescimento}
+                      onCheckedChange={(checked) =>
+                        setColunasPdf({ ...colunasPdf, crescimento: checked === true })
+                      }
+                    />
+                    <Label htmlFor="col-crescimento" className="cursor-pointer">
+                      Crescimento
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="col-eleitores"
+                      checked={colunasPdf.eleitores}
+                      onCheckedChange={(checked) =>
+                        setColunasPdf({ ...colunasPdf, eleitores: checked === true })
+                      }
+                    />
+                    <Label htmlFor="col-eleitores" className="cursor-pointer">
+                      Eleitores
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="col-alcance"
+                      checked={colunasPdf.alcance}
+                      onCheckedChange={(checked) =>
+                        setColunasPdf({ ...colunasPdf, alcance: checked === true })
+                      }
+                    />
+                    <Label htmlFor="col-alcance" className="cursor-pointer">
+                      Alcance
+                    </Label>
+                  </div>
+                </div>
+                <div className="border-t pt-4 mt-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="resumo-estatisticas"
+                      checked={incluirResumoEstatisticas}
+                      onCheckedChange={(checked) =>
+                        setIncluirResumoEstatisticas(checked === true)
+                      }
+                    />
+                    <Label htmlFor="resumo-estatisticas" className="cursor-pointer">
+                      Incluir Resumo das Estatísticas
+                    </Label>
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowPdfConfigModal(false)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setShowPdfConfigModal(false);
+                      gerarPDF();
+                    }}
+                  >
+                    Gerar PDF
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
           <Button
             variant="outline"
             size="sm"
